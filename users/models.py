@@ -3,7 +3,7 @@ from django.db import models
 
 # Create your models here.
 class User(models.Model):
-    phone       = models.ImageField(max_length = 100, blank = False, unique = True)
+    phone       = models.IntegerField(blank = False, unique = True)
     name        = models.CharField(max_length = 50, blank = False)
     password    = models.CharField(max_length = 50, blank = False)
     position    = models.CharField(max_length = 50, blank = False)
