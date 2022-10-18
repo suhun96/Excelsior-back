@@ -71,3 +71,16 @@ class SignInView(View):
             return JsonResponse({'message' : jwt_token }, status = 200)
         except KeyError:
             return JsonResponse({'message' : 'KEY_ERROR'} , status = 400)
+
+class ModifyView(View):
+    @jwt_decoder
+    def post(self, request):
+        modify_data = request.POST
+        user = request.user
+        try:
+            modify_user_info = User.objects.filter(id = user.id)
+            
+            return
+
+        except KeyError:
+            return JsonResponse({'message' : 'KEY_ERROR'} , status = 400)
