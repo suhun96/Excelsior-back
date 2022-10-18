@@ -18,11 +18,11 @@ class SignUpView(View):
         
         try:
             if not user.admin == True:
-                return JsonResponse({'messaga' : 'nono admin'}, status = 403) 
+                return JsonResponse({'messaga' : 'You do not have permission to create a member.'}, status = 403) 
 
             new_user , is_created = User.objects.get_or_create(
                 phone = data['phone'],
-                defaults={
+                defaults = {
                 'phone'       : data['phone'],
                 'name'        : data['name'],
                 'password'    : 1234,            # 기본 비밀번호
@@ -32,7 +32,7 @@ class SignUpView(View):
             })
 
             if not is_created:
-                return JsonResponse({'messaga' : 'nono phone exist'}, status = 403)
+                return JsonResponse({'messaga' : 'The phone number is already registered.'}, status = 403)
             
             check_user_info = list(User.objects.filter(id = new_user.id).values(
                 "phone",
