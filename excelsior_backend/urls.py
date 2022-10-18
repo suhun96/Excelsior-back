@@ -18,5 +18,5 @@ from django.urls import path, include
 from users.views import *
 
 urlpatterns = [
-    # path('api/login', include('users.urls'))
+    path('api/login', include('users.urls'))
 ]
