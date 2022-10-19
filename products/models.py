@@ -11,7 +11,7 @@ class ProductGroup(models.Model):
     class Meta:
         db_table = 'product_groups'
 
-class Company(models.Model):
+class Company(models.Model): # managers 확인 하세요!
     name        = models.CharField(max_length = 60, blank = False)
     code        = models.CharField(max_length = 10, blank = False)
     address     = models.CharField(max_length = 120, blank = False)

@@ -7,16 +7,15 @@ from django.db.models   import Q
 from users.models       import *
 from products.models    import *
 from users.jwtdecoder   import jwt_decoder
+from users.checkstatus  import check_status
 
 class CreateProductGroupView(View):
     @jwt_decoder
+    @check_status
     def post(self, request):
         input_data = request.POST
 
         try:
-            if User.objects.get(id = request.user.id ).status == False:
-                return JsonResponse({'message' : 'This account is not available.'}, status = 403)
-
             if not "name" in input_data or not "code" in input_data:
                 return JsonResponse({'message' : 'Please enter the correct value.'}, status = 403)
 
@@ -47,13 +46,11 @@ class CreateProductGroupView(View):
 
 class CreateCompanyView(View):
     @jwt_decoder
+    @check_status
     def post(self, request):
         input_data = request.POST
 
         try:
-            if User.objects.get(id = request.user.id ).status == False:
-                return JsonResponse({'message' : 'This account is not available.'}, status = 403)
-
             if not "name" in input_data or not "code" in input_data:
                 return JsonResponse({'message' : 'Please enter the correct value.'}, status = 403)
 
