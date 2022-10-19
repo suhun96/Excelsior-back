@@ -119,6 +119,7 @@ class ChangeStatusView(View):
             return JsonResponse({'message' : 'KEY_ERROR'} , status = 400)
 
 class UserListView(View):
+    @jwt_decoder 
     def get(self, request):
         User_List = User.objects.all()
 
