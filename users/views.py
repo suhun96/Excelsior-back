@@ -49,7 +49,6 @@ class SignUpView(View):
         except:
             return JsonResponse(status = 403)
 
-
 class SignInView(View):
     def create_jwt_token(self, user_id, user_admin):
         jwt_token = jwt.encode({'user_id' : user_id , 'admin' : user_admin, 'exp':datetime.utcnow() + timedelta(days = 3)}, settings.SECRET_KEY, settings.ALGORITHM)
@@ -101,7 +100,6 @@ class ModifyView(View):
         except KeyError:
             return JsonResponse({'message' : 'KEY_ERROR'} , status = 400)
 
-
 class ChangeStatusView(View):
     @jwt_decoder
     def post(self, request):
@@ -119,3 +117,17 @@ class ChangeStatusView(View):
             
         except KeyError:
             return JsonResponse({'message' : 'KEY_ERROR'} , status = 400)
+
+class UserListView(View):
+    def get(self, request):
+        User_List = User.objects.all()
+
+        user_list = [{
+            'use_id'    : user.id, 
+            'phone'     : user.phone,
+            'name'      : user.name,
+            'position'  : user.position,
+            'status'    : user.status
+        } for user in User_List]
+
+        return JsonResponse({'user_list' : user_list} , status = 200)
