@@ -1,7 +1,8 @@
 import jwt
-from django.views   import View
-from django.http    import JsonResponse
-from django.conf    import settings
+from django.views       import View
+from django.http        import JsonResponse
+from django.conf        import settings
+from django.db          import transaction
 
 from datetime       import datetime, timedelta
 
@@ -48,6 +49,7 @@ class SignUpView(View):
         except:
             return JsonResponse(status = 403)
 
+
 class SignInView(View):
     def create_jwt_token(self, user_id, user_admin):
         jwt_token = jwt.encode({'user_id' : user_id , 'admin' : user_admin, 'exp':datetime.utcnow() + timedelta(days = 3)}, settings.SECRET_KEY, settings.ALGORITHM)
@@ -76,11 +78,44 @@ class ModifyView(View):
     @jwt_decoder
     def post(self, request):
         modify_data = request.POST
-        user = request.user
+        user= request.user 
+        UOF = User.objects.filter(id = user.id)
+        
         try:
-            modify_user_info = User.objects.filter(id = user.id)
-            
-            return
+            with transaction.atomic():
+                if len(modify_data) == 0:
+                    return JsonResponse({'message' : 'No data contents to be modified.'}, status = 403)
 
+                if "name" in modify_data:
+                    UOF.update(name = modify_data['name'])
+
+                if "password" in modify_data:
+                    UOF.update(password = modify_data['password'])
+
+                if "position" in modify_data:
+                    UOF.update(position = modify_data['position'])
+
+
+            return JsonResponse({'message' : 'Check update'}, status = 204)
+
+        except KeyError:
+            return JsonResponse({'message' : 'KEY_ERROR'} , status = 400)
+
+
+class ChangeStatusView(View):
+    @jwt_decoder
+    def post(self, request):
+        user = request.user
+        data = request.POST
+        change_id = data['id']
+        
+        try:
+            if not user.admin == True:
+                return JsonResponse({'message' :'You are an unauthorized user.'}, status = 403)
+            
+            User.objects.filter(id = change_id).update(status = 0)
+            
+            return JsonResponse({'message' : 'The user account has been stopped.'}, status = 204)
+            
         except KeyError:
             return JsonResponse({'message' : 'KEY_ERROR'} , status = 400)
