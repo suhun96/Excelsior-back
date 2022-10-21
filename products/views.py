@@ -181,27 +181,28 @@ class UpdateProductView(View):
 
     def post(self, request):
         input_data = request.POST
-
-        # 제품 코드 슬라이싱
-
-        if not len(input_data['code']) == 7:
+        serial_num = request.POST['serial_code']
+        quantity   = request.POST['quantity']
+        
+        # 제품 코드 형식 확인
+        if not len(serial_num) == 7:
             return JsonResponse({'message' : 'Please check the serial number.'} , status = 403)
-
-        company_code        = input_data['code'][0:2]
-        product_group_code  = input_data['code'][2:4]
-        model_number        = input_data['code'][4:7]
+        
+        # 제품 코드 슬라이싱
+        company_code        = serial_num[0:2]
+        product_group_code  = serial_num[2:4]
+        model_number        = serial_num[4:7]
         
         try:
-            if not ProductQuantity.objects.filter(product_serial_code = input_data['code']).exists:
+            if not ProductQuantity.objects.filter(product_serial_code = serial_num).exists:
                 return JsonResponse({'message' : 'No product exists.'}, status = 403)
             
             pg_code_id = ProductGroup.objects.get(code = product_group_code).id
             cp_code_id = Company.objects.get(code = company_code).id
             
-            before_quantity = Product.objects.filter(serial_code__icontains = input_data['code']).count()
+            before_quantity = Product.objects.filter(serial_code__icontains = serial_num).count()
             
-            search_word = Product.objects.filter(product_group_id = pg_code_id, company_id = cp_code_id, model_number = model_number).last().search_word
-
+            choice_product = Product.objects.filter(product_group_id = pg_code_id, company_id = cp_code_id, model_number = model_number).last()
 
             for i in range(1, int(input_data['quantity']) + 1):
                 zero_num = str(i + before_quantity).zfill(3)
@@ -212,19 +213,20 @@ class UpdateProductView(View):
                     company_id          = cp_code_id,
                     use_status_id       = 1,
                     serial_code         = serial_code2,
-                    search_word         = search_word,
+                    search_word         = choice_product.search_word,
                     price               = input_data['price'],
-                    safe_quantity       = 10,
+                    safe_quantity       = choice_product.safe_quantity,
                     model_number        = model_number,
                     etc                 = input_data['etc']
                 )
             
-            after_quantity = Product.objects.filter(serial_code__contains = input_data['code']).count()
+            # 제품 생성 갯수 카운팅
+            after_quantity = Product.objects.filter(serial_code__contains = serial_num).count()
             
             # 입고 수량 정정
-            ProductQuantity.objects.filter(product_serial_code = input_data['code']).update(quantity  = after_quantity)
+            ProductQuantity.objects.filter(product_serial_code = serial_num).update(quantity  = after_quantity)
             
-            return JsonResponse({'message': 'active'}, status = 200)
+            return JsonResponse({'message': f'{quantity}, {serial_num} products have been added.'}, status = 200)
 
         except KeyError:
             return JsonResponse({'message' : 'KEY ERROR'}, status = 403)
