@@ -125,11 +125,12 @@ class CreateProductView(View):
         product_serial_code = cp_code + pg_code + model_number
         # 제품 갯수만큼 시리얼 생성
         plus_quantity = int(quantity) + 1
+        
+        serial_code = cp_code + pg_code + model_number
 
         for i in range(1, plus_quantity):
             zero_num = str(i).zfill(3)
-            
-            serial_code2 = cp_code + pg_code + model_number + zero_num + self.year[2:4] + self.month + self.day
+            serial_code2 = serial_code + zero_num + self.year[2:4] + self.month + self.day
             
             Product.objects.create(
                 product_group_id    = pg_id,
@@ -145,12 +146,12 @@ class CreateProductView(View):
         
         return product_serial_code 
 
-    @jwt_decoder
-    @check_status 
+    # @jwt_decoder
+    # @check_status 
     def post(self, request):
         input_data = request.POST
         
-        # serial_generator(self, pg_id, cp_id, quantity, search_word, price, safe_quantity):
+        # serial_generator(self, pg_id, cp_id, quantity, search_word, price, safe_quantity)
         try: 
             transaction.atomic()
             product_serial_code = self.serial_generator(
@@ -180,30 +181,29 @@ class UpdateProductView(View):
 
     def post(self, request):
         input_data = request.POST
-        code = request.POST['code']
-        print(input_data)
-        
-        Q = input_data['quantity']
+
         # 제품 코드 슬라이싱
-        company_code = code[0:2]
-        product_group_code = code[2:4]
-        model_number = code[4:7]
+
+        if not len(input_data['code']) == 7:
+            return JsonResponse({'message' : 'Please check the serial number.'} , status = 403)
+
+        company_code        = input_data['code'][0:2]
+        product_group_code  = input_data['code'][2:4]
+        model_number        = input_data['code'][4:7]
         
         try:
-            if not ProductQuantity.objects.filter(product_serial_code = code).exists:
-                return JsonResponse({'message' : 'does not'}, status = 403)
+            if not ProductQuantity.objects.filter(product_serial_code = input_data['code']).exists:
+                return JsonResponse({'message' : 'No product exists.'}, status = 403)
             
             pg_code_id = ProductGroup.objects.get(code = product_group_code).id
             cp_code_id = Company.objects.get(code = company_code).id
             
-            before_quantity = Product.objects.filter(serial_code__icontains = code).count()
+            before_quantity = Product.objects.filter(serial_code__icontains = input_data['code']).count()
             
             search_word = Product.objects.filter(product_group_id = pg_code_id, company_id = cp_code_id, model_number = model_number).last().search_word
 
-            
-            print(search_word)
 
-            for i in range(1, int(Q) + 1):
+            for i in range(1, int(input_data['quantity']) + 1):
                 zero_num = str(i + before_quantity).zfill(3)
                 serial_code2 = company_code + product_group_code + model_number + zero_num + self.year[2:4] + self.month + self.day
             
@@ -216,15 +216,14 @@ class UpdateProductView(View):
                     price               = input_data['price'],
                     safe_quantity       = 10,
                     model_number        = model_number,
-                    etc                 = 'etc'
+                    etc                 = input_data['etc']
                 )
             
-            after_quantity = Product.objects.filter(serial_code__contains = code).count()
+            after_quantity = Product.objects.filter(serial_code__contains = input_data['code']).count()
             
             # 입고 수량 정정
-            ProductQuantity.objects.get_or_create(product_serial_code = serial_code2, quantity  = after_quantity)
+            ProductQuantity.objects.filter(product_serial_code = input_data['code']).update(quantity  = after_quantity)
             
-    
             return JsonResponse({'message': 'active'}, status = 200)
 
         except KeyError:
