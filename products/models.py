@@ -26,22 +26,25 @@ class Company(models.Model): # managers 확인 하세요!
     class Meta:
         db_table = 'companies'
 
+class SerialCode(models.Model):
+    product_group   = models.ForeignKey(ProductGroup, on_delete = models.CASCADE)
+    company         = models.ForeignKey(Company, on_delete = models.CASCADE)
+    model_number    = models.IntegerField()
+    code = models.CharField(max_length = 15, blank = False)
+
+    class Meta:
+        db_table = 'serial_code'
+
 class UseStatus(models.Model):
     name = models.CharField(max_length = 15, blank = False)
-
+    
     class Meta:
         db_table = 'use_status'
 
 class Product(models.Model):
-    product_group   = models.ForeignKey(ProductGroup, on_delete = models.CASCADE)
-    company         = models.ForeignKey(Company, on_delete = models.CASCADE)
     use_status      = models.ForeignKey(UseStatus, on_delete = models.CASCADE)
-    serial_code     = models.CharField(max_length = 25, blank = False)
-    name            = models.CharField(max_length = 15, blank = False)
-    model_number    = models.IntegerField()
-    search_word     = models.CharField(max_length = 150, blank = False)
+    serial_code     = models.ForeignKey(SerialCode, on_delete = models.CASCADE)
     price           = models.BigIntegerField()              
-    safe_quantity   = models.IntegerField()
     etc             = models.CharField(max_length = 3000, blank = True)
     created_at      = models.DateTimeField(auto_now_add = True)
     updated_at      = models.DateTimeField(auto_now = True)
@@ -49,12 +52,15 @@ class Product(models.Model):
     class Meta:
         db_table = 'products'
 
-class ProductQuantity(models.Model):
+class ProductInfo(models.Model):
     product_serial_code = models.CharField(max_length = 30, blank = False)
-    quantity = models.IntegerField()
-
+    quantity        = models.IntegerField()
+    safe_quantity   = models.IntegerField()
+    search_word     = models.CharField(max_length = 150, blank = False)
+    name            = models.CharField(max_length = 15, blank = False)
+    
     class Meta:
-        db_table = 'product_quantity'
+        db_table = 'product_info'
 
 class WarehousingOrder(models.Model):
     user    = models.ForeignKey(User, on_delete = models.CASCADE)

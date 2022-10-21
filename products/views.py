@@ -231,11 +231,42 @@ class UpdateProductView(View):
         except KeyError:
             return JsonResponse({'message' : 'KEY ERROR'}, status = 403)
 
-# class CreateWarehousingOrder(models.Model):
-#     @jwt_decoder
-#     @check_status
-#     def post(self, request):
-#         input_data = request.POST
-#         user = request.user
+class CreateWarehousingOrder(models.Model):
+    def __init__(self):
+        # 날짜 설정
+        now = datetime.now()
+        self.year    = str(now.year)
+        self.month   = str(now.month)
+        self.day     = str(now.day) 
 
-#         WarehousingOrder.objects.create(user = user.id, product )
+    # @jwt_decoder
+    # @check_status
+    def post(self, request):
+        input_data = request.POST
+        serial_num = request.POST['serial_code']
+        quantity   = request.POST['quantity']
+        user       = request.user
+
+        # 제품 코드 형식 확인
+        if not len(serial_num) == 7:
+            return JsonResponse({'message' : 'Please check the serial number.'} , status = 403)
+        
+        # 제품 코드 슬라이싱
+        company_code        = serial_num[0:2]
+        product_group_code  = serial_num[2:4]
+        model_number        = serial_num[4:7]
+
+        if not Company.objects.filter(code = company_code).exists():
+            return JsonResponse({'message' : '회사 코드 없음'}, status = 403)
+        
+        if not ProductGroup.objects.filter(code = product_group_code).exists():
+            return JsonResponse({'message' : '제품 코드 없음'}, status = 403)
+        
+        WarehousingOrder.objects.create(
+            user_id     = user.id, 
+            product_id  = input_data['product_id'],
+            company_id  = input_data['company_id'],
+            inbound_price   = input_data[''],
+            inbound_quntity = input_data[''],
+            inbound_address = input_data['']
+        )
