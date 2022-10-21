@@ -184,6 +184,8 @@ class CreateProductView(View):
             print(product_group_code)
             print(company_code)
             print(model_number)
+            
+            ProductGroup.objects.get()
 
             check_quantity = Product.objects.filter(serial_code__contains = my_serial).count()
             print(check_quantity)
