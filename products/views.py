@@ -1,3 +1,4 @@
+from re import search
 from urllib import request
 from django.views       import View
 from django.http        import JsonResponse
@@ -130,7 +131,6 @@ class CreateProductView(View):
             
             serial_code2 = cp_code + pg_code + model_number + zero_num + self.year[2:4] + self.month + self.day
             
-            # SSPP001
             Product.objects.create(
                 product_group_id    = pg_id,
                 company_id          = cp_id,
@@ -145,8 +145,8 @@ class CreateProductView(View):
         
         return product_serial_code 
 
-    # @jwt_decoder
-    # @check_status 
+    @jwt_decoder
+    @check_status 
     def post(self, request):
         input_data = request.POST
         
@@ -170,44 +170,61 @@ class CreateProductView(View):
         except KeyError:
             return JsonResponse({'message' : 'KEY ERROR'}, status = 403)
 
-    def patch(self, request):
-        # input_data = request.UPDATE
-        my_serial = 'BSPP002'
-        Q = 10
+class UpdateProductView(View):
+    def __init__(self):
+        # 날짜 설정
+        now = datetime.now()
+        self.year    = str(now.year)
+        self.month   = str(now.month)
+        self.day     = str(now.day) 
+
+    def post(self, request):
+        input_data = request.POST
+        code = request.POST['code']
+        print(input_data)
+        
+        Q = input_data['quantity']
+        # 제품 코드 슬라이싱
+        company_code = code[0:2]
+        product_group_code = code[2:4]
+        model_number = code[4:7]
+        
         try:
-            if not ProductQuantity.objects.filter(product_serial_code = my_serial).exists:
+            if not ProductQuantity.objects.filter(product_serial_code = code).exists:
                 return JsonResponse({'message' : 'does not'}, status = 403)
             
-            product_group_code = my_serial[0:2]
-            company_code = my_serial[2:4]
-            model_number = my_serial[4:7]
-            print(product_group_code)
-            print(company_code)
-            print(model_number)
+            pg_code_id = ProductGroup.objects.get(code = product_group_code).id
+            cp_code_id = Company.objects.get(code = company_code).id
             
-            ProductGroup.objects.get()
+            before_quantity = Product.objects.filter(serial_code__icontains = code).count()
+            
+            search_word = Product.objects.filter(product_group_id = pg_code_id, company_id = cp_code_id, model_number = model_number).last().search_word
 
-            check_quantity = Product.objects.filter(serial_code__contains = my_serial).count()
-            print(check_quantity)
-            for i in range(1, Q + 1):
-                zero_num = str(i + check_quantity).zfill(3)
-                serial_code2 = company_code + product_group_code + zero_num + model_number + self.year[2:4] + self.month + self.day
             
-                # SSPP001
+            print(search_word)
+
+            for i in range(1, int(Q) + 1):
+                zero_num = str(i + before_quantity).zfill(3)
+                serial_code2 = company_code + product_group_code + model_number + zero_num + self.year[2:4] + self.month + self.day
+            
                 Product.objects.create(
-                    product_group_id    = product_group_code,
-                    company_id          = company_code,
+                    product_group_id    = pg_code_id,
+                    company_id          = cp_code_id,
                     use_status_id       = 1,
                     serial_code         = serial_code2,
-                    search_word         = 'search_word',
-                    price               = 100,
+                    search_word         = search_word,
+                    price               = input_data['price'],
                     safe_quantity       = 10,
                     model_number        = model_number,
                     etc                 = 'etc'
                 )
             
-            check_quantity = Product.objects.filter(serial_code__contains = my_serial).count()
-            print(check_quantity)
+            after_quantity = Product.objects.filter(serial_code__contains = code).count()
+            
+            # 입고 수량 정정
+            ProductQuantity.objects.get_or_create(product_serial_code = serial_code2, quantity  = after_quantity)
+            
+    
             return JsonResponse({'message': 'active'}, status = 200)
 
         except KeyError:
