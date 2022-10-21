@@ -11,7 +11,7 @@ class ProductGroup(models.Model):
     class Meta:
         db_table = 'product_groups'
 
-class Company(models.Model):
+class Company(models.Model): # managers 확인 하세요!
     name        = models.CharField(max_length = 60, blank = False)
     code        = models.CharField(max_length = 10, blank = False)
     address     = models.CharField(max_length = 120, blank = False)
@@ -38,16 +38,23 @@ class Product(models.Model):
     use_status      = models.ForeignKey(UseStatus, on_delete = models.CASCADE)
     serial_code     = models.CharField(max_length = 25, blank = False)
     name            = models.CharField(max_length = 15, blank = False)
-    serch_word      = models.CharField(max_length = 150, blank = False)
-    price           = models.BigIntegerField()
-    quantity        = models.IntegerField()
+    model_number    = models.IntegerField()
+    search_word     = models.CharField(max_length = 150, blank = False)
+    price           = models.BigIntegerField()              
     safe_quantity   = models.IntegerField()
-    etc             = models.CharField(max_length = 3000, blank = False)
+    etc             = models.CharField(max_length = 3000, blank = True)
     created_at      = models.DateTimeField(auto_now_add = True)
     updated_at      = models.DateTimeField(auto_now = True)
 
     class Meta:
         db_table = 'products'
+
+class ProductQuantity(models.Model):
+    product_serial_code = models.CharField(max_length = 30, blank = False)
+    quantity = models.IntegerField()
+
+    class Meta:
+        db_table = 'product_quantity'
 
 class WarehousingOrder(models.Model):
     user    = models.ForeignKey(User, on_delete = models.CASCADE)
@@ -56,8 +63,8 @@ class WarehousingOrder(models.Model):
     inbound_price   = models.BigIntegerField()
     inbound_quntity = models.IntegerField()
     inbound_address = models.CharField(max_length = 200, blank = False)
-    created_at      = models.DateTimeField(auto_now_add = True)
-    updated_at      = models.DateTimeField(auto_now = True)
+    created_at = models.DateTimeField(auto_now_add = True)
+    updated_at = models.DateTimeField(auto_now = True)
 
     class Meta:
         db_table = 'warehousing_orders'
