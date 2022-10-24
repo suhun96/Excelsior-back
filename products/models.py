@@ -27,7 +27,7 @@ class Company(models.Model): # managers 확인 하세요!
         db_table = 'companies'
 
 class ProductHis(models.Model):
-    use_status      = models.IntegerField(max_length = 5, blank = False)
+    use_status      = models.IntegerField(blank = False)
     serial_code     = models.CharField(max_length = 10, blank = False)
     price           = models.BigIntegerField()
     barcode         = models.CharField(max_length = 20, blank = False)              
