@@ -1,5 +1,3 @@
-from re import search
-from urllib import request
 from django.views       import View
 from django.http        import JsonResponse
 from django.db          import transaction

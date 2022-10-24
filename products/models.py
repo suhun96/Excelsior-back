@@ -30,7 +30,7 @@ class SerialCode(models.Model):
     product_group   = models.ForeignKey(ProductGroup, on_delete = models.CASCADE)
     company         = models.ForeignKey(Company, on_delete = models.CASCADE)
     model_number    = models.IntegerField()
-    code = models.CharField(max_length = 15, blank = False)
+    created_code = models.CharField(max_length = 15, blank = False)
     created_at  = models.DateTimeField(auto_now_add = True)
     
     class Meta:
@@ -42,7 +42,7 @@ class UseStatus(models.Model):
     class Meta:
         db_table = 'use_status'
 
-class Product(models.Model):
+class ProductHis(models.Model):
     use_status      = models.ForeignKey(UseStatus, on_delete = models.CASCADE)
     serial_code     = models.ForeignKey(SerialCode, on_delete = models.CASCADE)
     price           = models.BigIntegerField()
@@ -52,7 +52,7 @@ class Product(models.Model):
     updated_at      = models.DateTimeField(auto_now = True)
 
     class Meta:
-        db_table = 'products'
+        db_table = 'product_his'
 
 class ProductInfo(models.Model):
     serial_code     = models.ForeignKey(SerialCode, on_delete = models.CASCADE)
