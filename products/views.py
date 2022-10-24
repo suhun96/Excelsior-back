@@ -181,5 +181,3 @@ class CreateProductInfoView(View):
             return JsonResponse({'mesaage' : '제품 정보가 등록되었습니다.'}, status = 200) 
         except KeyError:
             return JsonResponse({'message' : 'Key error'}, status = 403)
-
-
