@@ -108,9 +108,9 @@ class CreateProductInfoView(View):
             raise ValueError('Company (trade name) that does not exist.')
 
         CPPG = cp_code + pg_code
-        if SerialCode.objects.filter(created_code__icontains = CPPG).exists():
-            latest_model_number = SerialCode.objects.filter().latest('created_at')
-            model_number = latest_model_number.model_number + 1
+        if ProductInfo.objects.filter(serial_code__icontains = CPPG).exists():
+            latest_serial_code = ProductInfo.objects.filter(serial_code__icontains = CPPG).latest('created_at').serial_code
+            model_number = int(latest_serial_code[5:7]) + 1
         else:
             model_number = 1
 
@@ -118,201 +118,68 @@ class CreateProductInfoView(View):
 
         product_serial_code = cp_code + pg_code + model_number
         print(f'시리얼 코드 생성 완료 {product_serial_code}')
-        
-        pg_id  = ProductGroup.objects.get(code = pg_code).id
-        cp_id  = Company.objects.get(code = cp_code).id
-        
-        gene_code = SerialCode.objects.create(
-            product_group_id = pg_id,
-            company_id = cp_id,
-            model_number = model_number,
-            created_code = product_serial_code
-        )
 
         print('새로운 시리얼 코드 DB에 생성')
-        return product_serial_code, gene_code
+        return product_serial_code
 
-    def product_history_generator(self, product_info_id, quantity, product_serial_code, gene_code , price ,etc):
+    def product_history_generator(self, product_serial_code, quantity, price ,etc):
         try:
-            check_SC = SerialCode.objects.filter(created_code = product_serial_code)
-            if check_SC.exists():
-                before_quantity = check_SC.count()
-
-                for i in range(1, int(quantity) + 1):
+            product_his = ProductHis.objects.filter(serial_code = product_serial_code)
+            if product_his.exists():
+                before_quantity = product_his.count()
+                print(before_quantity)
+                
+                for i in range(1 , quantity +1):
                     zero_num = str(i + before_quantity).zfill(3)
                     barcode = product_serial_code + zero_num + self.year[2:4] + self.month + self.day
-
+                    
                     ProductHis.objects.create(
-                    use_status_id = 1,
-                    serial_code_id = gene_code.id,
-                    price = price,
-                    barcode = barcode,
-                    etc = etc)
+                        use_status = 1,
+                        serial_code = product_serial_code,
+                        price = price,
+                        barcode = barcode,
+                        etc = etc
+                    )
 
                 return print('기존 제품을 참고하여 히스토리 생성완료')
-            
             else:
                 for i in range(1, int(quantity) + 1):
                     zero_num = str(i).zfill(3)
                     barcode = product_serial_code + zero_num + self.year[2:4] + self.month + self.day
 
                     ProductHis.objects.create(
-                    use_status_id = 1,
-                    serial_code_id = gene_code.id,
+                    use_status = 1,
+                    serial_code = product_serial_code,
                     price = price,
                     barcode = barcode,
                     etc = etc)
+
                 return print('새로운 제품 히스토리 생성완료')
         except KeyError:
-            return JsonResponse({'message' : 'Key error2'}, status = 403)
-
+            return JsonResponse({'message' : '키 에러'}, status = 403)
+     
     def post(self, request):
         input_data = request.POST
 
-        try: 
-            serial_code, gene_code = self.serial_generator(input_data['pg_code'], input_data['cp_code'])
+        try:
+            product_serial_code = self.serial_generator(input_data['pg_code'], input_data['cp_code'])
             
-            print(serial_code)
-            print(gene_code.id)
+            print(product_serial_code)
+
             product_info = ProductInfo.objects.create(
-                serial_code_id = gene_code.id,
+                serial_code = product_serial_code,
                 quantity = input_data['quantity'],
                 safe_quantity = input_data['safe_quantity'],
                 search_word = input_data['search_word'],
                 name = input_data['name']
                 )
 
-            product_info_id = product_info.id
-            print(product_info_id)
+
             # def product_history_generator(self, product_info_id, quantity, product_serial_code, price ,etc):
-            self.product_history_generator(product_info_id, input_data['quantity'], serial_code, gene_code ,input_data['price'] ,input_data['etc'] )
+            self.product_history_generator(product_serial_code, input_data['quantity'],input_data['price'] ,input_data['etc'] )
 
             return JsonResponse({'mesaage' : '제품 정보가 등록되었습니다.'}, status = 200) 
         except KeyError:
             return JsonResponse({'message' : 'Key error'}, status = 403)
 
 
-#     # @jwt_decoder
-#     # @check_status 
-#     def post(self, request):
-#         input_data = request.POST
-        
-#         # serial_generator(self, pg_id, cp_id, quantity, search_word, price, safe_quantity)
-#         try: 
-#             transaction.atomic()
-#             product_serial_code = self.serial_generator(
-#                 input_data['product_group_id'], input_data['company_id'],
-#                 input_data['quantity'], input_data['search_word'],
-#                 input_data['price'], input_data['safe_quantity'], input_data['etc'])
-
-#             check_quantity = Product.objects.filter(serial_code__contains = product_serial_code).count()
-            
-#             ProductQuantity.objects.create(
-#                 product_serial_code = product_serial_code,
-#                 quantity  = check_quantity
-#             )
-
-#             return JsonResponse({'message': product_serial_code}, status = 200)
-
-#         except KeyError:
-#             return JsonResponse({'message' : 'KEY ERROR'}, status = 403)
-
-# class UpdateProductView(View):
-#     def __init__(self):
-#         # 날짜 설정
-#         now = datetime.now()
-#         self.year    = str(now.year)
-#         self.month   = str(now.month)
-#         self.day     = str(now.day) 
-
-#     def post(self, request):
-#         input_data = request.POST
-#         serial_num = request.POST['serial_code']
-#         quantity   = request.POST['quantity']
-        
-#         # 제품 코드 형식 확인
-#         if not len(serial_num) == 7:
-#             return JsonResponse({'message' : 'Please check the serial number.'} , status = 403)
-        
-#         # 제품 코드 슬라이싱
-#         company_code        = serial_num[0:2]
-#         product_group_code  = serial_num[2:4]
-#         model_number        = serial_num[4:7]
-        
-#         try:
-#             if not ProductQuantity.objects.filter(product_serial_code = serial_num).exists:
-#                 return JsonResponse({'message' : 'No product exists.'}, status = 403)
-            
-#             pg_code_id = ProductGroup.objects.get(code = product_group_code).id
-#             cp_code_id = Company.objects.get(code = company_code).id
-            
-#             before_quantity = Product.objects.filter(serial_code__icontains = serial_num).count()
-            
-#             choice_product = Product.objects.filter(product_group_id = pg_code_id, company_id = cp_code_id, model_number = model_number).last()
-
-#             for i in range(1, int(input_data['quantity']) + 1):
-#                 zero_num = str(i + before_quantity).zfill(3)
-#                 serial_code2 = company_code + product_group_code + model_number + zero_num + self.year[2:4] + self.month + self.day
-            
-#                 Product.objects.create(
-#                     product_group_id    = pg_code_id,
-#                     company_id          = cp_code_id,
-#                     use_status_id       = 1,
-#                     serial_code         = serial_code2,
-#                     search_word         = choice_product.search_word,
-#                     price               = input_data['price'],
-#                     safe_quantity       = choice_product.safe_quantity,
-#                     model_number        = model_number,
-#                     etc                 = input_data['etc']
-#                 )
-            
-#             # 제품 생성 갯수 카운팅
-#             after_quantity = Product.objects.filter(serial_code__contains = serial_num).count()
-            
-#             # 입고 수량 정정
-#             ProductQuantity.objects.filter(product_serial_code = serial_num).update(quantity  = after_quantity)
-            
-#             return JsonResponse({'message': f'{quantity}, {serial_num} products have been added.'}, status = 200)
-
-#         except KeyError:
-#             return JsonResponse({'message' : 'KEY ERROR'}, status = 403)
-
-# class CreateWarehousingOrder(models.Model):
-#     def __init__(self):
-#         # 날짜 설정
-#         now = datetime.now()
-#         self.year    = str(now.year)
-#         self.month   = str(now.month)
-#         self.day     = str(now.day) 
-
-#     # @jwt_decoder
-#     # @check_status
-#     def post(self, request):
-#         input_data = request.POST
-#         serial_num = request.POST['serial_code']
-#         quantity   = request.POST['quantity']
-#         user       = request.user
-
-#         # 제품 코드 형식 확인
-#         if not len(serial_num) == 7:
-#             return JsonResponse({'message' : 'Please check the serial number.'} , status = 403)
-        
-#         # 제품 코드 슬라이싱
-#         company_code        = serial_num[0:2]
-#         product_group_code  = serial_num[2:4]
-#         model_number        = serial_num[4:7]
-
-#         if not Company.objects.filter(code = company_code).exists():
-#             return JsonResponse({'message' : '회사 코드 없음'}, status = 403)
-        
-#         if not ProductGroup.objects.filter(code = product_group_code).exists():
-#             return JsonResponse({'message' : '제품 코드 없음'}, status = 403)
-        
-#         WarehousingOrder.objects.create(
-#             user_id     = user.id, 
-#             product_id  = input_data['product_id'],
-#             company_id  = input_data['company_id'],
-#             inbound_price   = input_data[''],
-#             inbound_quntity = input_data[''],
-#             inbound_address = input_data['']
-#         )

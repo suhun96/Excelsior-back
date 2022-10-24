@@ -43,7 +43,7 @@ class ProductInfo(models.Model):
     quantity        = models.IntegerField()
     safe_quantity   = models.IntegerField()
     search_word     = models.CharField(max_length = 150, blank = False)
-    name            = models.CharField(max_length = 15, blank = False)
+    name            = models.CharField(max_length = 100, blank = False)
     created_at      = models.DateTimeField(auto_now_add = True)
     updated_at      = models.DateTimeField(auto_now = True)
     
