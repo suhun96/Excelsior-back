@@ -190,32 +190,44 @@ class CreateInboundOrderView(View):
         body_data= json.loads(request.body)
         user = request.user
         
-        if not 'company_code' in body_data:
-                return JsonResponse({'message': "company_code X"}, status = 403)
-        company_code = body_data['company_code']
+        try:
+            with transaction.atomic():
+                if not 'company_code' in body_data:
+                    return JsonResponse({'message': "company_code X"}, status = 403)
 
-        if 'etc' in body_data:
-            etc = body_data['etc']
-        else:
-            etc = ''    
+                if 'etc' in body_data:
+                    etc = body_data['etc']
+                else:
+                    etc = ''    
 
-        new_order = InboundOrder.objects.create(
-            user_id = user.id,
-            company_code =  body_data['company_code'],
-            etc = body_data['etc']
-        ) 
+                new_order = InboundOrder.objects.create(
+                    user_id = user.id,
+                    company_code =  body_data['company_code'],
+                    etc = etc
+                ) 
 
-        new_order_id = new_order.id
+                new_order_id = new_order.id
 
-        for key in body_data.keys():
-            if len(key) == 7:
-                price = body_data[key]['price']
-                quantity = body_data[key]['Q']
-                InboundQuantity.objects.create(
-                    inbound_order_id = new_order_id,
-                    serial_code = key,
-                    inbound_price = price,
-                    inbound_quntity = quantity
-                )
-        
-        return JsonResponse({'message' : 'check'}, status = 200)
+
+                for serial_code in body_data.keys():
+                    if len(serial_code) == 7:
+                        serial_code = serial_code
+                        price = body_data[serial_code]['price']
+                        quantity = body_data[serial_code]['Q']
+                        
+                        if not ProductInfo.objects.filter(serial_code__exact = serial_code).exists():
+                            raise Exception(f'{serial_code} 가 존재하지 않습니다')
+                        
+                        InboundQuantity.objects.create(
+                            inbound_order_id = new_order_id,
+                            serial_code = serial_code,
+                            inbound_price = price,
+                            inbound_quntity = quantity
+                        )
+                
+            return JsonResponse({'message' : '입고 처리가 완료되었습니다.'}, status = 200)
+        except KeyError:
+            return JsonResponse({'message' : 'Key error'}, status = 403)
+        except Exception as e:
+            return JsonResponse({f'message' : '존재하지 안습니다.'}, status = 403)
+            
