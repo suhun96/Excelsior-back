@@ -1,4 +1,5 @@
 import json
+from turtle import update
 from django.views       import View
 from django.http        import JsonResponse
 from django.db          import transaction
@@ -12,7 +13,7 @@ from users.jwtdecoder   import jwt_decoder
 from users.checkstatus  import check_status
 
 # Utils
-from products.utils     import product_history_generator
+from products.utils     import product_history_generator, update_quantity
 
 class CreateProductGroupView(View):
     @jwt_decoder
@@ -227,10 +228,11 @@ class CreateInboundOrderView(View):
                             inbound_quntity = quantity
                         )
                         product_history_generator(serial_code, quantity, price, etc)
-                
+                        update_quantity(serial_code)
+                        
             return JsonResponse({'message' : '입고 처리가 완료되었습니다.'}, status = 200)
         except KeyError:
             return JsonResponse({'message' : 'Key error'}, status = 403)
         except Exception as e:
-            return JsonResponse({f'message' : '존재하지 안습니다.'}, status = 403)
+            return JsonResponse({f'message' : '존재하지 안습니다.{e}'}, status = 403)
             

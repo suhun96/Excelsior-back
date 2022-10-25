@@ -42,3 +42,7 @@ def product_history_generator(product_serial_code, quantity, price ,etc):
                 return print('새로운 제품 히스토리 생성완료')
         except KeyError:
             return JsonResponse({'message' : '키 에러'}, status = 403)
+
+def update_quantity(product_serial_code):
+    count = ProductHis.objects.filter(serial_code = product_serial_code).count()
+    ProductInfo.objects.filter(serial_code = product_serial_code).update(quantity = count, updated_at = datetime.now())

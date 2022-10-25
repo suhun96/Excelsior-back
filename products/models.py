@@ -44,6 +44,8 @@ class ProductInfo(models.Model):
     safe_quantity   = models.IntegerField()
     search_word     = models.CharField(max_length = 150, blank = False)
     name            = models.CharField(max_length = 100, blank = False)
+    resent_IB_price = models.IntegerField()
+    resent_OB_price = models.IntegerField()
     created_at      = models.DateTimeField(auto_now_add = True)
     updated_at      = models.DateTimeField(auto_now = True)
     
