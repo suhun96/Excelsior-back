@@ -82,7 +82,10 @@ class OutboundOrder(models.Model):
 
 class OutboundQuantity(models.Model):
     outbound_oder   = models.ForeignKey(OutboundOrder, on_delete = models.CASCADE)
-    barcode         = models.CharField(blank = False)
+    barcode         = models.CharField(max_length = 40, blank = False)
     outbound_price  = models.BigIntegerField()
     outbound_quantity = models.IntegerField()
     created_at      = models.DateTimeField(auto_now_add = True)
+    
+    class Meta:
+        db_table = 'outbound_quantity'
