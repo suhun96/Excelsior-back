@@ -7,7 +7,7 @@ def product_history_generator(product_serial_code, quantity, price ,etc):
         year    = str(now.year)
         month   = str(now.month)
         day     = str(now.day) 
-        print(type(price))
+        
         try:
             product_his = ProductHis.objects.filter(serial_code = product_serial_code)
     
