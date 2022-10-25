@@ -43,6 +43,6 @@ def product_history_generator(product_serial_code, quantity, price ,etc):
         except KeyError:
             return JsonResponse({'message' : '키 에러'}, status = 403)
 
-def update_quantity(product_serial_code):
+def update_product_his(product_serial_code, price):
     count = ProductHis.objects.filter(serial_code = product_serial_code).count()
-    ProductInfo.objects.filter(serial_code = product_serial_code).update(quantity = count, updated_at = datetime.now())
+    ProductInfo.objects.filter(serial_code = product_serial_code).update(quantity = count, resent_IB_price = price ,updated_at = datetime.now())
