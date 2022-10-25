@@ -1,5 +1,4 @@
 import json
-from venv import create
 from django.views       import View
 from django.http        import JsonResponse
 from django.db          import transaction
@@ -11,6 +10,9 @@ from users.models       import *
 from products.models    import *
 from users.jwtdecoder   import jwt_decoder
 from users.checkstatus  import check_status
+
+# Utils
+from products.utils     import product_history_generator
 
 class CreateProductGroupView(View):
     @jwt_decoder
@@ -215,7 +217,7 @@ class CreateInboundOrderView(View):
                         price = body_data[serial_code]['price']
                         quantity = body_data[serial_code]['Q']
                         
-                        if not ProductInfo.objects.filter(serial_code__exact = serial_code).exists():
+                        if not ProductInfo.objects.filter(serial_code__contains = serial_code).exists():
                             raise Exception(f'{serial_code} 가 존재하지 않습니다')
                         
                         InboundQuantity.objects.create(
@@ -224,6 +226,7 @@ class CreateInboundOrderView(View):
                             inbound_price = price,
                             inbound_quntity = quantity
                         )
+                        product_history_generator(serial_code, quantity, price, etc)
                 
             return JsonResponse({'message' : '입고 처리가 완료되었습니다.'}, status = 200)
         except KeyError:
