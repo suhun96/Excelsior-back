@@ -237,5 +237,30 @@ class CreateInboundOrderView(View):
             return JsonResponse({'message' : '존재하지 않습니다.'}, status = 403)
 
 class CreateOutboundOrderView(View):
+    @jwt_decoder
+    @check_status
     def post(self, request):
-        input_data = request.POST
+        print('start')
+        input_data = json.loads(request.body)
+        user = request.user
+        
+        new_OB_order = OutboundOrder.objects.create(
+            user_id = user.id,
+            company_code = input_data['company_code'],
+            etc = input_data['etc']
+        )
+    
+        new_OB_order_id = new_OB_order.id
+
+        for barcode in input_data.keys():
+            if len(barcode) == 16:
+                print(barcode[:7])
+                OutboundQuantity.objects.create(
+                    outbound_oder_id = new_OB_order_id,
+                    barcode = barcode,
+                    outbound_price = int(input_data[barcode]['price']),
+                    outbound_quantity = int(input_data[barcode]['Q'])
+                )
+
+                ProductHis.objects.filter(barcode = barcode).update(use_status = 2)
+        return JsonResponse({"message" : "check ok"}, status = 200)
