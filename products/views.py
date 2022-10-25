@@ -235,4 +235,7 @@ class CreateInboundOrderView(View):
             return JsonResponse({'message' : 'Key error'}, status = 403)
         except Exception as e:
             return JsonResponse({'message' : '존재하지 않습니다.'}, status = 403)
-            
+
+class CreateOutboundOrderView(View):
+    def post(self, request):
+        input_data = request.POST

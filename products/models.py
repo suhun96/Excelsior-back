@@ -70,3 +70,19 @@ class InboundQuantity(models.Model):
     
     class Meta:
         db_table = 'inbound_quantity'
+
+class OutboundOrder(models.Model):
+    user            = models.ForeignKey(User, on_delete = models.CASCADE)
+    company_code    = models.CharField(max_length = 5, blank = False)
+    etc             = models.CharField(max_length = 3000, blank = True)
+    created_at      = models.DateTimeField(auto_now_add = True)
+    
+    class Meta:
+        db_table = 'outbound_order'
+
+class OutboundQuantity(models.Model):
+    outbound_oder   = models.ForeignKey(OutboundOrder, on_delete = models.CASCADE)
+    barcode         = models.CharField(blank = False)
+    outbound_price  = models.BigIntegerField()
+    outbound_quantity = models.IntegerField()
+    created_at      = models.DateTimeField(auto_now_add = True)
