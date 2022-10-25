@@ -1,3 +1,4 @@
+import json
 from venv import create
 from django.views       import View
 from django.http        import JsonResponse
@@ -181,3 +182,41 @@ class CreateProductInfoView(View):
             return JsonResponse({'mesaage' : '제품 정보가 등록되었습니다.'}, status = 200) 
         except KeyError:
             return JsonResponse({'message' : 'Key error'}, status = 403)
+
+class CreateInboundOrderView(View):
+    @jwt_decoder
+    @check_status
+    def post(self, request):
+        # form_data = request.POST
+        body_data= json.loads(request.body)
+        user = request.user
+        
+        if not 'company_code' in body_data:
+                return JsonResponse({'message': "company_code X"}, status = 403)
+        company_code = body_data['company_code']
+
+        if 'etc' in body_data:
+            etc = body_data['etc']
+        else:
+            etc = ''    
+
+        new_order = InboundOrder.objects.create(
+            user_id = user.id,
+            company_code =  body_data['company_code'],
+            etc = body_data['etc']
+        ) 
+
+        new_order_id = new_order.id
+
+        for key in body_data.keys():
+            if len(key) == 7:
+                price = body_data[key]['price']
+                quantity = body_data[key]['Q']
+                InboundQuantity.objects.create(
+                    inbound_order_id = new_order_id,
+                    serial_code = key,
+                    inbound_price = price,
+                    inbound_quntity = quantity
+                )
+        
+        return JsonResponse({'message' : 'check'}, status = 200)
