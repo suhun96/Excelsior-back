@@ -187,7 +187,6 @@ class CreateInboundOrderView(View):
     @jwt_decoder
     @check_status
     def post(self, request):
-        # form_data = request.POST
         body_data= json.loads(request.body)
         user = request.user
         
