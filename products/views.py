@@ -290,32 +290,27 @@ class ConfirmOutboundOrderView(View):
     def post(self, request):
         input_data = json.loads(request.body)
         try:
-            OB_id = input_data['OB_id']
+            with transaction.atomic():
+                OB_id = input_data['OB_id']
 
-            dic = {}
-            check_status = OutboundQuantity.objects.filter(outbound_order_id = OB_id).values('serial_code', 'outbound_quantity')
-            for i in range(len(check_status)):
-                dic[check_status[i]['serial_code']] = check_status[i]['outbound_quantity']
-            
-            print('before')
-            print(dic)
+                serial_codes_dic = {}
+                check_status = OutboundQuantity.objects.filter(outbound_order_id = OB_id).values('serial_code', 'outbound_quantity')
+                for i in range(len(check_status)):
+                    serial_codes_dic[check_status[i]['serial_code']] = check_status[i]['outbound_quantity']
 
-            barcodes = input_data['barcodes']
-            for i in range(len(barcodes)):
-                serial_code = barcodes[i][:7]
-                dic[serial_code] = int(dic[serial_code]) - 1
-            
-            print('after')
-            print(dic)
-            for i in dic.values():
-                if not i == 0:
-                    return JsonResponse({"serial_codes" : '바코드 입력이 잘못되었습니다.' }, status = 200)
-            
-            for barcode in barcodes:
-                ProductHis.objects.filter(barcode = barcode).update(use_status = 2)
-                OutboundBarcode.objects.create(outbound_order_id = OB_id, barcode = barcode)
+                barcodes = input_data['barcodes']
+                for i in range(len(barcodes)):
+                    serial_code = barcodes[i][:7]
+                    serial_codes_dic[serial_code] = int(serial_codes_dic[serial_code]) - 1
+                
+                for i in serial_codes_dic.values():
+                    if not i == 0:
+                        return JsonResponse({"serial_codes" : 'The barcode entered and the outbounding order do not match.' }, status = 200)
+                
+                for barcode in barcodes:
+                    ProductHis.objects.filter(barcode = barcode).update(use_status = 2)
+                    OutboundBarcode.objects.create(outbound_order_id = OB_id, barcode = barcode)
 
-            return JsonResponse({"serial_codes" : 'check' }, status = 200)
-
+            return JsonResponse({"serial_codes" : 'processing completed.' }, status = 200)
         except KeyError:
-            return JsonResponse({"serial_codes" : 'no' }, status = 200)
+            return JsonResponse({'message' : 'Key error'}, status = 403)
