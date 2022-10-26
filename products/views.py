@@ -233,7 +233,7 @@ class CreateInboundOrderView(View):
         except KeyError:
             return JsonResponse({'message' : 'Key error'}, status = 403)
         except Exception as e:
-            return JsonResponse({'message' : 'Error'}, status = 403)
+            return JsonResponse({'message' : 'An exception occurred while running.'}, status = 403)
 
 class CreateOutboundOrderView(View):
     @jwt_decoder
@@ -283,7 +283,7 @@ class CreateOutboundOrderView(View):
         except KeyError:
             return JsonResponse({'message' : 'Key error'}, status = 403)
         except Exception as e:
-            return JsonResponse({'message' : '존재하지 않습니다.'}, status = 403)
+            return JsonResponse({'message' : 'An exception occurred while running.'}, status = 403)
 
 class ConfirmOutboundOrderView(View):
     @jwt_decoder
