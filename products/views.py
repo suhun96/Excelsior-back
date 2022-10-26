@@ -1,4 +1,5 @@
 import json
+from socket import RDS_CMSG_RDMA_UPDATE
 from turtle import update
 from django.views       import View
 from django.http        import JsonResponse
@@ -308,6 +309,9 @@ class ConfirmOutboundOrderView(View):
                         return JsonResponse({"serial_codes" : 'The barcode entered and the outbounding order do not match.' }, status = 200)
                 
                 for barcode in barcodes:
+                    if not ProductHis.objects.get(barcode = barcode).use_status == 1 :
+                        return JsonResponse({'message' : '이미 사용된 바코드입니다.'}, status = 200 )
+
                     ProductHis.objects.filter(barcode = barcode).update(use_status = 2)
                     OutboundBarcode.objects.create(outbound_order_id = OB_id, barcode = barcode)
 
