@@ -292,22 +292,17 @@ class ConfirmOutboundOrderView(View):
         try:
             OB_id = input_data['OB_id']
 
-            dic = {}
+            serial_codes_dic = {}
             check_status = OutboundQuantity.objects.filter(outbound_order_id = OB_id).values('serial_code', 'outbound_quantity')
             for i in range(len(check_status)):
-                dic[check_status[i]['serial_code']] = check_status[i]['outbound_quantity']
-            
-            print('before')
-            print(dic)
+                serial_codes_dic[check_status[i]['serial_code']] = check_status[i]['outbound_quantity']
 
             barcodes = input_data['barcodes']
             for i in range(len(barcodes)):
                 serial_code = barcodes[i][:7]
-                dic[serial_code] = int(dic[serial_code]) - 1
+                serial_codes_dic[serial_code] = int(serial_codes_dic[serial_code]) - 1
             
-            print('after')
-            print(dic)
-            for i in dic.values():
+            for i in serial_codes_dic.values():
                 if not i == 0:
                     return JsonResponse({"serial_codes" : '바코드 입력이 잘못되었습니다.' }, status = 200)
             
