@@ -44,6 +44,8 @@ class ProductInfo(models.Model):
     safe_quantity   = models.IntegerField()
     search_word     = models.CharField(max_length = 150, blank = False)
     name            = models.CharField(max_length = 100, blank = False)
+    resent_IB_price = models.IntegerField()
+    resent_OB_price = models.IntegerField()
     created_at      = models.DateTimeField(auto_now_add = True)
     updated_at      = models.DateTimeField(auto_now = True)
     
@@ -68,3 +70,30 @@ class InboundQuantity(models.Model):
     
     class Meta:
         db_table = 'inbound_quantity'
+
+class OutboundOrder(models.Model):
+    user            = models.ForeignKey(User, on_delete = models.CASCADE)
+    company_code    = models.CharField(max_length = 5, blank = False)
+    etc             = models.CharField(max_length = 3000, blank = True)
+    created_at      = models.DateTimeField(auto_now_add = True)
+    
+    class Meta:
+        db_table = 'outbound_order'
+
+class OutboundQuantity(models.Model):
+    outbound_order  = models.ForeignKey(OutboundOrder, on_delete = models.CASCADE)
+    serial_code     = models.CharField(max_length = 40, blank = False)
+    outbound_price  = models.BigIntegerField()
+    outbound_quantity = models.IntegerField()
+    created_at      = models.DateTimeField(auto_now_add = True)
+    
+    class Meta:
+        db_table = 'outbound_quantity'
+        
+class OutboundBarcode(models.Model):
+    outbound_order = models.ForeignKey(OutboundOrder, on_delete = models.CASCADE)
+    barcode    = models.CharField(max_length = 40, blank = False)
+    created_at = models.DateTimeField(auto_now_add = True)
+    
+    class Meta:
+        db_table = 'outbound_barcode'
