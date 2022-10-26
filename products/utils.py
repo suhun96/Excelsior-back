@@ -9,7 +9,7 @@ def product_history_generator(product_serial_code, quantity, price ,etc):
         day     = str(now.day) 
         
         try:
-            product_his = ProductHis.objects.filter(serial_code = product_serial_code)
+            product_his = ProductHis.objects.filter(serial_code = product_serial_code, use_status = 1)
     
             if product_his.exists():
                 before_quantity = product_his.count()

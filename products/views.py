@@ -128,7 +128,7 @@ class CreateProductInfoView(View):
 
     def product_history_generator(self, product_serial_code, quantity, price ,etc):
         try:
-            product_his = ProductHis.objects.filter(serial_code = product_serial_code)
+            product_his = ProductHis.objects.filter(serial_code = product_serial_code, use_status = 1)
             if product_his.exists():
                 before_quantity = product_his.count()
                 print(before_quantity)
@@ -240,27 +240,82 @@ class CreateOutboundOrderView(View):
     @jwt_decoder
     @check_status
     def post(self, request):
-        print('start')
         input_data = json.loads(request.body)
         user = request.user
-        
-        new_OB_order = OutboundOrder.objects.create(
-            user_id = user.id,
-            company_code = input_data['company_code'],
-            etc = input_data['etc']
-        )
+        try:
+            with transaction.atomic():
+                new_OB_order = OutboundOrder.objects.create(
+                    user_id = user.id,
+                    company_code = input_data['company_code'],
+                    etc = input_data['etc']
+                )# 출고 주문서 생성
     
-        new_OB_order_id = new_OB_order.id
+                new_OB_order_id = new_OB_order.id
 
-        for barcode in input_data.keys():
-            if len(barcode) == 16:
-                print(barcode[:7])
-                OutboundQuantity.objects.create(
-                    outbound_oder_id = new_OB_order_id,
-                    barcode = barcode,
-                    outbound_price = int(input_data[barcode]['price']),
-                    outbound_quantity = int(input_data[barcode]['Q'])
-                )
+                print(new_OB_order_id)
+                for serial_code in input_data.keys():
+                    if len(serial_code) == 7:
+                        serial_code = serial_code
+                        print(serial_code)
+                        price = input_data[serial_code]['price']
+                        quantity = input_data[serial_code]['Q']
 
+                        if not ProductInfo.objects.filter(serial_code__icontains = serial_code).exists():
+                            raise Exception(f'{serial_code} 가 존재하지 않습니다')
+
+                        OutboundQuantity.objects.create(
+                            outbound_order_id = new_OB_order_id,
+                            serial_code = serial_code,
+                            outbound_price = price,
+                            outbound_quantity = quantity
+                        )
+
+                check2 = OutboundQuantity.objects.filter(outbound_order = new_OB_order_id).values('serial_code', 'outbound_quantity')
+                print(check2)
+                check_serial_code = {}
+
+                for query in check2:
+                    serial_code = query['serial_code']
+                    quantity    = query['outbound_quantity']
+                    check_serial_code[serial_code] = int(quantity)
+
+                
+            return JsonResponse({"serial_codes" : check_serial_code }, status = 200)
+        except KeyError:
+            return JsonResponse({'message' : 'Key error'}, status = 403)
+        except Exception as e:
+            return JsonResponse({'message' : '존재하지 않습니다.'}, status = 403)
+
+class ConfirmOutboundOrderView(View):
+    def post(self, request):
+        input_data = json.loads(request.body)
+        try:
+            OB_id = input_data['OB_id']
+
+            dic = {}
+            check_status = OutboundQuantity.objects.filter(outbound_order_id = OB_id).values('serial_code', 'outbound_quantity')
+            for i in range(len(check_status)):
+                dic[check_status[i]['serial_code']] = check_status[i]['outbound_quantity']
+            
+            print('before')
+            print(dic)
+
+            barcodes = input_data['barcodes']
+            for i in range(len(barcodes)):
+                serial_code = barcodes[i][:7]
+                dic[serial_code] = int(dic[serial_code]) - 1
+            
+            print('after')
+            print(dic)
+            for i in dic.values():
+                if not i == 0:
+                    return JsonResponse({"serial_codes" : '바코드 입력이 잘못되었습니다.' }, status = 200)
+            
+            for barcode in barcodes:
                 ProductHis.objects.filter(barcode = barcode).update(use_status = 2)
-        return JsonResponse({"message" : "check ok"}, status = 200)
+                OutboundBarcode.objects.create(outbound_order_id = OB_id, barcode = barcode)
+
+            return JsonResponse({"serial_codes" : 'check' }, status = 200)
+
+        except KeyError:
+            return JsonResponse({"serial_codes" : 'no' }, status = 200)

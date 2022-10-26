@@ -8,4 +8,5 @@ urlpatterns = [
     path('create/product', CreateProductInfoView.as_view()),
     path('create/order', CreateInboundOrderView.as_view()),
     path('create/test', CreateOutboundOrderView.as_view()),
+    path('create/test2', ConfirmOutboundOrderView.as_view()),
 ]
