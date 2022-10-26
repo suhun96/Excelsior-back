@@ -12,8 +12,6 @@ from products.models    import *
 
 # 
 from users.decorator   import jwt_decoder, check_status
-
-# Utils
 from products.utils     import product_history_generator, update_product_his
 
 class CreateProductGroupView(View):
