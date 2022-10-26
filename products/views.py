@@ -169,16 +169,16 @@ class CreateProductInfoView(View):
             
             print(product_serial_code)
 
-            product_info = ProductInfo.objects.create(
+            ProductInfo.objects.create(
                 serial_code = product_serial_code,
                 quantity = input_data['quantity'],
                 safe_quantity = input_data['safe_quantity'],
                 search_word = input_data['search_word'],
-                name = input_data['name']
+                name = input_data['name'],
+                resent_IB_price = 0,
+                resent_OB_price = 0
                 )
-
-
-            # def product_history_generator(self, product_info_id, quantity, product_serial_code, price ,etc):
+            
             self.product_history_generator(product_serial_code, input_data['quantity'],input_data['price'] ,input_data['etc'] )
 
             return JsonResponse({'mesaage' : '제품 정보가 등록되었습니다.'}, status = 200) 
