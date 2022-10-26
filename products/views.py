@@ -12,8 +12,6 @@ from products.models    import *
 
 # 
 from users.decorator   import jwt_decoder, check_status
-
-# Utils
 from products.utils     import product_history_generator, update_product_his
 
 class CreateProductGroupView(View):
@@ -197,7 +195,7 @@ class CreateInboundOrderView(View):
         try:
             with transaction.atomic():
                 if not 'company_code' in body_data:
-                    return JsonResponse({'message': "company_code X"}, status = 403)
+                    return JsonResponse({'message': "Company code does not exist."}, status = 403)
 
                 if 'etc' in body_data:
                     etc = body_data['etc']
@@ -231,11 +229,11 @@ class CreateInboundOrderView(View):
                         product_history_generator(serial_code, quantity, price, etc)
                         update_product_his(serial_code, price)
 
-            return JsonResponse({'message' : '입고 처리가 완료되었습니다.'}, status = 200)
+            return JsonResponse({'message' : 'Inbounding processing has been completed.'}, status = 200)
         except KeyError:
             return JsonResponse({'message' : 'Key error'}, status = 403)
         except Exception as e:
-            return JsonResponse({'message' : '존재하지 않습니다.'}, status = 403)
+            return JsonResponse({'message' : 'Error'}, status = 403)
 
 class CreateOutboundOrderView(View):
     @jwt_decoder
@@ -312,7 +310,7 @@ class ConfirmOutboundOrderView(View):
                 
                 for barcode in barcodes:
                     if not ProductHis.objects.get(barcode = barcode).use_status == 1 :
-                        return JsonResponse({'message' : '이미 사용된 바코드입니다.'}, status = 200 )
+                        return JsonResponse({'message' : 'Barcode already used.'}, status = 200 )
 
                     ProductHis.objects.filter(barcode = barcode).update(use_status = 2)
                     OutboundBarcode.objects.create(outbound_order_id = OB_id, barcode = barcode)
