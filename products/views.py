@@ -1,6 +1,5 @@
 import json
-from socket import RDS_CMSG_RDMA_UPDATE
-from turtle import update
+
 from django.views       import View
 from django.http        import JsonResponse
 from django.db          import transaction
@@ -10,8 +9,9 @@ from datetime           import datetime
 # Model
 from users.models       import *
 from products.models    import *
-from users.jwtdecoder   import jwt_decoder
-from users.checkstatus  import check_status
+
+# 
+from users.decorator   import jwt_decoder, check_status
 
 # Utils
 from products.utils     import product_history_generator, update_product_his
@@ -288,6 +288,8 @@ class CreateOutboundOrderView(View):
             return JsonResponse({'message' : '존재하지 않습니다.'}, status = 403)
 
 class ConfirmOutboundOrderView(View):
+    @jwt_decoder
+    @check_status
     def post(self, request):
         input_data = json.loads(request.body)
         try:

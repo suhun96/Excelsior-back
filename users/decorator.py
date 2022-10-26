@@ -4,6 +4,8 @@ from django.http                import JsonResponse
 from users.models               import User
 from excelsior_backend.settings import SECRET_KEY, ALGORITHM
 
+
+
 def jwt_decoder(func):
     def wrapper(self, request, *args, **kwargs):
         try:
@@ -26,4 +28,16 @@ def jwt_decoder(func):
 
         
         return func(self, request, *args, **kwargs)
+    return wrapper
+
+def check_status(func):
+    def wrapper(self, request, *args, **kwargs):
+        user_status = User.objects.get(id = request.user.id ).status
+        
+        if user_status == False:
+            return JsonResponse({'message' : 'This account is not available.'}, status = 403)
+        
+        else:
+            return func(self, request, *args, **kwargs)
+
     return wrapper
