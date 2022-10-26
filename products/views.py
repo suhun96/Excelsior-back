@@ -126,6 +126,7 @@ class CreateProductInfoView(View):
         return product_serial_code
 
     def product_history_generator(self, product_serial_code, quantity, price ,etc):
+        
         try:
             product_his = ProductHis.objects.filter(serial_code = product_serial_code, use_status = 1)
             if product_his.exists():
@@ -159,7 +160,7 @@ class CreateProductInfoView(View):
 
                 return print('새로운 제품 히스토리 생성완료')
         except KeyError:
-            return JsonResponse({'message' : '키 에러'}, status = 403)
+            return JsonResponse({'message' : 'Key Error'}, status = 403)
      
     def post(self, request):
         input_data = request.POST
@@ -169,7 +170,7 @@ class CreateProductInfoView(View):
             
             print(product_serial_code)
 
-            product_info = ProductInfo.objects.create(
+            ProductInfo.objects.create(
                 serial_code = product_serial_code,
                 quantity = input_data['quantity'],
                 safe_quantity = input_data['safe_quantity'],
@@ -177,11 +178,9 @@ class CreateProductInfoView(View):
                 name = input_data['name']
                 )
 
-
-            # def product_history_generator(self, product_info_id, quantity, product_serial_code, price ,etc):
             self.product_history_generator(product_serial_code, input_data['quantity'],input_data['price'] ,input_data['etc'] )
 
-            return JsonResponse({'mesaage' : '제품 정보가 등록되었습니다.'}, status = 200) 
+            return JsonResponse({'mesaage' : 'Product information has been registered.'}, status = 200) 
         except KeyError:
             return JsonResponse({'message' : 'Key error'}, status = 403)
 
