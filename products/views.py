@@ -9,8 +9,9 @@ from datetime           import datetime
 # Model
 from users.models       import *
 from products.models    import *
-from users.jwtdecoder   import jwt_decoder
-from users.checkstatus  import check_status
+
+# 
+from users.decorator   import jwt_decoder, check_status
 
 # Utils
 from products.utils     import product_history_generator, update_product_his

@@ -8,7 +8,7 @@ from datetime       import datetime, timedelta
 
 # Model
 from users.models       import *
-from users.jwtdecoder   import jwt_decoder
+from users.decorator   import jwt_decoder
 
 # View
 class SignUpView(View):
