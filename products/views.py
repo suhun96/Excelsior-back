@@ -34,7 +34,7 @@ class CreateProductGroupView(View):
                 })
 
             if is_created == False:
-                return JsonResponse({'messaga' : 'The product name(product code) is already registered.'}, status = 403)      
+                return JsonResponse({'messaga' : 'The product code(name) is already registered.'}, status = 403)      
 
             check_PG = list(ProductGroup.objects.filter(id = new_PG.id).values(
                 'id',
@@ -73,7 +73,7 @@ class CreateCompanyView(View):
                 })
 
             if is_created == False:
-                return JsonResponse({'messaga' : 'The product name(product code) is already registered.'}, status = 403)      
+                return JsonResponse({'messaga' : 'The company code(name) is already registered.'}, status = 403)      
 
             check_CP = list(Company.objects.filter(id = new_CP.id).values(
                 'name',       
