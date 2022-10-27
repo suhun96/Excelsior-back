@@ -194,14 +194,17 @@ class CreateInboundOrderView(View):
         
         try:
             with transaction.atomic():
+                # 회사 코드 확인
                 if not 'company_code' in body_data:
                     return JsonResponse({'message': "Company code does not exist."}, status = 403)
 
+                # 기타사항 입력 과 미입력 값 조정
                 if 'etc' in body_data:
                     etc = body_data['etc']
                 else:
                     etc = ''    
 
+                # 새로운 입고확인서 생성
                 new_order = InboundOrder.objects.create(
                     user_id = user.id,
                     company_code =  body_data['company_code'],
@@ -210,24 +213,26 @@ class CreateInboundOrderView(View):
 
                 new_order_id = new_order.id
 
-
+                
                 for serial_code in body_data.keys():
+                    # 입력된 값중 길이가 7 = 시리얼 코드
                     if len(serial_code) == 7:
-                        serial_code = serial_code
+                        serial_code = serial_code # 시리얼 코드안에 있는 가격, 수량 정보 가져옴
                         price = body_data[serial_code]['price']
                         quantity = body_data[serial_code]['Q']
-                        
+                        # 제품 정보 테이블에서 시리얼 코드가 있는지 확인
                         if not ProductInfo.objects.filter(serial_code__contains = serial_code).exists():
                             raise Exception(f'{serial_code} 가 존재하지 않습니다')
-                        
+                        # 입고확인서 ID를 입력하여 입고된 상품의 정보 테이블에 저장
                         InboundQuantity.objects.create(
                             inbound_order_id = new_order_id,
                             serial_code = serial_code,
                             inbound_price = price,
                             inbound_quntity = quantity
                         )
+                        # 입고된 내용을 통해 제품 history 생성 (바코드 생성 및 저장)
                         product_history_generator(serial_code, quantity, price, etc)
-                        update_product_his(serial_code, price)
+                        update_product_his(serial_code, price) # 기존에 있는 수량과 입고된 수량 파악 후 저장.
 
             return JsonResponse({'message' : 'Inbounding processing has been completed.'}, status = 200)
         except KeyError:
