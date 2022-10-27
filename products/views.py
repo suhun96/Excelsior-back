@@ -312,12 +312,15 @@ class ConfirmOutboundOrderView(View):
                     if not ProductHis.objects.get(barcode = barcode).use_status == 1 :
                         return JsonResponse({'message' : 'Barcode already used.'}, status = 200 )
                     serial_code = barcodes[i][:7]
-
+                    
+                    # 사용한 바코드 use_status 변경(사용함 = 2) 
+                    # OutboundBarcode Table에 OB 아이디와 바코드 저장 부품 추적시 사용.
                     ProductHis.objects.filter(barcode = barcode).update(use_status = 2)
                     OutboundBarcode.objects.create(outbound_order_id = OB_id, barcode = barcode)
                     
                     count = ProductHis.objects.filter(barcode__icontains = serial_code, use_status = 1).count()
                     print(count)
+                    # 제품 정보에 수량 수정사항 반영.
                     ProductInfo.objects.filter(serial_code = serial_code).update(quantity = count)
                     
                     # 문제발생 :
