@@ -2,14 +2,14 @@ from django.http        import JsonResponse
 from products.models    import *
 from datetime           import datetime, date
 
-def product_history_generator(product_serial_code, quantity, price ,etc):
+def product_history_generator(product_code, quantity, price ,etc):
         now = datetime.now()
         year    = str(now.year)
         month   = str(now.month)
         day     = str(now.day) 
         today = year[2:4] + month + day
         try:
-            product_his = ProductHis.objects.filter(serial_code = product_serial_code, barcode__icontains = today)
+            product_his = ProductHis.objects.filter(product_code = product_code, barcode__icontains = today)
             what = product_his.latest('created_at')
             print(what)
             print(what.barcode)
@@ -18,11 +18,11 @@ def product_history_generator(product_serial_code, quantity, price ,etc):
                 
                 for i in range(1 , int(quantity) +1):
                     zero_num = str(i + int(slicing_num)).zfill(3)
-                    barcode = product_serial_code + zero_num + today
+                    barcode = product_code + zero_num + today
                     
                     ProductHis.objects.create(
                         use_status = 1,
-                        serial_code = product_serial_code,
+                        product_code = product_code,
                         price = price,
                         barcode = barcode,
                         etc = etc
@@ -32,11 +32,11 @@ def product_history_generator(product_serial_code, quantity, price ,etc):
             else:
                 for i in range(1, int(quantity) + 1):
                     zero_num = str(i).zfill(3)
-                    barcode = product_serial_code + zero_num + year[2:4] + month + day
+                    barcode = product_code + zero_num + year[2:4] + month + day
 
                     ProductHis.objects.create(
                     use_status = 1,
-                    serial_code = product_serial_code,
+                    product_code = product_code,
                     price = price,
                     barcode = barcode,
                     etc = etc)
@@ -45,6 +45,6 @@ def product_history_generator(product_serial_code, quantity, price ,etc):
         except KeyError:
             return JsonResponse({'message' : '키 에러'}, status = 403)
 
-def update_product_his(product_serial_code, price):
-    count = ProductHis.objects.filter(serial_code = product_serial_code, use_status = 1).count()
-    ProductInfo.objects.filter(serial_code = product_serial_code).update(quantity = count, resent_IB_price = price ,updated_at = datetime.now())
+def update_product_his(product_code, price):
+    count = ProductHis.objects.filter(product_code = product_code, use_status = 1).count()
+    ProductInfo.objects.filter(product_code = product_code).update(quantity = count, resent_IB_price = price ,updated_at = datetime.now())
