@@ -1,22 +1,24 @@
 from django.http        import JsonResponse
 from products.models    import *
-from datetime           import datetime
+from datetime           import datetime, date
 
 def product_history_generator(product_serial_code, quantity, price ,etc):
         now = datetime.now()
         year    = str(now.year)
         month   = str(now.month)
         day     = str(now.day) 
-        
+        today = year[2:4] + month + day
         try:
-            product_his = ProductHis.objects.filter(serial_code = product_serial_code, use_status = 1)
-    
+            product_his = ProductHis.objects.filter(serial_code = product_serial_code, barcode__icontains = today)
+            what = product_his.latest('created_at')
+            print(what)
+            print(what.barcode)
             if product_his.exists():
-                before_quantity = product_his.count()
+                slicing_num = what.barcode[7:10]
                 
                 for i in range(1 , int(quantity) +1):
-                    zero_num = str(i + before_quantity).zfill(3)
-                    barcode = product_serial_code + zero_num + year[2:4] + month + day
+                    zero_num = str(i + int(slicing_num)).zfill(3)
+                    barcode = product_serial_code + zero_num + today
                     
                     ProductHis.objects.create(
                         use_status = 1,

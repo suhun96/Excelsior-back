@@ -103,14 +103,15 @@ class CreateProductInfoView(View):
         product_group  = ProductGroup.objects.filter(code = pg_code)
         company        = Company.objects.filter(code = cp_code)
         
-        
+        # 제품 그룹이 있는지 체크
         if product_group.exists() == False:
             raise ValueError('Product group that does not exist.')
-
+        # 회사가 등록이 되어있는지
         if company.exists() == False:
             raise ValueError('Company (trade name) that does not exist.')
 
-        CPPG = cp_code + pg_code
+        CPPG = cp_code + pg_code # SSPP 
+        # 형번을 생성 등록된 제품 정보를 참고해 CPPG 가 존재하면 그 다음 형번을 부여 없으면 1로 시작.
         if ProductInfo.objects.filter(serial_code__icontains = CPPG).exists():
             latest_serial_code = ProductInfo.objects.filter(serial_code__icontains = CPPG).latest('created_at').serial_code
             model_number = int(latest_serial_code[5:7]) + 1
@@ -118,16 +119,16 @@ class CreateProductInfoView(View):
             model_number = 1
 
         model_number = str(model_number).zfill(3)
-
+        # 제품 시리얼 코드 생성 SSPP001
         product_serial_code = cp_code + pg_code + model_number
-        print(f'시리얼 코드 생성 완료 {product_serial_code}')
-
-        print('새로운 시리얼 코드 DB에 생성')
+        
         return product_serial_code
 
     def product_history_generator(self, product_serial_code, quantity, price ,etc):
         try:
-            product_his = ProductHis.objects.filter(serial_code = product_serial_code, use_status = 1)
+            # 제품 history에서 사용 가능한
+            product_his = ProductHis.objects.filter(serial_code = product_serial_code, use_status = 1).values('serial_code')
+            print(product_his)
             if product_his.exists():
                 before_quantity = product_his.count()
                 print(before_quantity)
@@ -149,7 +150,7 @@ class CreateProductInfoView(View):
                 for i in range(1, int(quantity) + 1):
                     zero_num = str(i).zfill(3)
                     barcode = product_serial_code + zero_num + self.year[2:4] + self.month + self.day
-
+                    #SSPP001-221026-001-0001
                     ProductHis.objects.create(
                     use_status = 1,
                     serial_code = product_serial_code,
@@ -194,14 +195,17 @@ class CreateInboundOrderView(View):
         
         try:
             with transaction.atomic():
+                # 회사 코드 확인
                 if not 'company_code' in body_data:
                     return JsonResponse({'message': "Company code does not exist."}, status = 403)
 
+                # 기타사항 입력 과 미입력 값 조정
                 if 'etc' in body_data:
                     etc = body_data['etc']
                 else:
                     etc = ''    
 
+                # 새로운 입고확인서 생성
                 new_order = InboundOrder.objects.create(
                     user_id = user.id,
                     company_code =  body_data['company_code'],
@@ -210,24 +214,30 @@ class CreateInboundOrderView(View):
 
                 new_order_id = new_order.id
 
-
+                
                 for serial_code in body_data.keys():
+                    # 입력된 값중 길이가 7 = 시리얼 코드
                     if len(serial_code) == 7:
-                        serial_code = serial_code
+                        serial_code = serial_code # 시리얼 코드안에 있는 가격, 수량 정보 가져옴
+                        print(serial_code)
                         price = body_data[serial_code]['price']
                         quantity = body_data[serial_code]['Q']
-                        
+                        # 제품 정보 테이블에서 시리얼 코드가 있는지 확인
                         if not ProductInfo.objects.filter(serial_code__contains = serial_code).exists():
                             raise Exception(f'{serial_code} 가 존재하지 않습니다')
-                        
+                        # 입고확인서 ID를 입력하여 입고된 상품의 정보 테이블에 저장
+                        print("check1")
                         InboundQuantity.objects.create(
                             inbound_order_id = new_order_id,
                             serial_code = serial_code,
                             inbound_price = price,
                             inbound_quntity = quantity
                         )
+                        # 입고된 내용을 통해 제품 history 생성 (바코드 생성 및 저장)
+                        print("check2")
                         product_history_generator(serial_code, quantity, price, etc)
-                        update_product_his(serial_code, price)
+                        print("check3")
+                        update_product_his(serial_code, price) # 기존에 있는 수량과 입고된 수량 파악 후 저장.
 
             return JsonResponse({'message' : 'Inbounding processing has been completed.'}, status = 200)
         except KeyError:
@@ -239,29 +249,35 @@ class CreateOutboundOrderView(View):
     @jwt_decoder
     @check_status
     def post(self, request):
-        input_data = json.loads(request.body)
+        input_data = json.loads(request.body) # 여기서는 request.body를 사용
         user = request.user
         try:
             with transaction.atomic():
+                #input_data 에서 받은 값에 company_code가 들어있는지 체크
+                if not 'company_code' in input_data:
+                    return JsonResponse({'message': "Company code does not exist."}, status = 403)
+                
+                #input_data 에서 받은 값으로 새로운 출고 주문서 생성
                 new_OB_order = OutboundOrder.objects.create(
                     user_id = user.id,
                     company_code = input_data['company_code'],
                     etc = input_data['etc']
-                )# 출고 주문서 생성
+                )
     
                 new_OB_order_id = new_OB_order.id
 
-                print(new_OB_order_id)
+                
                 for serial_code in input_data.keys():
+                    # 길이가 7인 값 = 시리얼 코드
                     if len(serial_code) == 7:
                         serial_code = serial_code
-                        print(serial_code)
                         price = input_data[serial_code]['price']
                         quantity = input_data[serial_code]['Q']
 
+                        # 제품 정보 테이블에서 시리얼 코드를 검색 없으면 예외를 일으켜 트랜젝션 작동
                         if not ProductInfo.objects.filter(serial_code__icontains = serial_code).exists():
                             raise Exception(f'{serial_code} 가 존재하지 않습니다')
-
+                        # 제품이 있으면 수량, 가격, 생성한 출고 id로 OutboundQunatity 테이블 생성 
                         OutboundQuantity.objects.create(
                             outbound_order_id = new_OB_order_id,
                             serial_code = serial_code,
@@ -269,11 +285,11 @@ class CreateOutboundOrderView(View):
                             outbound_quantity = quantity
                         )
 
-                check2 = OutboundQuantity.objects.filter(outbound_order = new_OB_order_id).values('serial_code', 'outbound_quantity')
-                print(check2)
+                # ConfirmOutboundOrderView 에서 사용할 딕셔너리 생성
+                Confirm_query = OutboundQuantity.objects.filter(outbound_order = new_OB_order_id).values('serial_code', 'outbound_quantity')
                 check_serial_code = {}
 
-                for query in check2:
+                for query in Confirm_query:
                     serial_code = query['serial_code']
                     quantity    = query['outbound_quantity']
                     check_serial_code[serial_code] = int(quantity)
@@ -294,33 +310,39 @@ class ConfirmOutboundOrderView(View):
             with transaction.atomic():
                 OB_id = input_data['OB_id']
 
+                # {시리얼 : 바코드 수량} 비교 딕셔너리 생성.
                 serial_codes_dic = {}
                 check_status = OutboundQuantity.objects.filter(outbound_order_id = OB_id).values('serial_code', 'outbound_quantity')
                 for i in range(len(check_status)):
                     serial_codes_dic[check_status[i]['serial_code']] = check_status[i]['outbound_quantity']
 
                 barcodes = input_data['barcodes']
-                for i in range(len(barcodes)):
-                    serial_code = barcodes[i][:7]
-                    serial_codes_dic[serial_code] = int(serial_codes_dic[serial_code]) - 1
                 
+                # 바코드를 슬라이싱해 시리얼 코드화 딕셔너리 key 값에 슬라이싱한 바코드를 넣어 {시리얼 : 바코드 수량} 딕셔너리 값을 하나 차감.
+                for i in range(len(barcodes)):
+                    slicing_serial_code = barcodes[i][:7]
+                    serial_codes_dic[slicing_serial_code] = int(serial_codes_dic[slicing_serial_code]) - 1
+                
+                # {시리얼 : 바코드 수량} 바코드 수량이 0이 되지않으면 (즉, 같은 딕셔너리에 포함된 같은 시리얼 값의 바코드가 들어오지 않았음) return 값 작동.
                 for i in serial_codes_dic.values():
                     if not i == 0:
                         return JsonResponse({"serial_codes" : 'The barcode entered and the outbounding order do not match.' }, status = 200)
                 
                 for barcode in barcodes:
+                    # 바코드 검증 use_status가 1이 아니면 return 값 작동.
                     if not ProductHis.objects.get(barcode = barcode).use_status == 1 :
                         return JsonResponse({'message' : 'Barcode already used.'}, status = 200 )
                     serial_code = barcodes[i][:7]
-
+                    
+                    # 사용한 바코드 use_status 변경(사용함 = 2) 
+                    # OutboundBarcode Table에 OB 아이디와 바코드 저장 부품 추적시 사용.
                     ProductHis.objects.filter(barcode = barcode).update(use_status = 2)
                     OutboundBarcode.objects.create(outbound_order_id = OB_id, barcode = barcode)
                     
                     count = ProductHis.objects.filter(barcode__icontains = serial_code, use_status = 1).count()
-                    print(count)
+                    # 제품 정보에 수량 수정사항 반영.
                     ProductInfo.objects.filter(serial_code = serial_code).update(quantity = count)
                     
-                    # 문제발생 :
             return JsonResponse({"serial_codes" : 'processing completed.' }, status = 200)
         except KeyError:
             return JsonResponse({'message' : 'Key error'}, status = 403)
