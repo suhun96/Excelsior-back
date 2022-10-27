@@ -150,7 +150,7 @@ class CreateProductInfoView(View):
                 for i in range(1, int(quantity) + 1):
                     zero_num = str(i).zfill(3)
                     barcode = product_serial_code + zero_num + self.year[2:4] + self.month + self.day
-
+                    #SSPP001-221026-001-0001
                     ProductHis.objects.create(
                     use_status = 1,
                     serial_code = product_serial_code,
