@@ -124,7 +124,7 @@ class CreateProductInfoView(View):
         
         return product_code
 
-        
+
 
     def product_history_generator(self, product_code, quantity, price ,etc):
         try:
@@ -163,7 +163,7 @@ class CreateProductInfoView(View):
                 return print('새로운 제품 히스토리 생성완료')
         except KeyError:
             return JsonResponse({'message' : 'Key Error'}, status = 403)
-     
+
 
     def post(self, request):
         input_data = request.POST
@@ -183,7 +183,7 @@ class CreateProductInfoView(View):
                 resent_OB_price = 0
                 )
 
-            
+
             self.product_history_generator(product_code, input_data['quantity'],input_data['price'] ,input_data['etc'] )
 
 
