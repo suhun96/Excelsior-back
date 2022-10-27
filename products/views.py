@@ -318,6 +318,9 @@ class ConfirmOutboundOrderView(View):
                 # 바코드를 슬라이싱해 프로덕트 코드화 딕셔너리 key 값에 슬라이싱한 바코드를 넣어 {프로덕트 코드 : 바코드 수량} 딕셔너리 값을 하나 차감.
                 for i in range(len(barcodes)):
                     slicing_product_code = barcodes[i][:7]
+
+                    if not slicing_product_code in product_codes_dic.keys():
+                        return JsonResponse({'message' : 'Please check the first 7 digits of the product code.'}, status = 403 )
                     product_codes_dic[slicing_product_code] = int(product_codes_dic[slicing_product_code]) - 1
                 
                 # {프로덕트 코드 : 바코드 수량} 바코드 수량이 0이 되지않으면 (즉, 같은 딕셔너리에 포함된 같은 프로덕트 코드 값의 바코드가 들어오지 않았음) return 값 작동.
@@ -328,7 +331,7 @@ class ConfirmOutboundOrderView(View):
                 for barcode in barcodes:
                     # 바코드 검증 use_status가 1이 아니면 return 값 작동.
                     if not ProductHis.objects.get(barcode = barcode).use_status == 1 :
-                        return JsonResponse({'message' : 'Barcode already used.'}, status = 200 )
+                        return JsonResponse({'message' : 'Barcode already used.'}, status = 403 )
                     product_code = barcodes[i][:7]
                     
                     # 사용한 바코드 use_status 변경(사용함 = 2) 
