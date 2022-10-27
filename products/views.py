@@ -294,21 +294,26 @@ class ConfirmOutboundOrderView(View):
             with transaction.atomic():
                 OB_id = input_data['OB_id']
 
+                # {시리얼 : 바코드 수량} 비교 딕셔너리 생성.
                 serial_codes_dic = {}
                 check_status = OutboundQuantity.objects.filter(outbound_order_id = OB_id).values('serial_code', 'outbound_quantity')
                 for i in range(len(check_status)):
                     serial_codes_dic[check_status[i]['serial_code']] = check_status[i]['outbound_quantity']
 
                 barcodes = input_data['barcodes']
-                for i in range(len(barcodes)):
-                    serial_code = barcodes[i][:7]
-                    serial_codes_dic[serial_code] = int(serial_codes_dic[serial_code]) - 1
                 
+                # 바코드를 슬라이싱해 시리얼 코드화 딕셔너리 key 값에 슬라이싱한 바코드를 넣어 {시리얼 : 바코드 수량} 딕셔너리 값을 하나 차감.
+                for i in range(len(barcodes)):
+                    slicing_serial_code = barcodes[i][:7]
+                    serial_codes_dic[slicing_serial_code] = int(serial_codes_dic[slicing_serial_code]) - 1
+                
+                # {시리얼 : 바코드 수량} 바코드 수량이 0이 되지않으면 (즉, 같은 딕셔너리에 포함된 같은 시리얼 값의 바코드가 들어오지 않았음) return 값 작동.
                 for i in serial_codes_dic.values():
                     if not i == 0:
                         return JsonResponse({"serial_codes" : 'The barcode entered and the outbounding order do not match.' }, status = 200)
                 
                 for barcode in barcodes:
+                    # 바코드 검증 use_status가 1이 아니면 return 값 작동.
                     if not ProductHis.objects.get(barcode = barcode).use_status == 1 :
                         return JsonResponse({'message' : 'Barcode already used.'}, status = 200 )
                     serial_code = barcodes[i][:7]
@@ -319,11 +324,9 @@ class ConfirmOutboundOrderView(View):
                     OutboundBarcode.objects.create(outbound_order_id = OB_id, barcode = barcode)
                     
                     count = ProductHis.objects.filter(barcode__icontains = serial_code, use_status = 1).count()
-                    print(count)
                     # 제품 정보에 수량 수정사항 반영.
                     ProductInfo.objects.filter(serial_code = serial_code).update(quantity = count)
                     
-                    # 문제발생 :
             return JsonResponse({"serial_codes" : 'processing completed.' }, status = 200)
         except KeyError:
             return JsonResponse({'message' : 'Key error'}, status = 403)
