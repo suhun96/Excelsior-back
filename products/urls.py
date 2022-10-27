@@ -3,10 +3,10 @@ from django.urls import path
 from products.views import *
 
 urlpatterns = [
-    path('create/pg', CreateProductGroupView.as_view()),
-    path('create/cp', CreateCompanyView.as_view()),
-    path('create/product', CreateProductInfoView.as_view()),
-    path('create/order', CreateInboundOrderView.as_view()),
-    path('create/test', CreateOutboundOrderView.as_view()),
-    path('create/test2', ConfirmOutboundOrderView.as_view()),
+    path('group', CreateProductGroupView.as_view()),
+    path('company', CreateCompanyView.as_view()),
+    path('info', CreateProductInfoView.as_view()),
+    path('inbound', CreateInboundOrderView.as_view()),
+    path('outbound', CreateOutboundOrderView.as_view()),
+    path('outbound_conf', ConfirmOutboundOrderView.as_view()),
 ]
