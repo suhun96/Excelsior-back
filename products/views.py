@@ -226,7 +226,6 @@ class CreateInboundOrderView(View):
                         if not ProductInfo.objects.filter(product_code__contains = product_code).exists():
                             raise Exception(f'{product_code} 가 존재하지 않습니다')
                         # 입고확인서 ID를 입력하여 입고된 상품의 정보 테이블에 저장
-                        print("check1")
                         InboundQuantity.objects.create(
                             inbound_order_id = new_order_id,
                             product_code = product_code,
@@ -234,9 +233,7 @@ class CreateInboundOrderView(View):
                             inbound_quntity = quantity
                         )
                         # 입고된 내용을 통해 제품 history 생성 (바코드 생성 및 저장)
-                        print("check2")
                         product_history_generator(product_code, quantity, price, etc)
-                        print("check3")
                         update_product_his(product_code, price) # 기존에 있는 수량과 입고된 수량 파악 후 저장.
 
             return JsonResponse({'message' : 'Inbounding processing has been completed.'}, status = 200)
