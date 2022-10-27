@@ -103,14 +103,15 @@ class CreateProductInfoView(View):
         product_group  = ProductGroup.objects.filter(code = pg_code)
         company        = Company.objects.filter(code = cp_code)
         
-        
+        # 제품 그룹이 있는지 체크
         if product_group.exists() == False:
             raise ValueError('Product group that does not exist.')
-
+        # 회사가 등록이 되어있는지
         if company.exists() == False:
             raise ValueError('Company (trade name) that does not exist.')
 
-        CPPG = cp_code + pg_code
+        CPPG = cp_code + pg_code # SSPP 
+        # 형번을 생성 등록된 제품 정보를 참고해 CPPG 가 존재하면 그 다음 형번을 부여 없으면 1로 시작.
         if ProductInfo.objects.filter(serial_code__icontains = CPPG).exists():
             latest_serial_code = ProductInfo.objects.filter(serial_code__icontains = CPPG).latest('created_at').serial_code
             model_number = int(latest_serial_code[5:7]) + 1
@@ -118,16 +119,16 @@ class CreateProductInfoView(View):
             model_number = 1
 
         model_number = str(model_number).zfill(3)
-
+        # 제품 시리얼 코드 생성 SSPP001
         product_serial_code = cp_code + pg_code + model_number
-        print(f'시리얼 코드 생성 완료 {product_serial_code}')
-
-        print('새로운 시리얼 코드 DB에 생성')
+        
         return product_serial_code
 
     def product_history_generator(self, product_serial_code, quantity, price ,etc):
         try:
-            product_his = ProductHis.objects.filter(serial_code = product_serial_code, use_status = 1)
+            # 제품 history에서 사용 가능한
+            product_his = ProductHis.objects.filter(serial_code = product_serial_code, use_status = 1).values('serial_code')
+            print(product_his)
             if product_his.exists():
                 before_quantity = product_his.count()
                 print(before_quantity)
@@ -218,12 +219,14 @@ class CreateInboundOrderView(View):
                     # 입력된 값중 길이가 7 = 시리얼 코드
                     if len(serial_code) == 7:
                         serial_code = serial_code # 시리얼 코드안에 있는 가격, 수량 정보 가져옴
+                        print(serial_code)
                         price = body_data[serial_code]['price']
                         quantity = body_data[serial_code]['Q']
                         # 제품 정보 테이블에서 시리얼 코드가 있는지 확인
                         if not ProductInfo.objects.filter(serial_code__contains = serial_code).exists():
                             raise Exception(f'{serial_code} 가 존재하지 않습니다')
                         # 입고확인서 ID를 입력하여 입고된 상품의 정보 테이블에 저장
+                        print("check1")
                         InboundQuantity.objects.create(
                             inbound_order_id = new_order_id,
                             serial_code = serial_code,
@@ -231,7 +234,9 @@ class CreateInboundOrderView(View):
                             inbound_quntity = quantity
                         )
                         # 입고된 내용을 통해 제품 history 생성 (바코드 생성 및 저장)
+                        print("check2")
                         product_history_generator(serial_code, quantity, price, etc)
+                        print("check3")
                         update_product_his(serial_code, price) # 기존에 있는 수량과 입고된 수량 파악 후 저장.
 
             return JsonResponse({'message' : 'Inbounding processing has been completed.'}, status = 200)
