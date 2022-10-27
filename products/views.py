@@ -239,29 +239,35 @@ class CreateOutboundOrderView(View):
     @jwt_decoder
     @check_status
     def post(self, request):
-        input_data = json.loads(request.body)
+        input_data = json.loads(request.body) # 여기서는 request.body를 사용
         user = request.user
         try:
             with transaction.atomic():
+                #input_data 에서 받은 값에 company_code가 들어있는지 체크
+                if not 'company_code' in input_data:
+                    return JsonResponse({'message': "Company code does not exist."}, status = 403)
+                
+                #input_data 에서 받은 값으로 새로운 출고 주문서 생성
                 new_OB_order = OutboundOrder.objects.create(
                     user_id = user.id,
                     company_code = input_data['company_code'],
                     etc = input_data['etc']
-                )# 출고 주문서 생성
+                )
     
                 new_OB_order_id = new_OB_order.id
 
-                print(new_OB_order_id)
+                
                 for serial_code in input_data.keys():
+                    # 길이가 7인 값 = 시리얼 코드
                     if len(serial_code) == 7:
                         serial_code = serial_code
-                        print(serial_code)
                         price = input_data[serial_code]['price']
                         quantity = input_data[serial_code]['Q']
 
+                        # 제품 정보 테이블에서 시리얼 코드를 검색 없으면 예외를 일으켜 트랜젝션 작동
                         if not ProductInfo.objects.filter(serial_code__icontains = serial_code).exists():
                             raise Exception(f'{serial_code} 가 존재하지 않습니다')
-
+                        # 제품이 있으면 수량, 가격, 생성한 출고 id로 OutboundQunatity 테이블 생성 
                         OutboundQuantity.objects.create(
                             outbound_order_id = new_OB_order_id,
                             serial_code = serial_code,
@@ -269,11 +275,11 @@ class CreateOutboundOrderView(View):
                             outbound_quantity = quantity
                         )
 
-                check2 = OutboundQuantity.objects.filter(outbound_order = new_OB_order_id).values('serial_code', 'outbound_quantity')
-                print(check2)
+                # ConfirmOutboundOrderView 에서 사용할 딕셔너리 생성
+                Confirm_query = OutboundQuantity.objects.filter(outbound_order = new_OB_order_id).values('serial_code', 'outbound_quantity')
                 check_serial_code = {}
 
-                for query in check2:
+                for query in Confirm_query:
                     serial_code = query['serial_code']
                     quantity    = query['outbound_quantity']
                     check_serial_code[serial_code] = int(quantity)
