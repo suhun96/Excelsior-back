@@ -1,6 +1,6 @@
 from django.http        import JsonResponse
 from products.models    import *
-from datetime           import datetime, date
+from datetime           import datetime
 
 def product_history_generator(product_code, quantity, price ,etc):
         now = datetime.now()
