@@ -28,7 +28,7 @@ class Company(models.Model): # managers 확인 하세요!
 
 class ProductHis(models.Model):
     use_status      = models.IntegerField(blank = False)
-    serial_code     = models.CharField(max_length = 10, blank = False)
+    product_code    = models.CharField(max_length = 10, blank = False)
     price           = models.BigIntegerField()
     barcode         = models.CharField(max_length = 20, blank = False)              
     etc             = models.CharField(max_length = 3000, blank = True)
@@ -39,7 +39,7 @@ class ProductHis(models.Model):
         db_table = 'product_his'
 
 class ProductInfo(models.Model):
-    serial_code     = models.CharField(max_length = 10, blank = False)
+    product_code    = models.CharField(max_length = 10, blank = False)
     quantity        = models.IntegerField()
     safe_quantity   = models.IntegerField()
     search_word     = models.CharField(max_length = 150, blank = False)
@@ -63,7 +63,7 @@ class InboundOrder(models.Model):
 
 class InboundQuantity(models.Model):
     inbound_order   = models.ForeignKey(InboundOrder, on_delete = models.CASCADE)
-    serial_code     = models.CharField(max_length = 10, blank = False)
+    product_code    = models.CharField(max_length = 10, blank = False)
     inbound_price   = models.BigIntegerField()
     inbound_quntity = models.IntegerField()
     created_at      = models.DateTimeField(auto_now_add = True)
@@ -82,7 +82,7 @@ class OutboundOrder(models.Model):
 
 class OutboundQuantity(models.Model):
     outbound_order  = models.ForeignKey(OutboundOrder, on_delete = models.CASCADE)
-    serial_code     = models.CharField(max_length = 40, blank = False)
+    product_code    = models.CharField(max_length = 40, blank = False)
     outbound_price  = models.BigIntegerField()
     outbound_quantity = models.IntegerField()
     created_at      = models.DateTimeField(auto_now_add = True)
