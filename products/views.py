@@ -124,18 +124,9 @@ class CreateProductInfoView(View):
         
         return product_code
 
-<<<<<<< HEAD
-        product_serial_code = cp_code + pg_code + model_number
-        print(f'시리얼 코드 생성 완료 {product_serial_code}')
-
-        print('새로운 시리얼 코드 DB에 생성')
-        return product_serial_code
-
-    def product_history_generator(self, product_serial_code, quantity, price ,etc):
         
-=======
+
     def product_history_generator(self, product_code, quantity, price ,etc):
->>>>>>> main
         try:
             # 제품 history에서 사용 가능한
             product_his = ProductHis.objects.filter(product_code = product_code, use_status = 1).values('product_code')
@@ -173,6 +164,7 @@ class CreateProductInfoView(View):
         except KeyError:
             return JsonResponse({'message' : 'Key Error'}, status = 403)
      
+
     def post(self, request):
         input_data = request.POST
 
@@ -182,11 +174,7 @@ class CreateProductInfoView(View):
             print(product_code)
 
             ProductInfo.objects.create(
-<<<<<<< HEAD
-                serial_code = product_serial_code,
-=======
                 product_code = product_code,
->>>>>>> main
                 quantity = input_data['quantity'],
                 safe_quantity = input_data['safe_quantity'],
                 search_word = input_data['search_word'],
@@ -194,17 +182,15 @@ class CreateProductInfoView(View):
                 resent_IB_price = 0,
                 resent_OB_price = 0
                 )
-<<<<<<< HEAD
 
-            self.product_history_generator(product_serial_code, input_data['quantity'],input_data['price'] ,input_data['etc'] )
-=======
             
             self.product_history_generator(product_code, input_data['quantity'],input_data['price'] ,input_data['etc'] )
->>>>>>> main
+
 
             return JsonResponse({'mesaage' : 'Product information has been registered.'}, status = 200) 
         except KeyError:
             return JsonResponse({'message' : 'Key error'}, status = 403)
+
 
 class CreateInboundOrderView(View):
     @jwt_decoder
