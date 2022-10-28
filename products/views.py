@@ -12,7 +12,7 @@ from products.models    import *
 
 # 
 from users.decorator    import jwt_decoder, check_status
-from products.utils     import product_history_generator, update_product_his
+from products.utils     import product_history_generator, update_product_his, update_price
 
 class CreateProductGroupView(View):
     @jwt_decoder
@@ -125,46 +125,6 @@ class CreateProductInfoView(View):
         return product_code
 
 
-
-    def product_history_generator(self, product_code, quantity, price ,etc):
-        try:
-            # 제품 history에서 사용 가능한
-            product_his = ProductHis.objects.filter(product_code = product_code, use_status = 1).values('product_code')
-            print(product_his)
-            if product_his.exists():
-                before_quantity = product_his.count()
-                print(before_quantity)
-                
-                for i in range(1 , quantity +1):
-                    zero_num = str(i + before_quantity).zfill(3)
-                    barcode = product_code + zero_num + self.year[2:4] + self.month + self.day
-                    
-                    ProductHis.objects.create(
-                        use_status = 1,
-                        product_code = product_code,
-                        price = price,
-                        barcode = barcode,
-                        etc = etc
-                    )
-
-                return print('기존 제품을 참고하여 히스토리 생성완료')
-            else:
-                for i in range(1, int(quantity) + 1):
-                    zero_num = str(i).zfill(3)
-                    barcode = product_code + zero_num + self.year[2:4] + self.month + self.day
-                    #SSPP001-221026-001-0001
-                    ProductHis.objects.create(
-                    use_status = 1,
-                    product_code = product_code,
-                    price = price,
-                    barcode = barcode,
-                    etc = etc)
-
-                return print('새로운 제품 히스토리 생성완료')
-        except KeyError:
-            return JsonResponse({'message' : 'Key Error'}, status = 403)
-
-
     def post(self, request):
         input_data = request.POST
 
@@ -178,13 +138,11 @@ class CreateProductInfoView(View):
                 quantity = input_data['quantity'],
                 safe_quantity = input_data['safe_quantity'],
                 search_word = input_data['search_word'],
-                name = input_data['name'],
-                resent_IB_price = 0,
-                resent_OB_price = 0
+                name = input_data['name']
                 )
 
 
-            self.product_history_generator(product_code, input_data['quantity'],input_data['price'] ,input_data['etc'] )
+            product_history_generator(product_code, input_data['quantity'],input_data['price'] ,input_data['etc'] )
 
 
             return JsonResponse({'mesaage' : 'Product information has been registered.'}, status = 200) 
@@ -203,7 +161,7 @@ class CreateInboundOrderView(View):
                 # 회사 코드 확인
                 if not 'company_code' in body_data:
                     return JsonResponse({'message': "Company code does not exist."}, status = 403)
-
+                company_code = body_data['company_code']
                 # 기타사항 입력 과 미입력 값 조정
                 if 'etc' in body_data:
                     etc = body_data['etc']
@@ -237,9 +195,10 @@ class CreateInboundOrderView(View):
                             inbound_price = price,
                             inbound_quntity = quantity
                         )
-                        # 입고된 내용을 통해 제품 history 생성 (바코드 생성 및 저장)
+                        # 입고된 내용을 통해 제품 history, 제품 회사 - 가격 테이블 생성 (바코드 생성 및 저장)
                         product_history_generator(product_code, quantity, price, etc)
-                        update_product_his(product_code, price) # 기존에 있는 수량과 입고된 수량 파악 후 저장.
+                        update_product_his(product_code) # 기존에 있는 수량과 입고된 수량 파악 후 저장.
+                        update_price(product_code, price, company_code)
 
             return JsonResponse({'message' : 'Inbounding processing has been completed.'}, status = 200)
         except KeyError:
@@ -311,6 +270,7 @@ class ConfirmOutboundOrderView(View):
         try:
             with transaction.atomic():
                 OB_id = input_data['OB_id']
+                company_code = OutboundOrder.objects.get(id = OB_id).company_code
 
                 # {프로덕트 코드 : 바코드 수량} 비교 딕셔너리 생성.
                 product_codes_dic = {}
@@ -343,10 +303,12 @@ class ConfirmOutboundOrderView(View):
                     # OutboundBarcode Table에 OB 아이디와 바코드 저장 부품 추적시 사용.
                     ProductHis.objects.filter(barcode = barcode).update(use_status = 2)
                     OutboundBarcode.objects.create(outbound_order_id = OB_id, barcode = barcode)
+                    update_product_his(product_code)
                     
-                    count = ProductHis.objects.filter(barcode__icontains = product_code, use_status = 1).count()
-                    # 제품 정보에 수량 수정사항 반영.
-                    ProductInfo.objects.filter(product_code = product_code).update(quantity = count)
+                     # 제품 정보에 수량 수정사항(사용 가능한 수량, 회사 - 출고 가격) 반영.
+                    outbound_price = OutboundQuantity.objects.get(product_code = product_code, outbound_order_id = OB_id).outbound_price
+                    update_product_his(product_code)
+                    update_price(product_code, outbound_price, company_code)
                     
             return JsonResponse({"product_codes" : 'processing completed.' }, status = 200)
         except KeyError:
