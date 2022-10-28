@@ -10,7 +10,7 @@ from datetime           import datetime
 from users.models       import *
 from products.models    import *
 
-# 
+# decorator & utills 
 from users.decorator    import jwt_decoder, check_status
 from products.utils     import product_history_generator, update_product_his, update_price
 
