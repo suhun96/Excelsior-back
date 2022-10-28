@@ -1,4 +1,3 @@
-from tabnanny import check
 from django.http        import JsonResponse
 from products.models    import *
 from datetime           import datetime
