@@ -270,6 +270,7 @@ class ConfirmOutboundOrderView(View):
         try:
             with transaction.atomic():
                 OB_id = input_data['OB_id']
+                company_code = OutboundOrder.objects.get(id = OB_id).company_code
 
                 # {프로덕트 코드 : 바코드 수량} 비교 딕셔너리 생성.
                 product_codes_dic = {}
@@ -302,10 +303,12 @@ class ConfirmOutboundOrderView(View):
                     # OutboundBarcode Table에 OB 아이디와 바코드 저장 부품 추적시 사용.
                     ProductHis.objects.filter(barcode = barcode).update(use_status = 2)
                     OutboundBarcode.objects.create(outbound_order_id = OB_id, barcode = barcode)
-                    
-                    # 제품 정보에 수량 수정사항 반영.
                     update_product_his(product_code)
-                    update_price(product_code, price, company_code)
+                    
+                     # 제품 정보에 수량 수정사항 반영.
+                    outbound_price = OutboundQuantity.objects.get(product_code = product_code, outbound_order_id = OB_id).outbound_price
+                    update_product_his(product_code)
+                    update_price(product_code, outbound_price, company_code)
                     
             return JsonResponse({"product_codes" : 'processing completed.' }, status = 200)
         except KeyError:
