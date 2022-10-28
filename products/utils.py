@@ -75,6 +75,8 @@ def update_product_his(product_code):
     ProductInfo.objects.filter(product_code = product_code).update(quantity = count, updated_at = datetime.now())
 
 def update_price(product_code, price, company_code):
+    # manage_tag 를 이용하여 입고, 출고 구분
+    # 입고
     if Company.objects.get(code = company_code).manage_tag == "입고":
         
         new, created = CompanyInboundPrice.objects.update_or_create(
@@ -84,12 +86,14 @@ def update_price(product_code, price, company_code):
             })
         
         return print(f'제품 코드{product_code}이 {price}원에 {company_code}에서 입고되었습니다.')
-    
+    # 출고
     elif Company.objects.get(code = company_code).manage_tag == "출고":
+        
         new, created = CompanyOutboundPrice.objects.update_or_create(
             company_code = company_code, product_code = product_code,
             defaults={
                 'resent_price' : price
             })
+            
         return print(f'제품 코드{product_code}이 {price}원에 {company_code}에서 출고되었습니다.')
 
