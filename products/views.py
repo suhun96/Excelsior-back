@@ -191,7 +191,6 @@ class CreateProductInfoView(View):
         except KeyError:
             return JsonResponse({'message' : 'Key error'}, status = 403)
 
-
 class CreateInboundOrderView(View):
     @jwt_decoder
     @check_status
