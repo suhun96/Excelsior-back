@@ -305,7 +305,7 @@ class ConfirmOutboundOrderView(View):
                     OutboundBarcode.objects.create(outbound_order_id = OB_id, barcode = barcode)
                     update_product_his(product_code)
                     
-                     # 제품 정보에 수량 수정사항 반영.
+                     # 제품 정보에 수량 수정사항(사용 가능한 수량, 회사 - 출고 가격) 반영.
                     outbound_price = OutboundQuantity.objects.get(product_code = product_code, outbound_order_id = OB_id).outbound_price
                     update_product_his(product_code)
                     update_price(product_code, outbound_price, company_code)
