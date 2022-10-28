@@ -161,7 +161,7 @@ class CreateInboundOrderView(View):
                 # 회사 코드 확인
                 if not 'company_code' in body_data:
                     return JsonResponse({'message': "Company code does not exist."}, status = 403)
-
+                company_code = body_data['company_code']
                 # 기타사항 입력 과 미입력 값 조정
                 if 'etc' in body_data:
                     etc = body_data['etc']
@@ -195,12 +195,11 @@ class CreateInboundOrderView(View):
                             inbound_price = price,
                             inbound_quntity = quantity
                         )
-                        # 입고된 내용을 통해 제품 history 생성 (바코드 생성 및 저장)
+                        # 입고된 내용을 통해 제품 history, 제품 회사 - 가격 테이블 생성 (바코드 생성 및 저장)
                         product_history_generator(product_code, quantity, price, etc)
-                        print('check1')
-                        update_product_his(product_code, price) # 기존에 있는 수량과 입고된 수량 파악 후 저장.
-                        print('check2')
-                        update_price(product_code, price, body_data['company_code'])
+                        update_product_his(product_code) # 기존에 있는 수량과 입고된 수량 파악 후 저장.
+                        update_price(product_code, price, company_code)
+
             return JsonResponse({'message' : 'Inbounding processing has been completed.'}, status = 200)
         except KeyError:
             return JsonResponse({'message' : 'Key error'}, status = 403)
@@ -304,9 +303,9 @@ class ConfirmOutboundOrderView(View):
                     ProductHis.objects.filter(barcode = barcode).update(use_status = 2)
                     OutboundBarcode.objects.create(outbound_order_id = OB_id, barcode = barcode)
                     
-                    count = ProductHis.objects.filter(barcode__icontains = product_code, use_status = 1).count()
                     # 제품 정보에 수량 수정사항 반영.
-                    ProductInfo.objects.filter(product_code = product_code).update(quantity = count)
+                    update_product_his(product_code)
+                    update_price(product_code, price, company_code)
                     
             return JsonResponse({"product_codes" : 'processing completed.' }, status = 200)
         except KeyError:
