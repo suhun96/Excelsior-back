@@ -69,6 +69,24 @@ def product_history_generator(product_code, quantity, price ,etc):
         except KeyError:
             return JsonResponse({'message' : 'Key Error'}, status = 403)
 
-def update_product_his(product_code, price):
+def update_product_his(product_code,):
     count = ProductHis.objects.filter(product_code = product_code, use_status = 1).count()
-    ProductInfo.objects.filter(product_code = product_code).update(quantity = count, resent_IB_price = price ,updated_at = datetime.now())
+    ProductInfo.objects.filter(product_code = product_code).update(quantity = count, updated_at = datetime.now())
+
+def update_price(product_code, price, company_code):
+    if Company.objects.get(company_code = company_code).manage_tag == "입고":
+        new, created = CompanyInboundPrice.objects.update_or_create(
+            company_code = company_code, product_code = product_code,
+            defaults={
+                'price' : price
+            })
+        return print(f'제품 코드{product_code}이 {price}원에 {company_code}에서 입고되었습니다.')
+    
+    elif Company.objects.get(company_code = company_code).manage_tag == "출고":
+        new, created = CompanyOutboundPrice.objects.update_or_create(
+            company_code = company_code, product_code = product_code,
+            defaults={
+                'price' : price
+            })
+        return print(f'제품 코드{product_code}이 {price}원에 {company_code}에서 출고되었습니다.')
+
