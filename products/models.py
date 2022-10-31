@@ -1,3 +1,4 @@
+from codecs import BOM
 from django.db      import models
 from users.models   import User
 
@@ -112,3 +113,52 @@ class CompanyOutboundPrice(models.Model):
     class Meta:
         db_table = 'company_outbound_price'
 
+#--------------------------------------------#
+
+class Bom(models.Model):
+    name = models.CharField(max_length = 300, blank = False)
+    etc  = models.CharField(max_length = 3000, blank = True)
+
+    class Meta:
+        db_table = 'bom' 
+
+class BomProduct(models.Model):
+    BOM = models.ForeignKey(Bom, on_delete = models.CASCADE)
+    product_code = models.CharField(max_length = 10, blank = False)
+    product_quantity = models.IntegerField()
+    product_price = models.IntegerField()
+
+    class Meta:
+        db_table = 'bom_product'
+
+class OutboundBom(models.Model):
+    outbound_order = models.ForeignKey(OutboundOrder, on_delete = models.CASCADE)
+    BOM = models.ForeignKey(Bom, on_delete = models.CASCADE)
+
+    class Meta:
+        db_table = 'outbound_bom'
+
+#------------------------------------------------#
+
+class Set(models.Model):
+    name = models.CharField(max_length = 300, blank = False)
+    etc  = models.CharField(max_length = 3000, blank = True)
+
+    class Meta:
+        db_table = 'set' 
+
+class SetProduct(models.Model):
+    set = models.ForeignKey(Set, on_delete = models.CASCADE)
+    product_code = models.CharField(max_length = 10, blank = False)
+    product_quantity = models.IntegerField()
+    product_price = models.IntegerField()
+
+    class Meta:
+        db_table = 'set_product'
+
+class OutboundSet(models.Model):
+    outbound_order = models.ForeignKey(OutboundOrder, on_delete = models.CASCADE)
+    set = models.ForeignKey(Set, on_delete = models.CASCADE)
+
+    class Meta:
+        db_table = 'outbound_set'
