@@ -348,3 +348,58 @@ class CreateSetView(View):
             return JsonResponse({'message' : 'Key Error'}, status = 403)
         except Exception as e:
             return JsonResponse({'message' : 'An exception occurred while running.'}, status = 403)
+
+class CreateSetInfoView(View):
+    def __init__(self):
+        # 날짜 설정
+        now = datetime.now()
+        self.year    = str(now.year)
+        self.month   = str(now.month)
+        self.day     = str(now.day) 
+
+    def serial_generator(self, pg_code):
+        product_group  = ProductGroup.objects.filter(code = pg_code)
+        
+        # 제품 그룹이 있는지 체크
+        if product_group.exists() == False:
+            raise ValueError('Product group that does not exist.')
+
+        CPPG = 'EX' + pg_code # SSPP 
+        # 형번을 생성 등록된 제품 정보를 참고해 CPPG 가 존재하면 그 다음 형번을 부여 없으면 1로 시작.
+        if SetInfo.objects.filter(product_code__icontains = CPPG).exists():
+            latest_product_code = SetInfo.objects.filter(product_code__icontains = CPPG).latest('created_at').set_code
+            model_number = int(latest_product_code[5:7]) + 1
+        else:
+            model_number = 1
+
+        model_number = str(model_number).zfill(3)
+        # 제품 시리얼 코드 생성 SSPP001
+        product_code = CPPG + model_number
+        
+        return product_code
+
+
+    def post(self, request):
+        input_data = request.POST
+
+        try:
+            set_code = self.serial_generator(input_data['pg_code'])
+            
+            print(set_code)
+
+            SetInfo.objects.create(
+                set_code = set_code,
+                quantity = input_data['quantity'],
+                safe_quantity = input_data['safe_quantity'],
+                search_word = input_data['search_word'],
+                name = input_data['name']
+                )
+
+
+            product_history_generator(product_code, input_data['quantity'],input_data['price'] ,input_data['etc'] )
+
+
+            return JsonResponse({'mesaage' : 'Product information has been registered.'}, status = 200) 
+        except KeyError:
+            return JsonResponse({'message' : 'Key error'}, status = 403)
+        
