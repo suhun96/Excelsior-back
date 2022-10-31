@@ -9,4 +9,5 @@ urlpatterns = [
     path('inbound', CreateInboundOrderView.as_view()),
     path('outbound', CreateOutboundOrderView.as_view()),
     path('outbound_conf', ConfirmOutboundOrderView.as_view()),
+    path('bom', CreateBomView.as_view())
 ]
