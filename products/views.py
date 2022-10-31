@@ -366,17 +366,17 @@ class CreateSetInfoView(View):
 
         CPPG = 'EX' + pg_code # SSPP 
         # 형번을 생성 등록된 제품 정보를 참고해 CPPG 가 존재하면 그 다음 형번을 부여 없으면 1로 시작.
-        if SetInfo.objects.filter(product_code__icontains = CPPG).exists():
-            latest_product_code = SetInfo.objects.filter(product_code__icontains = CPPG).latest('created_at').set_code
+        if SetInfo.objects.filter(set_code__icontains = CPPG).exists():
+            latest_product_code = SetInfo.objects.filter(set_code__icontains = CPPG).latest('created_at').set_code
             model_number = int(latest_product_code[5:7]) + 1
         else:
             model_number = 1
 
         model_number = str(model_number).zfill(3)
         # 제품 시리얼 코드 생성 SSPP001
-        product_code = CPPG + model_number
+        set_code = CPPG + model_number
         
-        return product_code
+        return set_code
 
 
     def post(self, request):
@@ -396,7 +396,7 @@ class CreateSetInfoView(View):
                 )
 
 
-            product_history_generator(product_code, input_data['quantity'],input_data['price'] ,input_data['etc'] )
+            product_history_generator(set_code, input_data['quantity'],input_data['price'] ,input_data['etc'] )
 
 
             return JsonResponse({'mesaage' : 'Product information has been registered.'}, status = 200) 
