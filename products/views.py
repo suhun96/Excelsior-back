@@ -314,41 +314,6 @@ class ConfirmOutboundOrderView(View):
         except KeyError:
             return JsonResponse({'message' : 'Key error'}, status = 403)
 
-class CreateSetView(View):
-    def post(self, request):
-        input_data = json.loads(request.body)
-        
-        try:
-            with transaction.atomic():
-                # 같은 이름의 set 상품이 있는지 확인.
-                if Set.objects.filter(name = input_data['name']).exists():
-                    return JsonResponse({'message' :'이미 존재하는 이름입니다.'}, status = 403) 
-
-                new_set = Set.objects.create(
-                    name = input_data['name'],
-                    price = input_data['price'],
-                    etc = input_data['etc'])
-                
-                for product_code in input_data.keys():
-                    if len(product_code) == 7:
-                        product_code = product_code
-                        qunatity = input_data[product_code]['product_quantity']
-                        # 제품 정보 테이블에서 시리얼 코드를 검색 없으면 예외를 일으켜 트랜젝션 작동
-                        if not ProductInfo.objects.filter(product_code__icontains = product_code).exists():
-                            raise Exception(f'{product_code} 가 존재하지 않습니다')
-                    
-                        SetProduct.objects.create(
-                            set_id = new_set.id,
-                            product_code = product_code,
-                            product_quantity = qunatity
-                        )
-        
-            return JsonResponse({'message' : '생성되었습니다.'}, status = 200)
-        except KeyError:
-            return JsonResponse({'message' : 'Key Error'}, status = 403)
-        except Exception as e:
-            return JsonResponse({'message' : 'An exception occurred while running.'}, status = 403)
-
 class CreateSetInfoView(View):
     def __init__(self):
         # 날짜 설정
@@ -380,20 +345,35 @@ class CreateSetInfoView(View):
 
 
     def post(self, request):
-        input_data = request.POST
+        input_data = json.loads(request.body)
 
+    
+        set_code = self.serial_generator(input_data['pgcode'])
+        
+        # print(set_code)
         try:
-            set_code = self.serial_generator(input_data['pg_code'])
-            
-            print(set_code)
-
-            SetInfo.objects.create(
+            new_set = SetInfo.objects.create(
                 set_code = set_code,
                 quantity = input_data['quantity'],
                 safe_quantity = input_data['safe_quantity'],
                 search_word = input_data['search_word'],
                 name = input_data['name']
                 )
+            
+            for product_code in input_data.keys():
+                print(product_code)
+                if len(product_code) == 7:
+                    product_code = product_code
+                    qunatity = int(input_data[product_code])
+                    # 제품 정보 테이블에서 시리얼 코드를 검색 없으면 예외를 일으켜 트랜젝션 작동
+                    if not ProductInfo.objects.filter(product_code__icontains = product_code).exists():
+                        raise Exception(f'{product_code} 가 존재하지 않습니다')
+                
+                    SetProduct.objects.create(
+                        set_code = set_code,
+                        product_code = product_code,
+                        product_quantity = qunatity
+                    )
 
 
             product_history_generator(set_code, input_data['quantity'],input_data['price'] ,input_data['etc'] )
@@ -401,5 +381,5 @@ class CreateSetInfoView(View):
 
             return JsonResponse({'mesaage' : 'Product information has been registered.'}, status = 200) 
         except KeyError:
-            return JsonResponse({'message' : 'Key error'}, status = 403)
+            return JsonResponse({'mesaage' : 'Key Error'}, status = 403) 
         

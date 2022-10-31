@@ -9,6 +9,5 @@ urlpatterns = [
     path('inbound', CreateInboundOrderView.as_view()),
     path('outbound', CreateOutboundOrderView.as_view()),
     path('outbound_conf', ConfirmOutboundOrderView.as_view()),
-    path('set', CreateSetView.as_view()),
     path('setinfo',CreateSetInfoView.as_view())
 ]
