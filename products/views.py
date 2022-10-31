@@ -320,13 +320,15 @@ class CreateSetView(View):
         
         try:
             with transaction.atomic():
-                print(input_data)
+                # 같은 이름의 set 상품이 있는지 확인.
+                if Set.objects.filter(name = input_data['name']).exists():
+                    return JsonResponse({'message' :'이미 존재하는 이름입니다.'}, status = 403) 
+
                 new_set = Set.objects.create(
                     name = input_data['name'],
                     price = input_data['price'],
                     etc = input_data['etc'])
                 
-                print(new_set.id)
                 for product_code in input_data.keys():
                     if len(product_code) == 7:
                         product_code = product_code
