@@ -180,7 +180,7 @@ class CreateInboundOrderView(View):
                 
                 for product_code in body_data.keys():
                     # 입력된 값중 길이가 7 = 시리얼 코드
-                    if len(product_code) == 7:
+                    if str(product_code[0:4]).isupper() == 4:
                         product_code = product_code # 시리얼 코드안에 있는 가격, 수량 정보 가져옴
                         print(product_code)
                         price = body_data[product_code]['price']
@@ -346,8 +346,6 @@ class CreateSetInfoView(View):
 
     def post(self, request):
         input_data = json.loads(request.body)
-
-    
         set_code = self.serial_generator(input_data['pgcode'])
         
         # print(set_code)
@@ -360,20 +358,17 @@ class CreateSetInfoView(View):
                 name = input_data['name']
                 )
             
-            for product_code in input_data.keys():
-                print(product_code)
-                if len(product_code) == 7:
-                    product_code = product_code
-                    qunatity = int(input_data[product_code])
-                    # 제품 정보 테이블에서 시리얼 코드를 검색 없으면 예외를 일으켜 트랜젝션 작동
-                    if not ProductInfo.objects.filter(product_code__icontains = product_code).exists():
-                        raise Exception(f'{product_code} 가 존재하지 않습니다')
+            product_codes = input_data['product_code']
+            for product_code in product_codes:
+                quantity = int(product_codes[product_code])
+                if not ProductInfo.objects.filter(product_code__icontains = product_code).exists():
+                    raise Exception(f'{product_code} 가 존재하지 않습니다')
                 
-                    SetProduct.objects.create(
-                        set_code = set_code,
-                        product_code = product_code,
-                        product_quantity = qunatity
-                    )
+                SetProduct.objects.create(
+                    set_code = set_code,
+                    product_code = product_code,
+                    product_quantity = quantity
+                )
 
 
             product_history_generator(set_code, input_data['quantity'],input_data['price'] ,input_data['etc'] )
@@ -383,3 +378,11 @@ class CreateSetInfoView(View):
         except KeyError:
             return JsonResponse({'mesaage' : 'Key Error'}, status = 403) 
         
+# class CheckView(View):
+#     def post(self, request):
+#         input_data = json.loads(request.body)
+#         print(input_data)
+#         A = input_data['product_code']['SHVV001']
+#         print(A)
+#         print(len(input_data['product_code']))
+#         return JsonResponse({'message' : "ok"})
