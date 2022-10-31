@@ -314,25 +314,13 @@ class ConfirmOutboundOrderView(View):
         except KeyError:
             return JsonResponse({'message' : 'Key error'}, status = 403)
 
-class CreateBomView(View):
+class CreateSetView(View):
     def post(self, request):
         input_data = request.POST
         check = request.POST.getlist("product_code", None)
+        print(check)
         try:
-            # print(input_data)
-            # print(input_data['product_code'])
-            print(check[0])
-            # new_bom = Bom.objects.create(
-            #     name = input_data['name'],
-            #     etc = input_data
-            # )
-
-            # BomProduct.objects.create(
-            #     BOM = new_bom.id,
-            #     product_code = input_data['product_code'],
-            #     product_quantity = input_data['product_quantity'],
-            #     product_price = input_data['product_price']
-            # )
+        
             return JsonResponse({'message' : '생성되었습니다.'}, status = 200)
         except KeyError:
             return JsonResponse({'message' : 'Key Error'}, status = 403)

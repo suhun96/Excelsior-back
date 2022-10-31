@@ -1,4 +1,5 @@
 from codecs import BOM
+from email.policy import default
 from django.db      import models
 from users.models   import User
 
@@ -142,6 +143,7 @@ class OutboundBom(models.Model):
 
 class Set(models.Model):
     name = models.CharField(max_length = 300, blank = False)
+    price = models.IntegerField()
     etc  = models.CharField(max_length = 3000, blank = True)
 
     class Meta:
@@ -151,7 +153,6 @@ class SetProduct(models.Model):
     set = models.ForeignKey(Set, on_delete = models.CASCADE)
     product_code = models.CharField(max_length = 10, blank = False)
     product_quantity = models.IntegerField()
-    product_price = models.IntegerField()
 
     class Meta:
         db_table = 'set_product'
