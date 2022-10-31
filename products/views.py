@@ -316,11 +316,33 @@ class ConfirmOutboundOrderView(View):
 
 class CreateSetView(View):
     def post(self, request):
-        input_data = request.POST
-        check = request.POST.getlist("product_code", None)
-        print(check)
+        input_data = json.loads(request.body)
+        
         try:
+            with transaction.atomic():
+                print(input_data)
+                new_set = Set.objects.create(
+                    name = input_data['name'],
+                    price = input_data['price'],
+                    etc = input_data['etc'])
+                
+                print(new_set.id)
+                for product_code in input_data.keys():
+                    if len(product_code) == 7:
+                        product_code = product_code
+                        qunatity = input_data[product_code]['product_quantity']
+                        # 제품 정보 테이블에서 시리얼 코드를 검색 없으면 예외를 일으켜 트랜젝션 작동
+                        if not ProductInfo.objects.filter(product_code__icontains = product_code).exists():
+                            raise Exception(f'{product_code} 가 존재하지 않습니다')
+                    
+                        SetProduct.objects.create(
+                            set_id = new_set.id,
+                            product_code = product_code,
+                            product_quantity = qunatity
+                        )
         
             return JsonResponse({'message' : '생성되었습니다.'}, status = 200)
         except KeyError:
             return JsonResponse({'message' : 'Key Error'}, status = 403)
+        except Exception as e:
+            return JsonResponse({'message' : 'An exception occurred while running.'}, status = 403)
