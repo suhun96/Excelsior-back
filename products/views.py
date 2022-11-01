@@ -376,12 +376,3 @@ class CreateSetInfoView(View):
             return JsonResponse({'mesaage' : 'Product information has been registered.'}, status = 200) 
         except KeyError:
             return JsonResponse({'mesaage' : 'Key Error'}, status = 403) 
-        
-# class CheckView(View):
-#     def post(self, request):
-#         input_data = json.loads(request.body)
-#         print(input_data)
-#         A = input_data['product_code']['SHVV001']
-#         print(A)
-#         print(len(input_data['product_code']))
-#         return JsonResponse({'message' : "ok"})
