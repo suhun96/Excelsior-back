@@ -331,8 +331,8 @@ class CreateSetInfoView(View):
 
         CPPG = 'EX' + pg_code # SSPP 
         # 형번을 생성 등록된 제품 정보를 참고해 CPPG 가 존재하면 그 다음 형번을 부여 없으면 1로 시작.
-        if SetInfo.objects.filter(set_code__icontains = CPPG).exists():
-            latest_product_code = SetInfo.objects.filter(set_code__icontains = CPPG).latest('created_at').set_code
+        if SetProductInfo.objects.filter(set_product_code__icontains = CPPG).exists():
+            latest_product_code = SetProductInfo.objects.filter(set_product_code__icontains = CPPG).latest('created_at').set_product_code
             model_number = int(latest_product_code[5:7]) + 1
         else:
             model_number = 1
@@ -350,7 +350,7 @@ class CreateSetInfoView(View):
         
         # print(set_code)
         try:
-            new_set = SetInfo.objects.create(
+            new_set = SetProductInfo.objects.create(
                 set_code = set_code,
                 quantity = input_data['quantity'],
                 safe_quantity = input_data['safe_quantity'],
@@ -364,7 +364,7 @@ class CreateSetInfoView(View):
                 if not ProductInfo.objects.filter(product_code__icontains = product_code).exists():
                     raise Exception(f'{product_code} 가 존재하지 않습니다')
                 
-                SetProduct.objects.create(
+                SetProductQuantity.objects.create(
                     set_code = set_code,
                     product_code = product_code,
                     product_quantity = quantity
