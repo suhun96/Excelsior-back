@@ -178,8 +178,8 @@ class CreateInboundOrderView(View):
 
                 
                 for product_code in body_data.keys():
-                    # 입력된 값중 길이가 7 = 시리얼 코드
-                    if str(product_code[0:4]).isupper() == 4:
+                    # 입력값 필터링
+                    if str(product_code[0:4]).isupper() == True:
                         product_code = product_code # 시리얼 코드안에 있는 가격, 수량 정보 가져옴
                         print(product_code)
                         price = body_data[product_code]['price']
@@ -198,6 +198,7 @@ class CreateInboundOrderView(View):
                         product_history_generator(product_code, quantity, price, etc)
                         update_product_his(product_code) # 기존에 있는 수량과 입고된 수량 파악 후 저장.
                         update_price(product_code, price, company_code)
+                        
 
             return JsonResponse({'message' : 'Inbounding processing has been completed.'}, status = 200)
         except KeyError:

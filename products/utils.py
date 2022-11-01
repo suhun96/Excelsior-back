@@ -5,9 +5,9 @@ from django.db          import transaction
 
 def product_history_generator(product_code, quantity, price ,etc):
         now = datetime.now()
-        year    = str(now.year)
-        month   = str(now.month)
-        day     = str(now.day) 
+        year    = "2000"
+        month   = str(now.month).zfill(2)
+        day     = str(now.day).zfill(2)
         today = year[2:4] + month + day
         
         try:
@@ -37,10 +37,12 @@ def product_history_generator(product_code, quantity, price ,etc):
                 # 가장 마지막 제품의 히스토리의 날짜와 같다 같은 제품이 다른 로트로 입고된다.
                 if latest_product_barcode_yymmdd == today:
                     root_num = latest_product_his.barcode[13:15]
+                    print(root_num)
                     
                     for i in range(1 , int(quantity) +1):
                         product_quantity = str(i).zfill(3)
                         root_num2 = str(int(root_num) + 1).zfill(2)
+                        print(root_num2)
                         barcode = product_code + today + root_num2 + product_quantity
                         
                         ProductHis.objects.create(
@@ -50,6 +52,7 @@ def product_history_generator(product_code, quantity, price ,etc):
                             barcode = barcode,
                             etc = etc
                         )
+                    return print('기존 제품을 참고하여 히스토리 생성완료')
                 # 새로운 날 제품이 들어오기 때문에 로트는 1로 지정
                 else:
                     for i in range(1 , int(quantity) +1):
@@ -64,9 +67,8 @@ def product_history_generator(product_code, quantity, price ,etc):
                             barcode = barcode,
                             etc = etc
                         )
-                    
+                    return print('기존 제품을 참고하여 히스토리 생성완료 - 2')
 
-                return print('기존 제품을 참고하여 히스토리 생성완료')
         except KeyError:
             return JsonResponse({'message' : 'Key Error'}, status = 403)
 
@@ -99,10 +101,10 @@ def update_price(product_code, price, company_code):
 
 def set_product_history_generator(set_product_code, quantity, price, etc):
     now = datetime.now()
-    year    = str(now.year)
-    month   = str(now.month)
-    day     = str(now.day) 
-    today = year[2:4] + month + day    
+    year    = "2000"
+    month   = str(now.month).zfill(2)
+    day     = str(now.day).zfill(2)
+    today = year[2:4] + month + day   
 
     try:
         with transaction.atomic():
@@ -159,3 +161,6 @@ def set_product_history_generator(set_product_code, quantity, price, etc):
             return print('기존 제품을 참고하여 히스토리 생성완료')
     except KeyError:
         return JsonResponse({'message' : 'Key Error'}, status = 403)
+
+
+
