@@ -12,7 +12,7 @@ from products.models    import *
 
 # decorator & utills 
 from users.decorator    import jwt_decoder, check_status
-from products.utils     import product_history_generator, update_product_his, update_price
+from products.utils     import product_history_generator, set_product_history_generator ,update_product_his, update_price
 
 class CreateProductGroupView(View):
     @jwt_decoder
@@ -123,7 +123,6 @@ class CreateProductInfoView(View):
         product_code = cp_code + pg_code + model_number
         
         return product_code
-
 
     def post(self, request):
         input_data = request.POST
@@ -339,39 +338,38 @@ class CreateSetInfoView(View):
 
         model_number = str(model_number).zfill(3)
         # 제품 시리얼 코드 생성 SSPP001
-        set_code = CPPG + model_number
+        set_product_code = CPPG + model_number
         
-        return set_code
+        return set_product_code
 
 
     def post(self, request):
         input_data = json.loads(request.body)
-        set_code = self.serial_generator(input_data['pgcode'])
+        set_product_code = self.serial_generator(input_data['pgcode'])
         
         try:
-            new_set = SetProductInfo.objects.create(
-                set_code = set_code,
-                quantity = input_data['quantity'],
-                safe_quantity = input_data['safe_quantity'],
-                search_word = input_data['search_word'],
-                name = input_data['name']
-                )
-            
-            product_codes = input_data['product_code']
-            for product_code in product_codes:
-                quantity = int(product_codes[product_code])
-                if not ProductInfo.objects.filter(product_code__icontains = product_code).exists():
-                    raise Exception(f'{product_code} 가 존재하지 않습니다')
+            with transaction.atomic():
+                new_set = SetProductInfo.objects.create(
+                    set_product_code = set_product_code,
+                    quantity = input_data['quantity'],
+                    safe_quantity = input_data['safe_quantity'],
+                    search_word = input_data['search_word'],
+                    name = input_data['name']
+                    )
                 
-                SetProductQuantity.objects.create(
-                    set_code = set_code,
-                    product_code = product_code,
-                    product_quantity = quantity
-                )
-
-
-            product_history_generator(set_code, input_data['quantity'],input_data['price'] ,input_data['etc'] )
-
+                product_codes = input_data['product_code']
+                for product_code in product_codes:
+                    quantity = int(product_codes[product_code])
+                    if not ProductInfo.objects.filter(product_code__icontains = product_code).exists():
+                        raise Exception(f'{product_code} 가 존재하지 않습니다')
+                    
+                    SetProductQuantity.objects.create(
+                        set_product_code = set_product_code,
+                        product_code = product_code,
+                        product_quantity = quantity
+                    )
+                
+                set_product_history_generator(set_product_code, input_data['quantity'],input_data['price'] ,input_data['etc'] )
 
             return JsonResponse({'mesaage' : 'Product information has been registered.'}, status = 200) 
         except KeyError:
