@@ -96,3 +96,11 @@ def update_price(product_code, price, company_code):
             
         return print(f'제품 코드{product_code}이 {price}원에 {company_code}에서 출고되었습니다.')
 
+def set_product_history_generator(self):
+    now = datetime.now()
+    year    = str(now.year)
+    month   = str(now.month)
+    day     = str(now.day) 
+    today = year[2:4] + month + day    
+
+    return 
