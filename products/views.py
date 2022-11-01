@@ -348,7 +348,6 @@ class CreateSetInfoView(View):
         input_data = json.loads(request.body)
         set_code = self.serial_generator(input_data['pgcode'])
         
-        # print(set_code)
         try:
             new_set = SetProductInfo.objects.create(
                 set_code = set_code,
