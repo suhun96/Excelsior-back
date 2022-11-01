@@ -1,3 +1,5 @@
+from codecs import BOM
+from email.policy import default
 from django.db      import models
 from users.models   import User
 
@@ -112,3 +114,57 @@ class CompanyOutboundPrice(models.Model):
     class Meta:
         db_table = 'company_outbound_price'
 
+#--------------------------------------------#
+
+class Bom(models.Model):
+    name = models.CharField(max_length = 300, blank = False)
+    etc  = models.CharField(max_length = 3000, blank = True)
+
+    class Meta:
+        db_table = 'bom' 
+
+class BomProduct(models.Model):
+    BOM = models.ForeignKey(Bom, on_delete = models.CASCADE)
+    product_code = models.CharField(max_length = 10, blank = False)
+    product_quantity = models.IntegerField()
+    product_price = models.IntegerField()
+
+    class Meta:
+        db_table = 'bom_product'
+
+class OutboundBom(models.Model):
+    outbound_order = models.ForeignKey(OutboundOrder, on_delete = models.CASCADE)
+    BOM = models.ForeignKey(Bom, on_delete = models.CASCADE)
+
+    class Meta:
+        db_table = 'outbound_bom'
+
+#------------------------------------------------#
+
+class SetInfo(models.Model):
+    set_code        = models.CharField(max_length = 10, blank = False)
+    quantity        = models.IntegerField()
+    safe_quantity   = models.IntegerField()
+    search_word     = models.CharField(max_length = 150, blank = False)
+    name            = models.CharField(max_length = 100, blank = False)
+    created_at      = models.DateTimeField(auto_now_add = True)
+    updated_at      = models.DateTimeField(auto_now = True)
+
+    class Meta:
+        db_table = 'set_info' 
+
+class SetProduct(models.Model):
+    set_code         = models.CharField(max_length = 10, blank = False)
+    product_code     = models.CharField(max_length = 10, blank = False)
+    product_quantity = models.IntegerField()
+
+    class Meta:
+        db_table = 'set_info_product'
+
+class OutboundSetQuantity(models.Model):
+    outbound_order  = models.ForeignKey(OutboundOrder, on_delete = models.CASCADE)
+    set_code        = models.CharField(max_length = 10, blank = False)
+    quantity        = models.IntegerField()
+
+    class Meta:
+        db_table = 'outbound_set_info'
