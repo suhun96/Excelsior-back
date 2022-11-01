@@ -2,18 +2,18 @@ from django.http        import JsonResponse
 from products.models    import *
 from datetime           import datetime
 from django.db          import transaction
+from django.db.models   import Q
 
 def product_history_generator(product_code, quantity, price ,etc):
         now = datetime.now()
         year    = str(now.year)
-        month   = str(now.month)
-        day     = str(now.day) 
+        month   = str(now.month).zfill(2)
+        day     = str(now.day).zfill(2)
         today = year[2:4] + month + day
         
         try:
             # 오늘 처음 물량입고 = 제품 새로 등록
             product_his = ProductHis.objects.filter(product_code = product_code)
-            
             if not product_his.exists(): 
                 for i in range(1, int(quantity) + 1):
                     product_quantity = str(i).zfill(3)
@@ -26,8 +26,8 @@ def product_history_generator(product_code, quantity, price ,etc):
                     price = price,
                     barcode = barcode,
                     etc = etc)
-
-                return print('새로운 제품 히스토리 생성완료')
+                    
+                return print('새로운 히스토리 생성')
             
             else: # 기존 등록된 제품 입고 
                 # product_code 기준 가장 마지막 제품 히스토리를 가져옴 
@@ -37,10 +37,12 @@ def product_history_generator(product_code, quantity, price ,etc):
                 # 가장 마지막 제품의 히스토리의 날짜와 같다 같은 제품이 다른 로트로 입고된다.
                 if latest_product_barcode_yymmdd == today:
                     root_num = latest_product_his.barcode[13:15]
+                    print(root_num)
                     
                     for i in range(1 , int(quantity) +1):
                         product_quantity = str(i).zfill(3)
                         root_num2 = str(int(root_num) + 1).zfill(2)
+                        print(root_num2)
                         barcode = product_code + today + root_num2 + product_quantity
                         
                         ProductHis.objects.create(
@@ -50,6 +52,7 @@ def product_history_generator(product_code, quantity, price ,etc):
                             barcode = barcode,
                             etc = etc
                         )
+                    return print('기존 제품을 참고하여 히스토리 생성완료')
                 # 새로운 날 제품이 들어오기 때문에 로트는 1로 지정
                 else:
                     for i in range(1 , int(quantity) +1):
@@ -64,9 +67,8 @@ def product_history_generator(product_code, quantity, price ,etc):
                             barcode = barcode,
                             etc = etc
                         )
-                    
+                    return print('기존 제품을 참고하여 히스토리 생성완료 - 2')
 
-                return print('기존 제품을 참고하여 히스토리 생성완료')
         except KeyError:
             return JsonResponse({'message' : 'Key Error'}, status = 403)
 
@@ -99,10 +101,10 @@ def update_price(product_code, price, company_code):
 
 def set_product_history_generator(set_product_code, quantity, price, etc):
     now = datetime.now()
-    year    = str(now.year)
-    month   = str(now.month)
-    day     = str(now.day) 
-    today = year[2:4] + month + day    
+    year    = "2000"
+    month   = str(now.month).zfill(2)
+    day     = str(now.day).zfill(2)
+    today = year[2:4] + month + day   
 
     try:
         with transaction.atomic():
@@ -159,3 +161,43 @@ def set_product_history_generator(set_product_code, quantity, price, etc):
             return print('기존 제품을 참고하여 히스토리 생성완료')
     except KeyError:
         return JsonResponse({'message' : 'Key Error'}, status = 403)
+
+def product_code_generator(pg_code, cp_code):
+        product_group  = ProductGroup.objects.filter(code = pg_code)
+        company        = Company.objects.filter(code = cp_code)
+        
+        # 제품 그룹이 있는지 체크
+        if product_group.exists() == False:
+            raise ValueError('Product group that does not exist.')
+        # 회사가 등록이 되어있는지
+        if company.exists() == False:
+            raise ValueError('Company (trade name) that does not exist.')
+
+        CPPG = cp_code + pg_code # SSPP 
+        # 형번을 생성 등록된 제품 정보를 참고해 CPPG 가 존재하면 그 다음 형번을 부여 없으면 1로 시작.
+        if ProductInfo.objects.filter(product_code__icontains = CPPG).exists():
+            latest_product_code = ProductInfo.objects.filter(product_code__icontains = CPPG).latest('created_at').product_code
+            model_number = int(latest_product_code[5:7]) + 1
+        else:
+            model_number = 1
+
+        model_number = str(model_number).zfill(3)
+        # 제품 시리얼 코드 생성 SSPP001
+        product_code = cp_code + pg_code + model_number
+        
+        return product_code
+
+def print_barcode(product_code, yymmdd):
+    
+    name = ProductInfo.objects.get(product_code = product_code).name
+
+    barcodes = ProductHis.objects.filter(
+        Q(product_code = product_code) & Q(barcode__icontains = yymmdd)
+    ).values('barcode')
+    
+    dict_print = []
+    for i in range(len(barcodes)):
+        dictx = dict({'name' : name, 'barcode' : barcodes[i]['barcode']})
+        dict_print.append(dictx)
+
+    return dict_print

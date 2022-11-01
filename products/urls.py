@@ -2,6 +2,7 @@ from django.urls import path
 
 from products.views import *
 
+
 urlpatterns = [
     path('group', CreateProductGroupView.as_view()),
     path('company', CreateCompanyView.as_view()),
@@ -10,5 +11,6 @@ urlpatterns = [
     path('outbound', CreateOutboundOrderView.as_view()),
     path('outbound_conf', ConfirmOutboundOrderView.as_view()),
     path('setinfo',CreateSetInfoView.as_view()),
-    # path('check', CheckView.as_view())
+    path('check', CheckView.as_view())
 ]
+
