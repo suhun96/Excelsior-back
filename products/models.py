@@ -170,13 +170,13 @@ class OutboundSetProductQuantity(models.Model):
         db_table = 'outbound_set_product_quan'
 
 class SetProductHis(models.Model):
-    use_status      = models.IntegerField(blank = False)
-    set_product_code    = models.CharField(max_length = 10, blank = False)
-    price           = models.BigIntegerField()
-    barcode         = models.CharField(max_length = 20, blank = False)              
-    etc             = models.CharField(max_length = 3000, blank = True)
-    created_at      = models.DateTimeField(auto_now_add = True)
-    updated_at      = models.DateTimeField(auto_now = True)
+    use_status       = models.IntegerField(blank = False)
+    set_product_code = models.CharField(max_length = 10, blank = False)
+    price      = models.BigIntegerField()
+    barcode    = models.CharField(max_length = 20, blank = False)              
+    etc        = models.CharField(max_length = 3000, blank = True)
+    created_at = models.DateTimeField(auto_now_add = True)
+    updated_at = models.DateTimeField(auto_now = True)
 
     class Meta:
         db_table = 'set_product_his'
