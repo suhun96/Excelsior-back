@@ -141,30 +141,42 @@ class OutboundBom(models.Model):
 
 #------------------------------------------------#
 
-class SetInfo(models.Model):
-    set_code        = models.CharField(max_length = 10, blank = False)
-    quantity        = models.IntegerField()
-    safe_quantity   = models.IntegerField()
-    search_word     = models.CharField(max_length = 150, blank = False)
-    name            = models.CharField(max_length = 100, blank = False)
-    created_at      = models.DateTimeField(auto_now_add = True)
-    updated_at      = models.DateTimeField(auto_now = True)
+class SetProductInfo(models.Model):
+    set_product_code = models.CharField(max_length = 10, blank = False)
+    quantity         = models.IntegerField()
+    safe_quantity    = models.IntegerField()
+    search_word      = models.CharField(max_length = 150, blank = False)
+    name             = models.CharField(max_length = 100, blank = False)
+    created_at       = models.DateTimeField(auto_now_add = True)
+    updated_at       = models.DateTimeField(auto_now = True)
 
     class Meta:
-        db_table = 'set_info' 
+        db_table = 'set_product_info' 
 
-class SetProduct(models.Model):
-    set_code         = models.CharField(max_length = 10, blank = False)
+class SetProductQuantity(models.Model):
+    set_product_code = models.CharField(max_length = 10, blank = False)
     product_code     = models.CharField(max_length = 10, blank = False)
     product_quantity = models.IntegerField()
 
     class Meta:
-        db_table = 'set_info_product'
+        db_table = 'set_product_quan'
 
-class OutboundSetQuantity(models.Model):
-    outbound_order  = models.ForeignKey(OutboundOrder, on_delete = models.CASCADE)
-    set_code        = models.CharField(max_length = 10, blank = False)
-    quantity        = models.IntegerField()
+class OutboundSetProductQuantity(models.Model):
+    outbound_order   = models.ForeignKey(OutboundOrder, on_delete = models.CASCADE)
+    set_product_code = models.CharField(max_length = 10, blank = False)
+    quantity         = models.IntegerField()
 
     class Meta:
-        db_table = 'outbound_set_info'
+        db_table = 'outbound_set_product_quan'
+
+class SetProductHis(models.Model):
+    use_status      = models.IntegerField(blank = False)
+    set_product_code    = models.CharField(max_length = 10, blank = False)
+    price           = models.BigIntegerField()
+    barcode         = models.CharField(max_length = 20, blank = False)              
+    etc             = models.CharField(max_length = 3000, blank = True)
+    created_at      = models.DateTimeField(auto_now_add = True)
+    updated_at      = models.DateTimeField(auto_now = True)
+
+    class Meta:
+        db_table = 'set_product_his'
