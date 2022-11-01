@@ -11,6 +11,6 @@ urlpatterns = [
     path('outbound', CreateOutboundOrderView.as_view()),
     path('outbound_conf', ConfirmOutboundOrderView.as_view()),
     path('setinfo',CreateSetInfoView.as_view()),
-    # path('check', CheckView.as_view())
+    path('check', CheckView.as_view())
 ]
 

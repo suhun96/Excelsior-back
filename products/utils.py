@@ -2,6 +2,7 @@ from django.http        import JsonResponse
 from products.models    import *
 from datetime           import datetime
 from django.db          import transaction
+from django.db.models   import Q
 
 def product_history_generator(product_code, quantity, price ,etc):
         now = datetime.now()
@@ -186,21 +187,17 @@ def product_code_generator(pg_code, cp_code):
         
         return product_code
 
-def print_barcode(barcodes, yymmdd):
-    barcodes = []
-
+def print_barcode(product_code, yymmdd):
     
+    name = ProductInfo.objects.get(product_code = product_code).name
 
-    return 
+    barcodes = ProductHis.objects.filter(
+        Q(product_code = product_code) & Q(barcode__icontains = yymmdd)
+    ).values('barcode')
+    
+    dict_print = []
+    for i in range(len(barcodes)):
+        dictx = dict({'name' : name, 'barcode' : barcodes[i]['barcode']})
+        dict_print.append(dictx)
 
-# SHVV00822110101001
-# SHVV00822110101002
-# SHVV00822110101003
-# SHVV00822110101004
-# SHVV00822110101005
-# SHVV00822110101006
-# SHVV00822110101007
-# SHVV00822110101008
-# SHVV00822110101009
-# SHVV00822110101010
-# SHVV00822110101011
+    return dict_print
