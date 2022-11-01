@@ -1,6 +1,7 @@
 from django.http        import JsonResponse
 from products.models    import *
 from datetime           import datetime
+from django.db          import transaction
 
 def product_history_generator(product_code, quantity, price ,etc):
         now = datetime.now()
@@ -96,11 +97,65 @@ def update_price(product_code, price, company_code):
             
         return print(f'제품 코드{product_code}이 {price}원에 {company_code}에서 출고되었습니다.')
 
-def set_product_history_generator(self):
+def set_product_history_generator(set_product_code, quantity, price, etc):
     now = datetime.now()
     year    = str(now.year)
     month   = str(now.month)
     day     = str(now.day) 
     today = year[2:4] + month + day    
 
-    return 
+    try:
+        with transaction.atomic():
+            # 기존 세트 상품이 있는지 확인
+            set_product_his = SetProductHis.objects.filter(set_product_code = set_product_code)
+            if not set_product_his.exists():
+                for i in range(1, int(quantity) + 1):
+                    set_product_quantity = str(i).zfill(3)
+                    root_num = '01'
+                    barcode = set_product_code + today + root_num + set_product_quantity
+
+                    SetProductHis.objects.create(
+                        use_status = 1,
+                        set_product_code = set_product_code,
+                        price = price,
+                        barcode = barcode,
+                        etc = etc
+                    )
+                return print('새로운 세트 상품 히스토리 생성완료')
+            else: #기존에 등록된 세트 상품
+                # set_product_code 기준 가장 마지막 상품의 히스토리 가져옴
+                latest_set_product_his = SetProductHis.objects.filter(set_product_code = set_product_code).latest('created_at')
+                barcode_yymmdd = latest_set_product_his.barcode[7:13]
+
+                if barcode_yymmdd == today:
+                    root_num = latest_set_product_his.barcode[13:15]
+
+                    for i in range(1, int(quantity) + 1):
+                        set_product_quantity = str(i).zfill(3)
+                        root_num2 = str(int(root_num) + 1).zfill(2)
+                        barcode = set_product_code + today + root_num2 + set_product_quantity
+
+                        SetProductHis.objects.create(
+                            use_status = 1,
+                            set_product_code = set_product_code,
+                            price = price,
+                            barcode = barcode,
+                            etc = etc
+                        )
+                # 새로운 날 세트 상품이 들어오기 때문에 로트는 1로 지정
+                else:
+                    for i in range(1, int(quantity)+1):
+                        set_product_quantity = str(i).zfill(3)
+                        root_num2 = "01"
+                        barcode = set_product_code + today + root_num2 + set_product_quantity
+
+                        SetProductHis.objects.create(
+                            use_status = 1,
+                            set_product_code = set_product_code,
+                            price = price,
+                            barcode = barcode,
+                            etc = etc
+                        )
+            return print('기존 제품을 참고하여 히스토리 생성완료')
+    except KeyError:
+        return JsonResponse({'message' : 'Key Error'}, status = 403)
