@@ -15,10 +15,8 @@ Including another URLconf
 """
 
 from django.urls    import path, include
-from users.views    import *
-from products.views import *
 
 urlpatterns = [
     path('api/user/', include('users.urls')),
-    path('api/product/', include('products.urls'))
+    path('api/product/', include('products.urls')),  
 ]

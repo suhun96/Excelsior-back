@@ -12,7 +12,7 @@ from products.models    import *
 
 # decorator & utills 
 from users.decorator    import jwt_decoder, check_status
-from products.utils     import product_history_generator, update_product_his, update_price
+from products.utils     import *
 
 class CreateProductGroupView(View):
     @jwt_decoder
@@ -99,53 +99,37 @@ class CreateProductInfoView(View):
         self.month   = str(now.month)
         self.day     = str(now.day) 
 
-    def serial_generator(self, pg_code, cp_code):
-        product_group  = ProductGroup.objects.filter(code = pg_code)
-        company        = Company.objects.filter(code = cp_code)
-        
-        # 제품 그룹이 있는지 체크
-        if product_group.exists() == False:
-            raise ValueError('Product group that does not exist.')
-        # 회사가 등록이 되어있는지
-        if company.exists() == False:
-            raise ValueError('Company (trade name) that does not exist.')
-
-        CPPG = cp_code + pg_code # SSPP 
-        # 형번을 생성 등록된 제품 정보를 참고해 CPPG 가 존재하면 그 다음 형번을 부여 없으면 1로 시작.
-        if ProductInfo.objects.filter(product_code__icontains = CPPG).exists():
-            latest_product_code = ProductInfo.objects.filter(product_code__icontains = CPPG).latest('created_at').product_code
-            model_number = int(latest_product_code[5:7]) + 1
-        else:
-            model_number = 1
-
-        model_number = str(model_number).zfill(3)
-        # 제품 시리얼 코드 생성 SSPP001
-        product_code = cp_code + pg_code + model_number
-        
-        return product_code
-
-
     def post(self, request):
         input_data = request.POST
 
         try:
-            product_code = self.serial_generator(input_data['pg_code'], input_data['cp_code'])
-            
-            print(product_code)
+            with transaction.atomic():
+                product_code = product_code_generator(input_data['pg_code'], input_data['cp_code'])
+                quantity = input_data['quantity']
 
-            ProductInfo.objects.create(
-                product_code = product_code,
-                quantity = input_data['quantity'],
-                safe_quantity = input_data['safe_quantity'],
-                search_word = input_data['search_word'],
-                name = input_data['name']
-                )
-
-
-            product_history_generator(product_code, input_data['quantity'],input_data['price'] ,input_data['etc'] )
-
-
-            return JsonResponse({'mesaage' : 'Product information has been registered.'}, status = 200) 
+                # 제품 정보만 등록    
+                if int(quantity) == 0:
+                    ProductInfo.objects.create(
+                        product_code = product_code,
+                        quantity = quantity,
+                        safe_quantity = input_data['safe_quantity'],
+                        search_word = input_data['search_word'],
+                        name = input_data['name']
+                    )
+                    return JsonResponse({f'{product_code}' : 'Product information has been registered.'}, status = 200)
+                
+                # 제품 정보 등록 & 수량 입력 바코드 생성
+                else:
+                    ProductInfo.objects.create(
+                        product_code = product_code,
+                        quantity = quantity,
+                        safe_quantity = input_data['safe_quantity'],
+                        search_word = input_data['search_word'],
+                        name = input_data['name']
+                    )
+                    product_history_generator(product_code, quantity ,input_data['price'] ,input_data['etc'] )
+                    return JsonResponse({f'{product_code}' : f'등록 되었습니다. 입력하신 {quantity} 만큼 바코드를 생성했습니다.'}, status = 200) 
+        
         except KeyError:
             return JsonResponse({'message' : 'Key error'}, status = 403)
 
@@ -179,8 +163,8 @@ class CreateInboundOrderView(View):
 
                 
                 for product_code in body_data.keys():
-                    # 입력된 값중 길이가 7 = 시리얼 코드
-                    if str(product_code[0:4]).isupper() == 4:
+                    # 입력값 필터링
+                    if str(product_code[0:4]).isupper() == True:
                         product_code = product_code # 시리얼 코드안에 있는 가격, 수량 정보 가져옴
                         print(product_code)
                         price = body_data[product_code]['price']
@@ -199,6 +183,7 @@ class CreateInboundOrderView(View):
                         product_history_generator(product_code, quantity, price, etc)
                         update_product_his(product_code) # 기존에 있는 수량과 입고된 수량 파악 후 저장.
                         update_price(product_code, price, company_code)
+                        
 
             return JsonResponse({'message' : 'Inbounding processing has been completed.'}, status = 200)
         except KeyError:
@@ -331,58 +316,57 @@ class CreateSetInfoView(View):
 
         CPPG = 'EX' + pg_code # SSPP 
         # 형번을 생성 등록된 제품 정보를 참고해 CPPG 가 존재하면 그 다음 형번을 부여 없으면 1로 시작.
-        if SetInfo.objects.filter(set_code__icontains = CPPG).exists():
-            latest_product_code = SetInfo.objects.filter(set_code__icontains = CPPG).latest('created_at').set_code
+        if SetProductInfo.objects.filter(set_product_code__icontains = CPPG).exists():
+            latest_product_code = SetProductInfo.objects.filter(set_product_code__icontains = CPPG).latest('created_at').set_product_code
             model_number = int(latest_product_code[5:7]) + 1
         else:
             model_number = 1
 
         model_number = str(model_number).zfill(3)
         # 제품 시리얼 코드 생성 SSPP001
-        set_code = CPPG + model_number
+        set_product_code = CPPG + model_number
         
-        return set_code
+        return set_product_code
 
 
     def post(self, request):
         input_data = json.loads(request.body)
-        set_code = self.serial_generator(input_data['pgcode'])
+        set_product_code = self.serial_generator(input_data['pgcode'])
         
-        # print(set_code)
         try:
-            new_set = SetInfo.objects.create(
-                set_code = set_code,
-                quantity = input_data['quantity'],
-                safe_quantity = input_data['safe_quantity'],
-                search_word = input_data['search_word'],
-                name = input_data['name']
-                )
-            
-            product_codes = input_data['product_code']
-            for product_code in product_codes:
-                quantity = int(product_codes[product_code])
-                if not ProductInfo.objects.filter(product_code__icontains = product_code).exists():
-                    raise Exception(f'{product_code} 가 존재하지 않습니다')
+            with transaction.atomic():
+                new_set = SetProductInfo.objects.create(
+                    set_product_code = set_product_code,
+                    quantity = input_data['quantity'],
+                    safe_quantity = input_data['safe_quantity'],
+                    search_word = input_data['search_word'],
+                    name = input_data['name']
+                    )
                 
-                SetProduct.objects.create(
-                    set_code = set_code,
-                    product_code = product_code,
-                    product_quantity = quantity
-                )
-
-
-            product_history_generator(set_code, input_data['quantity'],input_data['price'] ,input_data['etc'] )
-
+                product_codes = input_data['product_code']
+                for product_code in product_codes:
+                    quantity = int(product_codes[product_code])
+                    if not ProductInfo.objects.filter(product_code__icontains = product_code).exists():
+                        raise Exception(f'{product_code} 가 존재하지 않습니다')
+                    
+                    SetProductQuantity.objects.create(
+                        set_product_code = set_product_code,
+                        product_code = product_code,
+                        product_quantity = quantity
+                    )
+                
+                set_product_history_generator(set_product_code, input_data['quantity'],input_data['price'] ,input_data['etc'] )
 
             return JsonResponse({'mesaage' : 'Product information has been registered.'}, status = 200) 
         except KeyError:
             return JsonResponse({'mesaage' : 'Key Error'}, status = 403) 
+
+class CheckView(View):
+    def post(self, request):
+        data = request.POST
+        product_code = "SHVV008"
+        yymmdd = '221101'
+        barcodes = list(print_barcode(product_code, yymmdd))
         
-# class CheckView(View):
-#     def post(self, request):
-#         input_data = json.loads(request.body)
-#         print(input_data)
-#         A = input_data['product_code']['SHVV001']
-#         print(A)
-#         print(len(input_data['product_code']))
-#         return JsonResponse({'message' : "ok"})
+        return JsonResponse({'message' : barcodes}, status = 200)
+
