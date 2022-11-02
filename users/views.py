@@ -12,25 +12,29 @@ from users.decorator   import jwt_decoder
 
 # View
 class SignUpView(View):
-    @jwt_decoder
+    # @jwt_decoder
     def post(self, request):
         data = request.POST
-        user = request.user
+        # user = request.user
         
         try:
-            if not user.admin == True:
-                return JsonResponse({'messaga' : 'You do not have permission to create a member.'}, status = 403) 
+            # if not user.admin == True:
+            #     return JsonResponse({'messaga' : 'You do not have permission to create a member.'}, status = 403) 
 
             new_user , is_created = User.objects.get_or_create(
                 phone = data['phone'],
                 defaults = {
                 'phone'       : data['phone'],
                 'name'        : data['name'],
+                'email'       : data['email'],
+                'team'        : data['team'],
                 'password'    : 1234,            # 기본 비밀번호
-                'position'    : data['position'] 
-                # admin  기본적으로 False   / True = 관리자 , False = 일반회원
-                # status 기본적으로 True    / True = 활성화 , False = 비활성화      
-            })
+                'position'    : data['position'], 
+                'admin'       : 1
+                # admin  80 = 매니저  / 1 = 일반회원
+                # status 기본적으로 True    / True = 활성화 , False = 비활성화  
+                }
+                )
 
             if not is_created:
                 return JsonResponse({'messaga' : 'The phone number is already registered.'}, status = 403)
@@ -38,6 +42,8 @@ class SignUpView(View):
             check_user_info = list(User.objects.filter(id = new_user.id).values(
                 "phone",
                 "name",
+                'email',
+                'team', 
                 "password",
                 "position",
                 "admin",
