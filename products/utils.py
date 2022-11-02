@@ -188,14 +188,14 @@ def product_code_generator(pg_code, cp_code):
         return product_code
 
 def print_barcode(product_code, yymmdd):
-    
+    # 제품 정보에서 name 가져옴 (product_code를 이용)
     name = ProductInfo.objects.get(product_code = product_code).name
-
+    # product_code와 yymmdd를 바코드안에 넣어서 원하는 값을 찾음
     barcodes = ProductHis.objects.filter(
         Q(product_code = product_code) & Q(barcode__icontains = yymmdd)
     ).values('barcode')
     
-    dict_print = []
+    dict_print = [] # 딕셔너리를 생성한 뒤 수정사항 반영.
     for i in range(len(barcodes)):
         dictx = dict({'name' : name, 'barcode' : barcodes[i]['barcode']})
         dict_print.append(dictx)
