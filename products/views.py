@@ -2,7 +2,7 @@ import json
 
 from django.views       import View
 from django.http        import JsonResponse
-from django.db          import transaction
+from django.db          import transaction, connection
 from django.db.models   import Q
 from datetime           import datetime
 
@@ -361,12 +361,40 @@ class CreateSetInfoView(View):
         except KeyError:
             return JsonResponse({'mesaage' : 'Key Error'}, status = 403) 
 
-class CheckView(View):
+class PrintProductBarcodeView(View):
+    def __init__(self):
+        now = datetime.now()
+        year    = str(now.year)
+        month   = str(now.month).zfill(2)
+        day     = str(now.day).zfill(2)
+        self.today = year[2:4] + month + day
+
     def post(self, request):
-        data = request.POST
-        product_code = "SHVV008"
-        yymmdd = '221101'
-        barcodes = list(print_barcode(product_code, yymmdd))
+        input_data = request.POST
+        product_code = input_data['product_code']
+        yymmdd = self.today
+    
+        try:
+            product_info = ProductInfo.objects.filter(product_code = product_code)
+            print(len(connection.queries))
+            if not product_info.exists():
+                return JsonResponse({'mesaage' : '존재하지 않는 프로덕트 코드 입니다.'}, status = 403) 
+
+            if "yymmdd" in input_data:
+                yymmdd = input_data['yymmdd']
+            
+            barcodes = list(print_barcode(product_code, yymmdd))
+            print(len(connection.queries))
+            return JsonResponse({'barcodes' : barcodes }, status = 200) 
+        except KeyError:
+            return JsonResponse({'mesaage' : 'Key Error'}, status = 403) 
+
+# class CheckView(View):
+#     def post(self, request):
+#         data = request.POST
+#         product_code = "SHVV008"
+#         yymmdd = '221101'
+#         barcodes = list(print_barcode(product_code, yymmdd))
         
-        return JsonResponse({'message' : barcodes}, status = 200)
+#         return JsonResponse({'message' : barcodes}, status = 200)
 
