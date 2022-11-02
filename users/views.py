@@ -35,6 +35,7 @@ class SignUpView(View):
                 # status 기본적으로 True    / True = 활성화 , False = 비활성화  
                 }
                 )
+                
 
             if not is_created:
                 return JsonResponse({'messaga' : 'The phone number is already registered.'}, status = 403)
