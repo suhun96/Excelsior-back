@@ -1,4 +1,5 @@
-import jwt
+import jwt, bcrypt
+
 from django.views       import View
 from django.http        import JsonResponse
 from django.conf        import settings
@@ -12,48 +13,49 @@ from users.decorator   import jwt_decoder
 
 # View
 class SignUpView(View):
-    # @jwt_decoder
     def post(self, request):
         data = request.POST
-        # user = request.user
-        
+        password = data['password']
+
+        new_salt = bcrypt.gensalt()
+        bytes_password = password.encode('utf-8')
+        hashed_password = bcrypt.hashpw(bytes_password, new_salt)
+        decode_hash_pw = hashed_password.decode('utf-8')
+
         try:
-            # if not user.admin == True:
-            #     return JsonResponse({'messaga' : 'You do not have permission to create a member.'}, status = 403) 
+            with transaction.atomic():
+                new_user , is_created = User.objects.get_or_create(
+                    phone = data['phone'],
+                    defaults = {
+                    'phone'       : data['phone'],
+                    'name'        : data['name'],
+                    'email'       : data['email'],
+                    'team'        : data['team'],
+                    'password'    : decode_hash_pw,    # 기본 비밀번호
+                    'position'    : data['position'], 
+                    'admin'       : 0
+                    # admin  80 = 매니저  / 1 = 일반회원
+                    # status 기본적으로 True    / True = 활성화 , False = 비활성화  
+                    }
+                    )
 
-            new_user , is_created = User.objects.get_or_create(
-                phone = data['phone'],
-                defaults = {
-                'phone'       : data['phone'],
-                'name'        : data['name'],
-                'email'       : data['email'],
-                'team'        : data['team'],
-                'password'    : 1234,            # 기본 비밀번호
-                'position'    : data['position'], 
-                'admin'       : 1
-                # admin  80 = 매니저  / 1 = 일반회원
-                # status 기본적으로 True    / True = 활성화 , False = 비활성화  
-                }
-                )
-
-            if not is_created:
-                return JsonResponse({'messaga' : 'The phone number is already registered.'}, status = 403)
-            
-            check_user_info = list(User.objects.filter(id = new_user.id).values(
-                "phone",
-                "name",
-                'email',
-                'team', 
-                "password",
-                "position",
-                "admin",
-                "status"
-            )) 
-            
+                if not is_created:
+                    return JsonResponse({'messaga' : 'The phone number is already registered.'}, status = 403)
+                
+                check_user_info = list(User.objects.filter(id = new_user.id).values(
+                    "phone",
+                    "name",
+                    'email',
+                    'team', 
+                    "password",
+                    "position",
+                    "admin",
+                    "status"
+                )) 
+                
             return JsonResponse({'message' : check_user_info }, status = 200)
-
-        except:
-            return JsonResponse(status = 403)
+        except Exception:
+            return JsonResponse({'message' : '예외 사항이 발생해서 트랜잭션을 중지했습니다.'})
 
 class SignInView(View):
     def create_jwt_token(self, user_id, user_admin):
@@ -63,21 +65,22 @@ class SignInView(View):
 
     def post(self, request):
         signin_data = request.POST
-        
+        user = User.objects.filter(phone = signin_data['phone'])
         try:
-            if not User.objects.filter(phone = signin_data['phone']).exists() == True:
+            if not user.exists() == True:
                 return JsonResponse({'Message' : 'The mobile phone number you entered does not exist.'}, status = 402)
             
-            get_user_info = User.objects.get(phone = signin_data['phone'])
-            
-            if not get_user_info.password == signin_data['password']:
+            get_user_info = user.values('id', 'password', 'admin')[0]
+            phone = get_user_info('phone')
+            print[get_user_info]
+            if not str(get_user_info['phone']) == signin_data['password']:
                 return JsonResponse({'Message' : 'Please check the password.'}, status = 402)
             
-            jwt_token = self.create_jwt_token(get_user_info.id, get_user_info.admin)
+            jwt_token = self.create_jwt_token(get_user_info['id'], get_user_info['admin'])
             
             return JsonResponse({'message' : jwt_token }, status = 200)
-        except KeyError:
-            return JsonResponse({'message' : 'KEY_ERROR'} , status = 400)
+        except Exception as e:
+            return JsonResponse({'message' : e} , status = 400)
 
 class ModifyView(View):
     @jwt_decoder
