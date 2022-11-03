@@ -1,7 +1,7 @@
 import jwt, bcrypt ,re
 
 from django.views       import View
-from django.http        import JsonResponse
+from django.http        import JsonResponse ,HttpResponse
 from django.conf        import settings
 from django.db          import transaction
 
@@ -173,3 +173,8 @@ class UserListView(View):
         } for user in User_List]
 
         return JsonResponse({'user_list' : user_list} , status = 200)
+
+
+class CheckView(View): 
+    def get(self, request):
+        return HttpResponse('welcome yamuzin backend server')
