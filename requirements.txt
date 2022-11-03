@@ -1,32 +1,28 @@
-asgiref==3.5.0
-boto3==1.21.42
-botocore==1.24.42
-brotlipy==0.7.0
-certifi==2021.10.8
-cffi @ file:///private/var/folders/sy/f16zz6x50xz3113nwtb9bvq00000gp/T/croot-2p6q7e2r/cffi_1642701115063/work
-charset-normalizer @ file:///tmp/build/80754af9/charset-normalizer_1630003229654/work
-conda==4.12.0
-conda-content-trust @ file:///tmp/build/80754af9/conda-content-trust_1617045594566/work
-conda-package-handling @ file:///opt/concourse/worker/volumes/live/8fb3e065-760b-4a9d-4cd9-aca7fc8baf53/volume/conda-package-handling_1618262145611/work
-cryptography @ file:///opt/concourse/worker/volumes/live/3143e751-d0f4-457e-7dc5-b7eaa48a56a8/volume/cryptography_1633520383659/work
-Django==4.0.3
-django-cors-headers==3.11.0
-django-extensions==3.1.5
+asgiref==3.5.2
+bcrypt==4.0.1
+boto3==1.24.56
+botocore==1.27.56
+certifi==2022.6.15
+cffi==1.15.1
+charset-normalizer==2.1.0
+cryptography==37.0.4
+defusedxml==0.7.1
+Django==4.0.6
+django-allauth==0.51.0
+django-cors-headers==3.13.0
 gunicorn==20.1.0
-idna @ file:///tmp/build/80754af9/idna_1637925883363/work
-jmespath==1.0.0
-mysqlclient==2.1.1
-pycosat==0.6.3
-pycparser @ file:///tmp/build/80754af9/pycparser_1636541352034/work
-PyJWT @ file:///opt/concourse/worker/volumes/live/bd094316-1935-4bf0-5028-b889d4e7967c/volume/pyjwt_1619682501859/work
+idna==3.3
+jmespath==1.0.1
+oauthlib==3.2.0
+pycparser==2.21
+PyJWT==2.4.0
 PyMySQL==1.0.2
-pyOpenSSL @ file:///tmp/build/80754af9/pyopenssl_1635333100036/work
-PySocks @ file:///opt/concourse/worker/volumes/live/112288ac-9cb0-4e73-768b-13baf4ca6419/volume/pysocks_1605305820043/work
 python-dateutil==2.8.2
-requests @ file:///opt/conda/conda-bld/requests_1641824580448/work
-ruamel-yaml-conda @ file:///opt/concourse/worker/volumes/live/e81cf0fe-611a-498e-6e69-a7320057c1ac/volume/ruamel_yaml_1616016689696/work
-s3transfer==0.5.2
-six @ file:///tmp/build/80754af9/six_1623709665295/work
+python3-openid==3.2.0
+requests==2.28.1
+requests-oauthlib==1.3.1
+s3transfer==0.6.0
+six==1.16.0
 sqlparse==0.4.2
-tqdm @ file:///tmp/build/80754af9/tqdm_1635330843403/work
-urllib3==1.26.7
+urllib3==1.26.10
+
