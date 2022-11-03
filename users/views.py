@@ -12,14 +12,14 @@ from users.decorator   import jwt_decoder
 
 # View
 class SignUpView(View):
-    # @jwt_decoder
+    @jwt_decoder
     def post(self, request):
         data = request.POST
-        # user = request.user
+        user = request.user
         
         try:
-            # if not user.admin == True:
-            #     return JsonResponse({'messaga' : 'You do not have permission to create a member.'}, status = 403) 
+            if not user.admin == True:
+                return JsonResponse({'messaga' : 'You do not have permission to create a member.'}, status = 403) 
 
             new_user , is_created = User.objects.get_or_create(
                 phone = data['phone'],
@@ -63,21 +63,22 @@ class SignInView(View):
 
     def post(self, request):
         signin_data = request.POST
-        
+        user = User.objects.filter(phone = signin_data['phone'])
         try:
-            if not User.objects.filter(phone = signin_data['phone']).exists() == True:
+            if not user.exists() == True:
                 return JsonResponse({'Message' : 'The mobile phone number you entered does not exist.'}, status = 402)
             
-            get_user_info = User.objects.get(phone = signin_data['phone'])
-            
-            if not get_user_info.password == signin_data['password']:
+            get_user_info = user.values('id', 'password', 'admin')[0]
+            phone = get_user_info('phone')
+            print[get_user_info]
+            if not str(get_user_info['phone']) == signin_data['password']:
                 return JsonResponse({'Message' : 'Please check the password.'}, status = 402)
             
-            jwt_token = self.create_jwt_token(get_user_info.id, get_user_info.admin)
+            jwt_token = self.create_jwt_token(get_user_info['id'], get_user_info['admin'])
             
             return JsonResponse({'message' : jwt_token }, status = 200)
-        except KeyError:
-            return JsonResponse({'message' : 'KEY_ERROR'} , status = 400)
+        except Exception as e:
+            return JsonResponse({'message' : e} , status = 400)
 
 class ModifyView(View):
     @jwt_decoder
