@@ -174,7 +174,18 @@ class UserListView(View):
 
         return JsonResponse({'user_list' : user_list} , status = 200)
 
+class UserView(View):
+    @jwt_decoder
+    def get(request):
+        user = request.user
+        user_info = User.objects.get(id = user.id)
 
-class CheckView(View): 
-    def get(self, request):
-        return HttpResponse('welcome yamuzin backend server')
+        user_info = {
+            'phone' : user_info.phone,
+            'name'  : user_info.name,
+            'email' : user_info.email,
+            'team'  : user_info.team,
+            'position' : user_info.position
+        }
+        
+        return JsonResponse({'user_info' : user_info}, status = 200)
