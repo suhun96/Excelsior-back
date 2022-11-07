@@ -89,8 +89,6 @@ class PermissionSignUpView(View):
         except Exception:
             return JsonResponse({'message' : '예외 사항이 발생해서 트랜잭션을 중지했습니다.'}, status = 403)
 
-
-
 class SignInView(View):
     def create_jwt_token(self, user_id, user_admin):
         jwt_token = jwt.encode({'user_id' : user_id , 'admin' : user_admin, 'exp':datetime.utcnow() + timedelta(days = 3)}, settings.SECRET_KEY, settings.ALGORITHM)
@@ -130,6 +128,12 @@ class ModifyView(View):
 
                 if "name" in modify_data:
                     UOF.update(name = modify_data['name'])
+
+                if "email" in modify_data:
+                    UOF.update(email = modify_data['email'])
+
+                if "team" in modify_data:
+                    UOF.update(team = modify_data['team'])
 
                 if "password" in modify_data:
                     UOF.update(password = modify_data['password'])
