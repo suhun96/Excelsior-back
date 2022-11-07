@@ -174,7 +174,7 @@ class UserListView(View):
 
         return JsonResponse({'user_list' : user_list} , status = 200)
 
-class UserView(View):
+class UserInfoView(View):
     @jwt_decoder
     def get(request):
         user = request.user

@@ -18,7 +18,6 @@ from django.urls    import path, include
 from users.views import *
 
 urlpatterns = [
-    path('', CheckView.as_view()),
     path('api/user/', include('users.urls')),
     path('api/product/', include('products.urls')),  
 ]
