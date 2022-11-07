@@ -121,6 +121,15 @@ class ModifyView(View):
         modify_data = request.POST
         user= request.user 
         UOF = User.objects.filter(id = user.id)
+        password = modify_data['password']
+        
+        # 정규식 : 비밀번호
+        REGEX_PW    = '^(?=.{8,16}$)(?=.*[a-z])(?=.*[0-9]).*$'   # 비밀번호 정규표현식, 8자 이상 16자 이하, 소문자, 숫자 최소 하나 사용 
+        
+        # bcrypt
+        new_salt = bcrypt.gensalt()
+        bytes_password = password.encode('utf-8')
+        hashed_password = bcrypt.hashpw(bytes_password, new_salt)
         
         try:
             with transaction.atomic():
@@ -137,7 +146,14 @@ class ModifyView(View):
                     UOF.update(team = modify_data['team'])
 
                 if "password" in modify_data:
-                    UOF.update(password = modify_data['password'])
+                    if not re.fullmatch(REGEX_PW, password):
+                        return JsonResponse({'message' : '비밀번호 정규표현식, 8자 이상 16자 이하, 소문자, 숫자 최소 하나 사용 '}, status = 403)
+                    
+                    new_salt = bcrypt.gensalt()
+                    bytes_password = password.encode('utf-8')
+                    hashed_password = bcrypt.hashpw(bytes_password, new_salt)
+                    
+                    UOF.update(password = hashed_password)
 
                 if "position" in modify_data:
                     UOF.update(position = modify_data['position'])
