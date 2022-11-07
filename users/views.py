@@ -142,7 +142,7 @@ class ModifyView(View):
                     UOF.update(position = modify_data['position'])
 
 
-            return JsonResponse({'message' : 'Check update'}, status = 204)
+            return JsonResponse({'message' : 'Check update'}, status = 200)
 
         except KeyError:
             return JsonResponse({'message' : 'KEY_ERROR'} , status = 400)
