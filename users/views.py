@@ -77,7 +77,7 @@ class PermissionSignUpView(View):
         try:
             with transaction.atomic():
 
-                if not user.admin == False:
+                if user.admin == False:
                     return JsonResponse({'message' : '당신은 권한이 없습니다. '}, status = 403)
 
                 if User.objects.get(id = input_data['id']).status == False:
@@ -86,6 +86,7 @@ class PermissionSignUpView(View):
                 else:
                     User.objects.filter( id = input_data['id']).update( status = False )
                     return JsonResponse({'message' : '사용이 불허 되었습니다.'}, status = 200)
+
         except Exception:
             return JsonResponse({'message' : '예외 사항이 발생해서 트랜잭션을 중지했습니다.'}, status = 403)
 
