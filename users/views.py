@@ -165,21 +165,21 @@ class ChangeStatusView(View):
         except KeyError:
             return JsonResponse({'message' : 'KEY_ERROR'} , status = 400)
 
-class UserListView(View):
-    @jwt_decoder 
-    def get(self, request):
-        User_List = User.objects.all()
-        admin_user = request.user
+# class UserListView(View):
+#     @jwt_decoder 
+#     def get(self, request):
+#         User_List = User.objects.all()
+#         admin_user = request.user
 
-        user_list = [{
-            'use_id'    : user.id, 
-            'phone'     : user.phone,
-            'name'      : user.name,
-            'position'  : user.position,
-            'status'    : user.status
-        } for user in User_List]
+#         user_list = [{
+#             'use_id'    : user.id, 
+#             'phone'     : user.phone,
+#             'name'      : user.name,
+#             'position'  : user.position,
+#             'status'    : user.status
+#         } for user in User_List]
 
-        return JsonResponse({'user_list' : user_list} , status = 200)
+#         return JsonResponse({'user_list' : user_list} , status = 200)
 
 class UserInfoView(View):
     @jwt_decoder
