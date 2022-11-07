@@ -153,7 +153,7 @@ class ModifyView(View):
                     bytes_password = password.encode('utf-8')
                     hashed_password = bcrypt.hashpw(bytes_password, new_salt)
                     
-                    UOF.update(password = hashed_password)
+                    UOF.update(password = hashed_password.decode('utf-8'))
 
                 if "position" in modify_data:
                     UOF.update(position = modify_data['position'])
