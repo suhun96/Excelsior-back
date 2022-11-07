@@ -1,7 +1,7 @@
 import jwt, bcrypt ,re
 
 from django.views       import View
-from django.http        import JsonResponse ,HttpResponse
+from django.http        import JsonResponse 
 from django.conf        import settings
 from django.db          import transaction
 
@@ -46,7 +46,7 @@ class SignUpView(View):
                     'team'        : data['team'],
                     'password'    : hashed_password.decode('utf-8'),    # 기본 비밀번호
                     'position'    : data['position'], 
-                    'admin'       : 0 # admin  80 = 매니저 1 = 일반회원  status 기본적으로 True (True = 활성화 , False = 비활성화)  
+                    # admin  False / status 기본적으로 True (True = 활성화 , False = 비활성화)  
                     }
                     )
 
@@ -77,12 +77,15 @@ class PermissionSignUpView(View):
         try:
             with transaction.atomic():
 
-                if not user.admin == 80:
+                if not user.admin == False:
                     return JsonResponse({'message' : '당신은 권한이 없습니다. '}, status = 403)
 
-                User.objects.filter(id = input_data['id']).update(admin = 1)
-
-                return JsonResponse({'message' : 'ok'}, status = 200)
+                if User.objects.get(id = input_data['id']).status == False:
+                    User.objects.filter( id = input_data['id']).update( status = True)
+                    return JsonResponse({'message' : '사용이 허가 되었습니다'}, status = 200)
+                else:
+                    User.objects.filter( id = input_data['id']).update( status = False )
+                    return JsonResponse({'message' : '사용이 불허 되었습니다.'}, status = 200)
         except Exception:
             return JsonResponse({'message' : '예외 사항이 발생해서 트랜잭션을 중지했습니다.'}, status = 403)
 
