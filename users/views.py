@@ -66,7 +66,7 @@ class SignUpView(View):
                 
             return JsonResponse({'message' : check_user_info }, status = 200)
         except Exception:
-            return JsonResponse({'message' : '예외 사항이 발생해서 트랜잭션을 중지했습니다.'})
+            return JsonResponse({'message' : 'qwdf 예외 사항이 발생해서 트랜잭션을 중지했습니다.'})
 
 class PermissionSignUpView(View):
     @jwt_decoder
