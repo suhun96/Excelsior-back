@@ -176,7 +176,7 @@ class UserListView(View):
 
 class UserInfoView(View):
     @jwt_decoder
-    def get(request):
+    def get(self, request):
         user = request.user
         user_info = User.objects.get(id = user.id)
 
