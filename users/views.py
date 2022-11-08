@@ -1,7 +1,8 @@
 import jwt, bcrypt ,re
 
+from django.shortcuts   import render
 from django.views       import View
-from django.http        import JsonResponse 
+from django.http        import JsonResponse , HttpResponse
 from django.conf        import settings
 from django.db          import transaction
 
@@ -77,7 +78,7 @@ class PermissionSignUpView(View):
         try:
             with transaction.atomic():
 
-                if not user.admin == False:
+                if user.admin == False:
                     return JsonResponse({'message' : '당신은 권한이 없습니다. '}, status = 403)
 
                 if User.objects.get(id = input_data['id']).status == False:
@@ -86,6 +87,7 @@ class PermissionSignUpView(View):
                 else:
                     User.objects.filter( id = input_data['id']).update( status = False )
                     return JsonResponse({'message' : '사용이 불허 되었습니다.'}, status = 200)
+
         except Exception:
             return JsonResponse({'message' : '예외 사항이 발생해서 트랜잭션을 중지했습니다.'}, status = 403)
 
@@ -120,6 +122,15 @@ class ModifyView(View):
         modify_data = request.POST
         user= request.user 
         UOF = User.objects.filter(id = user.id)
+        password = modify_data['password']
+        
+        # 정규식 : 비밀번호
+        REGEX_PW    = '^(?=.{8,16}$)(?=.*[a-z])(?=.*[0-9]).*$'   # 비밀번호 정규표현식, 8자 이상 16자 이하, 소문자, 숫자 최소 하나 사용 
+        
+        # bcrypt
+        new_salt = bcrypt.gensalt()
+        bytes_password = password.encode('utf-8')
+        hashed_password = bcrypt.hashpw(bytes_password, new_salt)
         
         try:
             with transaction.atomic():
@@ -136,7 +147,14 @@ class ModifyView(View):
                     UOF.update(team = modify_data['team'])
 
                 if "password" in modify_data:
-                    UOF.update(password = modify_data['password'])
+                    if not re.fullmatch(REGEX_PW, password):
+                        return JsonResponse({'message' : '비밀번호 정규표현식, 8자 이상 16자 이하, 소문자, 숫자 최소 하나 사용 '}, status = 403)
+                    
+                    new_salt = bcrypt.gensalt()
+                    bytes_password = password.encode('utf-8')
+                    hashed_password = bcrypt.hashpw(bytes_password, new_salt)
+                    
+                    UOF.update(password = hashed_password.decode('utf-8'))
 
                 if "position" in modify_data:
                     UOF.update(position = modify_data['position'])
@@ -196,3 +214,7 @@ class UserInfoView(View):
         }
         
         return JsonResponse({'user_info' : user_info}, status = 200)
+
+class HealthCheckView(View):
+    def health(request):
+        return JsonResponse({"message" : "Hello world"}, status =200)
