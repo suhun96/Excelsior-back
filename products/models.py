@@ -1,5 +1,3 @@
-from codecs import BOM
-from email.policy import default
 from django.db      import models
 from users.models   import User
 
@@ -7,8 +5,6 @@ class ProductGroup(models.Model):
     name        = models.CharField(max_length = 60, blank = False)
     code        = models.CharField(max_length = 10, blank = False)
     etc         = models.CharField(max_length = 3000)
-    created_at  = models.DateTimeField(auto_now_add = True)
-    updated_at  = models.DateTimeField(auto_now = True)
 
     class Meta:
         db_table = 'product_groups'
@@ -22,15 +18,13 @@ class Company(models.Model): # managers 확인 하세요!
     mobilephone = models.CharField(max_length = 13, blank = False)
     manage_tag  = models.CharField(max_length = 30, blank = False)
     etc         = models.CharField(max_length = 3000, blank = False)
-    created_at  = models.DateTimeField(auto_now_add = True)
-    updated_at  = models.DateTimeField(auto_now = True)
 
     class Meta:
         db_table = 'companies'
 
 class ProductHis(models.Model):
-    use_status      = models.IntegerField(blank = False)
     product_code    = models.CharField(max_length = 10, blank = False)
+    status          = models.CharField(max_length = 20, blank = False)
     price           = models.BigIntegerField()
     barcode         = models.CharField(max_length = 20, blank = False)              
     etc             = models.CharField(max_length = 3000, blank = True)
@@ -40,8 +34,10 @@ class ProductHis(models.Model):
     class Meta:
         db_table = 'product_his'
 
+# Depth 1
 class ProductInfo(models.Model):
     product_code    = models.CharField(max_length = 10, blank = False)
+    depth           = models.IntegerField()
     quantity        = models.IntegerField()
     safe_quantity   = models.IntegerField()
     search_word     = models.CharField(max_length = 150, blank = False)
@@ -51,6 +47,28 @@ class ProductInfo(models.Model):
     
     class Meta:
         db_table = 'product_info'
+
+# Depth 2
+class BomProduct(models.Model):
+    product_code = models.CharField(max_length = 10, blank = False)
+    product_quantity = models.IntegerField()
+    product_price = models.IntegerField()
+
+    class Meta:
+        db_table = 'bom_product'
+
+# Depth 3
+class Set(models.Model):
+    product_code  = models.CharField(max_length = 10, blank = False)
+    quantity      = models.IntegerField()
+    safe_quantity = models.IntegerField()
+    search_word   = models.CharField(max_length = 150, blank = False)
+    name          = models.CharField(max_length = 100, blank = False)
+
+    class Meta:
+        db_table = 'sets'
+
+# ---------------------------------------------------------------------------------
 
 class InboundOrder(models.Model):
     user            = models.ForeignKey(User, on_delete = models.CASCADE)
@@ -70,6 +88,8 @@ class InboundQuantity(models.Model):
     
     class Meta:
         db_table = 'inbound_quantity'
+
+# ----------------------------------------------------------------------------------
 
 class OutboundOrder(models.Model):
     user            = models.ForeignKey(User, on_delete = models.CASCADE)
@@ -98,6 +118,8 @@ class OutboundBarcode(models.Model):
     class Meta:
         db_table = 'outbound_barcode'
 
+# -------------------------------------------------------------------------------
+
 class CompanyInboundPrice(models.Model):
     product_code = models.CharField(max_length = 10, blank = False)
     company_code = models.CharField(max_length = 5, blank = False)
@@ -116,15 +138,7 @@ class CompanyOutboundPrice(models.Model):
 
 #--------------------------------------------#
 
-class Bom(models.Model):
-    name = models.CharField(max_length = 300, blank = False)
-    etc  = models.CharField(max_length = 3000, blank = True)
-
-    class Meta:
-        db_table = 'bom' 
-
 class BomProduct(models.Model):
-    BOM = models.ForeignKey(Bom, on_delete = models.CASCADE)
     product_code = models.CharField(max_length = 10, blank = False)
     product_quantity = models.IntegerField()
     product_price = models.IntegerField()

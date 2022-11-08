@@ -29,23 +29,6 @@ class SignUpView(View):
         try:
             with transaction.atomic():
 
-<<<<<<< HEAD
-            new_user , is_created = User.objects.get_or_create(
-                phone = data['phone'],
-                defaults = {
-                'phone'       : data['phone'],
-                'name'        : data['name'],
-                'email'       : data['email'],
-                'team'        : data['team'],
-                'password'    : 1234,            # 기본 비밀번호
-                'position'    : data['position'], 
-                'admin'       : 1
-                # admin  80 = 매니저  / 1 = 일반회원
-                # status 기본적으로 True    / True = 활성화 , False = 비활성화  
-                }
-                )
-                
-=======
                 # 전화번호 형식 확인
                 if not re.fullmatch(REGEX_PHONE, data['phone']):
                     return JsonResponse({'message' : '010XXXXXXXX 형식을 따라주세요.'}, status = 403)
@@ -53,7 +36,6 @@ class SignUpView(View):
                 # 패스워드 형식 확인
                 if not re.fullmatch(REGEX_PW, password):
                     return JsonResponse({'message' : '비밀번호 정규표현식, 8자 이상 16자 이하, 소문자, 숫자 최소 하나 사용 '}, status = 403)
->>>>>>> main
 
                 new_user , is_created = User.objects.get_or_create(
                     phone = data['phone'],
