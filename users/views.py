@@ -216,4 +216,4 @@ class UserInfoView(View):
 
 class HealthCheckView(View):
     def health(request):
-        return HttpResponse('For Excelsior!')
+        return JsonResponse({"message" : "Hello world"}, status =200)
