@@ -22,54 +22,73 @@ class Company(models.Model): # managers 확인 하세요!
     class Meta:
         db_table = 'companies'
 
-class ProductHis(models.Model):
-    product_code    = models.CharField(max_length = 10, blank = False)
-    status          = models.CharField(max_length = 20, blank = False)
-    price           = models.BigIntegerField()
-    barcode         = models.CharField(max_length = 20, blank = False)              
-    etc             = models.CharField(max_length = 3000, blank = True)
-    created_at      = models.DateTimeField(auto_now_add = True)
-    updated_at      = models.DateTimeField(auto_now = True)
-
-    class Meta:
-        db_table = 'product_his'
+# -----------------------------------------------------------------
 
 # Depth 1
-class ProductInfo(models.Model):
-    product_code    = models.CharField(max_length = 10, blank = False)
-    depth           = models.IntegerField()
-    quantity        = models.IntegerField()
-    safe_quantity   = models.IntegerField()
-    search_word     = models.CharField(max_length = 150, blank = False)
-    name            = models.CharField(max_length = 100, blank = False)
-    created_at      = models.DateTimeField(auto_now_add = True)
-    updated_at      = models.DateTimeField(auto_now = True)
-    
-    class Meta:
-        db_table = 'product_info'
-
-# Depth 2
-class BomProduct(models.Model):
-    product_code = models.CharField(max_length = 10, blank = False)
-    product_quantity = models.IntegerField()
-    product_price = models.IntegerField()
-
-    class Meta:
-        db_table = 'bom_product'
-
-# Depth 3
-class Set(models.Model):
-    product_code  = models.CharField(max_length = 10, blank = False)
+class Component(models.Model):
+    code          = models.CharField(max_length = 10, blank = False)
     quantity      = models.IntegerField()
     safe_quantity = models.IntegerField()
     search_word   = models.CharField(max_length = 150, blank = False)
     name          = models.CharField(max_length = 100, blank = False)
+    etc           = models.CharField(max_length = 3000, blank = True)
+
+    class Meta:
+        db_table = 'components'
+
+# Depth 2
+class Bom(models.Model):
+    code          = models.CharField(max_length = 10, blank = False)
+    quantity      = models.IntegerField()
+    safe_quantity = models.IntegerField()
+    search_word   = models.CharField(max_length = 150, blank = False)
+    name          = models.CharField(max_length = 100, blank = False)
+    etc           = models.CharField(max_length = 3000, blank = True)
+
+    class Meta:
+        db_table = 'boms'
+
+class BomComponent(models.Model):
+    bom_code = models.CharField(max_length = 10, blank = False)
+    com_code = models.CharField(max_length = 10, blank = False)
+    com_quan = models.IntegerField()
+    
+    class Meta:
+        db_table = 'bom_components'
+
+# Depth 3
+class Set(models.Model):
+    code          = models.CharField(max_length = 10, blank = False)
+    quantity      = models.IntegerField()
+    safe_quantity = models.IntegerField()
+    search_word   = models.CharField(max_length = 150, blank = False)
+    name          = models.CharField(max_length = 100, blank = False)
+    etc          = models.CharField(max_length = 3000, blank = True)
 
     class Meta:
         db_table = 'sets'
 
-# ---------------------------------------------------------------------------------
+class SetComponent(models.Model):
+    set_code = models.CharField(max_length = 10, blank = False)
+    com_code = models.CharField(max_length = 10, blank = False)
+    com_quan = models.IntegerField()
 
+    class Meta:
+        db_table = 'set_components'
+
+# barcode history
+class ProductHis(models.Model):
+    code         = models.CharField(max_length = 10, blank = False)
+    barcode      = models.CharField(max_length = 20, blank = False)
+    status       = models.IntegerField(blank = False)
+    price        = models.BigIntegerField()
+    created_at   = models.DateTimeField(auto_now_add = True)
+    updated_at   = models.DateTimeField(auto_now = True)
+
+    class Meta:
+        db_table = 'product_his'
+
+# 입고 (Inbound)
 class InboundOrder(models.Model):
     user            = models.ForeignKey(User, on_delete = models.CASCADE)
     company_code    = models.CharField(max_length = 5, blank = False)
@@ -80,17 +99,16 @@ class InboundOrder(models.Model):
         db_table = 'inbound_order'
 
 class InboundQuantity(models.Model):
-    inbound_order   = models.ForeignKey(InboundOrder, on_delete = models.CASCADE)
-    product_code    = models.CharField(max_length = 10, blank = False)
-    inbound_price   = models.BigIntegerField()
-    inbound_quntity = models.IntegerField()
-    created_at      = models.DateTimeField(auto_now_add = True)
+    inbound_order    = models.ForeignKey(InboundOrder, on_delete = models.CASCADE)
+    product_code     = models.CharField(max_length = 10, blank = False)
+    inbound_price    = models.BigIntegerField()
+    inbound_quantity = models.IntegerField()
+    created_at       = models.DateTimeField(auto_now_add = True)
     
     class Meta:
         db_table = 'inbound_quantity'
 
-# ----------------------------------------------------------------------------------
-
+# 출고(Outbound)
 class OutboundOrder(models.Model):
     user            = models.ForeignKey(User, on_delete = models.CASCADE)
     company_code    = models.CharField(max_length = 5, blank = False)
@@ -109,88 +127,3 @@ class OutboundQuantity(models.Model):
     
     class Meta:
         db_table = 'outbound_quantity'
-        
-class OutboundBarcode(models.Model):
-    outbound_order = models.ForeignKey(OutboundOrder, on_delete = models.CASCADE)
-    barcode    = models.CharField(max_length = 40, blank = False)
-    created_at = models.DateTimeField(auto_now_add = True)
-    
-    class Meta:
-        db_table = 'outbound_barcode'
-
-# -------------------------------------------------------------------------------
-
-class CompanyInboundPrice(models.Model):
-    product_code = models.CharField(max_length = 10, blank = False)
-    company_code = models.CharField(max_length = 5, blank = False)
-    resent_price = models.BigIntegerField()
-
-    class Meta:
-        db_table = 'company_inbound_price'
-
-class CompanyOutboundPrice(models.Model):
-    product_code = models.CharField(max_length = 10, blank = False)
-    company_code = models.CharField(max_length = 5, blank = False)
-    resent_price = models.BigIntegerField()
-
-    class Meta:
-        db_table = 'company_outbound_price'
-
-#--------------------------------------------#
-
-class BomProduct(models.Model):
-    product_code = models.CharField(max_length = 10, blank = False)
-    product_quantity = models.IntegerField()
-    product_price = models.IntegerField()
-
-    class Meta:
-        db_table = 'bom_product'
-
-class OutboundBom(models.Model):
-    outbound_order = models.ForeignKey(OutboundOrder, on_delete = models.CASCADE)
-    BOM = models.ForeignKey(Bom, on_delete = models.CASCADE)
-
-    class Meta:
-        db_table = 'outbound_bom'
-
-#------------------------------------------------#
-
-class SetProductInfo(models.Model):
-    set_product_code = models.CharField(max_length = 10, blank = False)
-    quantity         = models.IntegerField()
-    safe_quantity    = models.IntegerField()
-    search_word      = models.CharField(max_length = 150, blank = False)
-    name             = models.CharField(max_length = 100, blank = False)
-    created_at       = models.DateTimeField(auto_now_add = True)
-    updated_at       = models.DateTimeField(auto_now = True)
-
-    class Meta:
-        db_table = 'set_product_info' 
-
-class SetProductQuantity(models.Model):
-    set_product_code = models.CharField(max_length = 10, blank = False)
-    product_code     = models.CharField(max_length = 10, blank = False)
-    product_quantity = models.IntegerField()
-
-    class Meta:
-        db_table = 'set_product_quan'
-
-class OutboundSetProductQuantity(models.Model):
-    outbound_order   = models.ForeignKey(OutboundOrder, on_delete = models.CASCADE)
-    set_product_code = models.CharField(max_length = 10, blank = False)
-    quantity         = models.IntegerField()
-
-    class Meta:
-        db_table = 'outbound_set_product_quan'
-
-class SetProductHis(models.Model):
-    use_status       = models.IntegerField(blank = False)
-    set_product_code = models.CharField(max_length = 10, blank = False)
-    price      = models.BigIntegerField()
-    barcode    = models.CharField(max_length = 20, blank = False)              
-    etc        = models.CharField(max_length = 3000, blank = True)
-    created_at = models.DateTimeField(auto_now_add = True)
-    updated_at = models.DateTimeField(auto_now = True)
-
-    class Meta:
-        db_table = 'set_product_his'
