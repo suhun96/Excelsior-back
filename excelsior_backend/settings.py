@@ -30,6 +30,10 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['3.39.18.177', 'yamuzin.net', '.yamuzin.net', '172.31.33.146']
 
+# timeout error
+SESSION_COOKIE_AGE = 1200
+SESSION_SAVE_EVERY_REQUEST = True
+
 
 # Application definition
 
@@ -129,22 +133,22 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # JWT
 ALGORITHM = ALGORITHM
 
-# LOGGING = {
-#     "version": 1,
-#     "disable_existing_loggers": False,
-#     "handlers": {
-#         "console": {
-#             "level": "DEBUG",
-#             "class": "logging.StreamHandler",
-#         },
-#     },
-#     "loggers": {
-#         "django.db.backends": {
-#             "handlers": ["console"],
-#             "level": "DEBUG",
-#         },
-#     },
-# }
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {
+            "level": "DEBUG",
+            "class": "logging.StreamHandler",
+        },
+    },
+    "loggers": {
+        "django.db.backends": {
+            "handlers": ["console"],
+            "level": "DEBUG",
+        },
+    },
+}
 
 ##CORS
 CORS_ORIGIN_ALLOW_ALL  = True
