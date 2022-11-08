@@ -1,7 +1,7 @@
 import jwt, bcrypt ,re
 
 from django.views       import View
-from django.http        import JsonResponse 
+from django.http        import JsonResponse , HttpResponse
 from django.conf        import settings
 from django.db          import transaction
 
@@ -213,3 +213,7 @@ class UserInfoView(View):
         }
         
         return JsonResponse({'user_info' : user_info}, status = 200)
+
+class HealthCheckView(View):
+    def health(request):
+        return HttpResponse('For Excelsior!')
