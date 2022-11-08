@@ -1,5 +1,6 @@
 import jwt, bcrypt ,re
 
+from django.shortcuts   import render
 from django.views       import View
 from django.http        import JsonResponse , HttpResponse
 from django.conf        import settings
@@ -216,4 +217,4 @@ class UserInfoView(View):
 
 class HealthCheckView(View):
     def health(request):
-        return HttpResponse('For Excelsior!')
+        return JsonResponse({"message" : "Hello world"}, status =200)
