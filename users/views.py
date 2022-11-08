@@ -116,6 +116,17 @@ class SignInView(View):
         except Exception as e:
             return JsonResponse({'message' : e} , status = 400)
 
+class CheckPasswordView(View):
+    @jwt_decoder
+    def post(self, request):
+        input_password = request.POST['password']
+        user = request.user
+        try_user_password = User.objects.get(id = user.id).password
+        if bcrypt.checkpw(input_password.encode('utf-8'),try_user_password.encode('utf-8')) == False:
+            return JsonResponse({'message' : 'no'}, status = 400)
+
+        return JsonResponse({'message' : 'ok' }, status = 200)
+
 class ModifyView(View):
     @jwt_decoder
     def post(self, request):
