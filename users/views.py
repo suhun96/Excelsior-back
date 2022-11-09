@@ -215,17 +215,32 @@ class UserInfoView(View):
     def get(self, request):
         user = request.user
         user_info = User.objects.get(id = user.id)
+        check_admin = user_info.admin
+        try:
+            user_info = {
+                    'phone' : user_info.phone,
+                    'name'  : user_info.name,
+                    'email' : user_info.email,
+                    'team'  : user_info.team,
+                    'position' : user_info.position,
+                    'admin' : user_info.admin
+                }
 
-        user_info = {
-            'phone' : user_info.phone,
-            'name'  : user_info.name,
-            'email' : user_info.email,
-            'team'  : user_info.team,
-            'position' : user_info.position,
-            'admin' : user_info.admin
-        }
-        
-        return JsonResponse({'user_info' : user_info}, status = 200)
+            if not check_admin == 1:
+                return JsonResponse({'user_info' : user_info}, status = 200)
+            
+            if check_admin == 1:
+                user_list = list(User.objects.filter().values(
+                    'phone',
+                    'name',
+                    'email',
+                    'team',
+                    'position',
+                    'admin'
+                ))
+                return JsonResponse({'user_info' : user_info, 'user_list' : user_list}, status = 200)
+        except:
+            return JsonResponse({'message' : "예외 사항 발생"}, status = 403)
 
 class HealthCheckView(View):
     def health(request):
