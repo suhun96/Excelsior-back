@@ -5,7 +5,7 @@ from products.views import *
 
 urlpatterns = [
     path('group', ProductGroupView.as_view()),
-    path('company', CreateCompanyView.as_view()),
+    path('company', CompanyView.as_view()),
     # path('info', CreateProductInfoView.as_view()),
     # path('inbound', CreateInboundOrderView.as_view()),
     # path('outbound', CreateOutboundOrderView.as_view()),

@@ -71,7 +71,20 @@ class ProductGroupView(View):
         except KeyError:
             return JsonResponse({'message' : 'KEY ERROR'}, status = 403)
 
-class CreateCompanyView(View):
+class CompanyView(View):
+    def get(self, request):
+        name = request.GET.get('name')
+        
+        q = Q()
+        if name:
+            q &= Q(name__icontains = name)
+        
+        result = list(Company.objects.filter(q).values())
+
+        return JsonResponse({'message' : result} , status = 200)
+        
+
+    
     @jwt_decoder
     @check_status
     def post(self, request):
