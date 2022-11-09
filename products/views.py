@@ -1,5 +1,3 @@
-import json
-
 from django.views       import View
 from django.http        import JsonResponse
 from django.db          import transaction, connection
@@ -16,9 +14,30 @@ from products.utils     import *
 
 class ProductGroupView(View):
     def get(self, request):
+        name = request.GET.get('name', None)
+        code = request.GET.get('code', None)
+        sort = request.GET.get('sort', None)
+        try:
+            q = Q()
+            if name:
+                q &= Q(name__icontains = name)
+            if code:
+                q &= Q(code__icontains = code)
+
+            order_condition = {
+                'up' : 'name',
+                'down' : '-name'
+            }
+            if sort in order_condition:
+                sort = (order_condition[sort])
+
+            
+            result = list(ProductGroup.objects.filter(q).order_by(sort).values())
         
-        return JsonResponse({'message' : 'check'}, status = 200)
-    
+            return JsonResponse({'message' : result}, status = 200)
+        except:
+            return JsonResponse({'message' : '예외 상황 발생'}, status = 403)
+   
     @jwt_decoder
     @check_status
     def post(self, request):
