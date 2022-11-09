@@ -194,6 +194,7 @@ class ChangeStatusView(View):
         except KeyError:
             return JsonResponse({'message' : 'KEY_ERROR'} , status = 400)
 
+<<<<<<< HEAD
 # class UserListView(View):
 #     @jwt_decoder 
 #     def get(self, request):
@@ -209,13 +210,35 @@ class ChangeStatusView(View):
 #         } for user in User_List]
 
 #         return JsonResponse({'user_list' : user_list} , status = 200)
+=======
+class UserListView(View):
+    @jwt_decoder 
+    def get(self, request):
+        user = request.user
+        check_admin = user.admin
+
+        if check_admin == False:
+            return JsonResponse({'message' : "권한이 없는 유저입니다."}, status = 403)
+
+        else:
+            user_list = list(User.objects.all().values(
+                'phone',
+                'name',
+                'email',
+                'team',
+                'position',
+                'admin',
+                'status'
+            )) 
+            return JsonResponse({'user_list' : user_list} , status = 200)
+>>>>>>> origin
 
 class UserInfoView(View):
     @jwt_decoder
     def get(self, request):
         user = request.user
         user_info = User.objects.get(id = user.id)
-        check_admin = user_info.admin
+
         try:
             user_info = {
                     'phone' : user_info.phone,
@@ -226,19 +249,7 @@ class UserInfoView(View):
                     'admin' : user_info.admin
                 }
 
-            if not check_admin == 1:
-                return JsonResponse({'user_info' : user_info}, status = 200)
-            
-            if check_admin == 1:
-                user_list = list(User.objects.filter().values(
-                    'phone',
-                    'name',
-                    'email',
-                    'team',
-                    'position',
-                    'admin'
-                ))
-                return JsonResponse({'user_info' : user_info, 'user_list' : user_list}, status = 200)
+            return JsonResponse({'user_info' : user_info}, status = 200)
         except:
             return JsonResponse({'message' : "예외 사항 발생"}, status = 403)
 
