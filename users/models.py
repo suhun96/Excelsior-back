@@ -10,7 +10,7 @@ class User(models.Model):
     team        = models.CharField(max_length = 100)
     password    = models.CharField(max_length = 500, blank = False)
     position    = models.CharField(max_length = 50)
-    admin       = models.IntegerField(default = False, blank = False)
+    admin       = models.BooleanField(default = False)
     status      = models.BooleanField(default = True)
     created_at  = models.DateTimeField(auto_now_add = True)
     updated_at  = models.DateTimeField(auto_now = True)

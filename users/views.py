@@ -1,7 +1,8 @@
 import jwt, bcrypt ,re
 
+from django.shortcuts   import render
 from django.views       import View
-from django.http        import JsonResponse
+from django.http        import JsonResponse , HttpResponse
 from django.conf        import settings
 from django.db          import transaction
 
@@ -46,7 +47,7 @@ class SignUpView(View):
                     'team'        : data['team'],
                     'password'    : hashed_password.decode('utf-8'),    # 기본 비밀번호
                     'position'    : data['position'], 
-                    'admin'       : 0 # admin  80 = 매니저 1 = 일반회원  status 기본적으로 True (True = 활성화 , False = 비활성화)  
+                    # admin  False / status 기본적으로 True (True = 활성화 , False = 비활성화)  
                     }
                     )
 
@@ -77,16 +78,18 @@ class PermissionSignUpView(View):
         try:
             with transaction.atomic():
 
-                if not user.admin == 80:
+                if user.admin == False:
                     return JsonResponse({'message' : '당신은 권한이 없습니다. '}, status = 403)
 
-                User.objects.filter(id = input_data['id']).update(admin = 1)
+                if User.objects.get(id = input_data['id']).status == False:
+                    User.objects.filter( id = input_data['id']).update( status = True)
+                    return JsonResponse({'message' : '사용이 허가 되었습니다'}, status = 200)
+                else:
+                    User.objects.filter( id = input_data['id']).update( status = False )
+                    return JsonResponse({'message' : '사용이 불허 되었습니다.'}, status = 200)
 
-                return JsonResponse({'message' : 'ok'}, status = 200)
         except Exception:
             return JsonResponse({'message' : '예외 사항이 발생해서 트랜잭션을 중지했습니다.'}, status = 403)
-
-
 
 class SignInView(View):
     def create_jwt_token(self, user_id, user_admin):
@@ -113,12 +116,32 @@ class SignInView(View):
         except Exception as e:
             return JsonResponse({'message' : e} , status = 400)
 
+class CheckPasswordView(View):
+    @jwt_decoder
+    def post(self, request):
+        input_password = request.POST['password']
+        user = request.user
+        try_user_password = User.objects.get(id = user.id).password
+        if bcrypt.checkpw(input_password.encode('utf-8'),try_user_password.encode('utf-8')) == False:
+            return JsonResponse({'message' : 'no'}, status = 400)
+
+        return JsonResponse({'message' : 'ok' }, status = 200)
+
 class ModifyView(View):
     @jwt_decoder
     def post(self, request):
         modify_data = request.POST
         user= request.user 
         UOF = User.objects.filter(id = user.id)
+        password = modify_data['password']
+        
+        # 정규식 : 비밀번호
+        REGEX_PW    = '^(?=.{8,16}$)(?=.*[a-z])(?=.*[0-9]).*$'   # 비밀번호 정규표현식, 8자 이상 16자 이하, 소문자, 숫자 최소 하나 사용 
+        
+        # bcrypt
+        new_salt = bcrypt.gensalt()
+        bytes_password = password.encode('utf-8')
+        hashed_password = bcrypt.hashpw(bytes_password, new_salt)
         
         try:
             with transaction.atomic():
@@ -128,8 +151,21 @@ class ModifyView(View):
                 if "name" in modify_data:
                     UOF.update(name = modify_data['name'])
 
+                if "email" in modify_data:
+                    UOF.update(email = modify_data['email'])
+
+                if "team" in modify_data:
+                    UOF.update(team = modify_data['team'])
+
                 if "password" in modify_data:
-                    UOF.update(password = modify_data['password'])
+                    if not re.fullmatch(REGEX_PW, password):
+                        return JsonResponse({'message' : '비밀번호 정규표현식, 8자 이상 16자 이하, 소문자, 숫자 최소 하나 사용 '}, status = 403)
+                    
+                    new_salt = bcrypt.gensalt()
+                    bytes_password = password.encode('utf-8')
+                    hashed_password = bcrypt.hashpw(bytes_password, new_salt)
+                    
+                    UOF.update(password = hashed_password.decode('utf-8'))
 
                 if "position" in modify_data:
                     UOF.update(position = modify_data['position'])
@@ -173,3 +209,23 @@ class UserListView(View):
         } for user in User_List]
 
         return JsonResponse({'user_list' : user_list} , status = 200)
+
+class UserInfoView(View):
+    @jwt_decoder
+    def get(self, request):
+        user = request.user
+        user_info = User.objects.get(id = user.id)
+
+        user_info = {
+            'phone' : user_info.phone,
+            'name'  : user_info.name,
+            'email' : user_info.email,
+            'team'  : user_info.team,
+            'position' : user_info.position
+        }
+        
+        return JsonResponse({'user_info' : user_info}, status = 200)
+
+class HealthCheckView(View):
+    def health(request):
+        return JsonResponse({"message" : "Hello world"}, status =200)
