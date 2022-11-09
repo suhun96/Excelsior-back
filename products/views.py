@@ -104,7 +104,7 @@ class CompanyView(View):
         return JsonResponse({'message' : result} , status = 200)
 
     @jwt_decoder
-    @check_status
+    @check_status 
     def post(self, request):
         input_data = request.POST
 
@@ -194,35 +194,26 @@ class ComponentInfoView(View):
 
     def put(self, request):
         body_data= json.loads(request.body)
+        # try:
+        comp_id = request.GET.get('id')
+        component = Component.objects.filter(id = comp_id)
 
-        try:
-            comp_id = request.GET.get('id')
-            component = Component.objects.filter(id = comp_id)
+        if component.exists() == False:
+            return JsonResponse({'message' : "존재하지 않는 제품입니다."})
 
-            if component.exists() == False:
-                return JsonResponse({'message' : "존재하지 않는 제품입니다."})
+        with transaction.atomic():
+            UPDATE_SET = {}
+            
+            for key, value in body_data.items():
+                UPDATE_SET.update({key : value})
+            
+            Component.objects.update(**UPDATE_SET)
 
-            with transaction.atomic():
-                if body_data == {}:
-                    return JsonResponse({'message' : 'No data contents to be modified.'}, status = 403)
-                
-                if "name" in body_data:
-                    component.update(name = body_data['name'])
-
-                if "search_word" in body_data:
-                    component.update(search_word = body_data['search_word'])
-
-                if "safe_quantity" in body_data:
-                    component.update(safe_quantity = body_data['safe_quantity'])
-
-                if "etc" in body_data:
-                    component.update(etc = body_data['etc'])
-
-            return JsonResponse({'message' : 'Check update'}, status = 200)
-        except KeyError:
-            return JsonResponse({'message' : 'KeyError'}, status = 403)
-        except:
-            return JsonResponse({'message' : '예외 사항 발생'}, status = 403)
+        return JsonResponse({'message' : 'Check update'}, status = 200)
+        # except KeyError:
+        #     return JsonResponse({'message' : 'KeyError'}, status = 403)
+        # except:
+        #     return JsonResponse({'message' : '예외 사항 발생'}, status = 403)
           
 class CreateBomInfoView(View):
     def post(self, request):
