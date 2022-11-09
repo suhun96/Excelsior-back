@@ -122,7 +122,7 @@ class CheckPasswordView(View):
         input_password = request.POST['password']
         user = request.user
         try_user_password = User.objects.get(id = user.id).password
-        if bcrypt.checkpw(input_password.encode('utf-8'),try_user_password.encode('utf-8')) == False:
+        if bcrypt.checkpw(input_password.encode('utf-8'), try_user_password.encode('utf-8')) == False:
             return JsonResponse({'message' : 'no'}, status = 400)
 
         return JsonResponse({'message' : 'ok' }, status = 200)
@@ -221,7 +221,8 @@ class UserInfoView(View):
             'name'  : user_info.name,
             'email' : user_info.email,
             'team'  : user_info.team,
-            'position' : user_info.position
+            'position' : user_info.position,
+            'admin' : user_info.admin
         }
         
         return JsonResponse({'user_info' : user_info}, status = 200)
