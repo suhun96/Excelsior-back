@@ -1,3 +1,5 @@
+import json
+
 from django.views       import View
 from django.http        import JsonResponse
 from django.db          import transaction, connection
@@ -73,18 +75,34 @@ class ProductGroupView(View):
 
 class CompanyView(View):
     def get(self, request):
-        name = request.GET.get('name')
+        name = request.GET.get('name', None)
+        code = request.GET.get('code', None)
+        manager = request.GET.get('manager', None)
+        address = request.GET.get('address', None)
+        telephone = request.GET.get('telephone', None)
+        mobilephone = request.GET.get('mobilephone', None)
+        manage_tag = request.GET.get('manage_tag', None)
         
         q = Q()
         if name:
             q &= Q(name__icontains = name)
-        
+        if code:
+            q &= Q(code__icontains = code)
+        if manager:
+            q &= Q(managers__icontains = manager)
+        if address:
+            q &= Q(address__icontains = address)
+        if telephone:
+            q &= Q(telephone__icontains = telephone)
+        if mobilephone:
+            q &= Q(mobilephone__icontains = mobilephone)
+        if manage_tag:
+            q &= Q(manage_tag__icontains = manage_tag)
+
         result = list(Company.objects.filter(q).values())
 
         return JsonResponse({'message' : result} , status = 200)
-        
 
-    
     @jwt_decoder
     @check_status
     def post(self, request):
@@ -127,10 +145,37 @@ class CompanyView(View):
         except KeyError:
             return JsonResponse({'message' : 'KEY ERROR'}, status = 403)
 
-class CreateComponentInfoView(View):
+class ComponentInfoView(View):
+    def get(self, request):
+        code = request.GET.get('code')
+        search_word = request.GET.get('search_word')
+        name = request.GET.get('name')
+
+        try:
+            q = Q()
+            if name:
+                q &= Q(name__icontains = name)
+            if code:
+                q &= Q(code__icontains = code)
+            if search_word:
+                q &= Q(search_word__icontains = search_word)
+            
+            result = list(Component.objects.filter(q).values(
+                'code',
+                'quantity',
+                'safe_quantity',
+                'search_word',
+                'name',
+                'etc'
+            ))
+        
+            return JsonResponse({'message' : result}, status = 200)
+        except:
+            return JsonResponse({'message' : '예외 상황 발생'}, status = 403)
+    
     def post(self, request):
         input_data = request.POST
-
+        print(input_data)
         try:
             with transaction.atomic():
                 component_code = component_code_generator(input_data['pg_code'], input_data['cp_code'])
@@ -143,10 +188,42 @@ class CreateComponentInfoView(View):
                     search_word = input_data['search_word'],
                     name = input_data['name']
                 )
-            return JsonResponse({f'{component_code}' : 'Product information has been registered.'}, status = 200)
+                return JsonResponse({f'{component_code}' : 'Product information has been registered.'}, status = 200)
         except KeyError:
             return JsonResponse({'message' : 'Key error'}, status = 403)
 
+    def put(self, request):
+        body_data= json.loads(request.body)
+
+        try:
+            comp_id = request.GET.get('id')
+            component = Component.objects.filter(id = comp_id)
+
+            if component.exists() == False:
+                return JsonResponse({'message' : "존재하지 않는 제품입니다."})
+
+            with transaction.atomic():
+                if body_data == {}:
+                    return JsonResponse({'message' : 'No data contents to be modified.'}, status = 403)
+                
+                if "name" in body_data:
+                    component.update(name = body_data['name'])
+
+                if "search_word" in body_data:
+                    component.update(search_word = body_data['search_word'])
+
+                if "safe_quantity" in body_data:
+                    component.update(safe_quantity = body_data['safe_quantity'])
+
+                if "etc" in body_data:
+                    component.update(etc = body_data['etc'])
+
+            return JsonResponse({'message' : 'Check update'}, status = 200)
+        except KeyError:
+            return JsonResponse({'message' : 'KeyError'}, status = 403)
+        except:
+            return JsonResponse({'message' : '예외 사항 발생'}, status = 403)
+          
 class CreateBomInfoView(View):
     def post(self, request):
         input_data = request.POST

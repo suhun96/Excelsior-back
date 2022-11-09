@@ -32,7 +32,8 @@ class Component(models.Model):
     search_word   = models.CharField(max_length = 150, blank = False)
     name          = models.CharField(max_length = 100, blank = False)
     etc           = models.CharField(max_length = 3000, blank = True)
-
+    created_at    = models.DateTimeField(auto_now_add = True)
+    
     class Meta:
         db_table = 'components'
 
