@@ -213,7 +213,6 @@ class ComponentInfoView(View):
 
     def put(self, request):
         body_data= json.loads(request.body)
-        # try:
         comp_code = request.GET.get('code')
         component = Component.objects.filter(code = comp_code)
 
