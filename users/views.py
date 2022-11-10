@@ -81,11 +81,11 @@ class PermissionSignUpView(View):
                 if user.admin == False:
                     return JsonResponse({'message' : '당신은 권한이 없습니다. '}, status = 403)
 
-                if User.objects.get(id = input_data['id']).status == False:
-                    User.objects.filter( id = input_data['id']).update( status = True)
+                if User.objects.get(phone = input_data['phone']).status == False:
+                    User.objects.filter( phone = input_data['phone']).update( status = True)
                     return JsonResponse({'message' : '사용이 허가 되었습니다'}, status = 200)
                 else:
-                    User.objects.filter( id = input_data['id']).update( status = False )
+                    User.objects.filter( phone = input_data['phone']).update( status = False )
                     return JsonResponse({'message' : '사용이 불허 되었습니다.'}, status = 200)
 
         except Exception:
@@ -115,6 +115,17 @@ class SignInView(View):
             return JsonResponse({'message' : jwt_token }, status = 200)
         except Exception as e:
             return JsonResponse({'message' : e} , status = 400)
+
+class CheckPasswordView(View):
+    @jwt_decoder
+    def post(self, request):
+        input_password = request.POST['password']
+        user = request.user
+        try_user_password = User.objects.get(id = user.id).password
+        if bcrypt.checkpw(input_password.encode('utf-8'), try_user_password.encode('utf-8')) == False:
+            return JsonResponse({'message' : 'no'}, status = 400)
+
+        return JsonResponse({'message' : 'ok' }, status = 200)
 
 class ModifyView(View):
     @jwt_decoder
@@ -186,18 +197,23 @@ class ChangeStatusView(View):
 class UserListView(View):
     @jwt_decoder 
     def get(self, request):
-        User_List = User.objects.all()
-        admin_user = request.user
+        user = request.user
+        check_admin = user.admin
 
-        user_list = [{
-            'use_id'    : user.id, 
-            'phone'     : user.phone,
-            'name'      : user.name,
-            'position'  : user.position,
-            'status'    : user.status
-        } for user in User_List]
+        if check_admin == False:
+            return JsonResponse({'message' : "권한이 없는 유저입니다."}, status = 403)
 
-        return JsonResponse({'user_list' : user_list} , status = 200)
+        else:
+            user_list = list(User.objects.all().values(
+                'phone',
+                'name',
+                'email',
+                'team',
+                'position',
+                'admin',
+                'status'
+            )) 
+            return JsonResponse({'user_list' : user_list} , status = 200)
 
 class UserInfoView(View):
     @jwt_decoder
@@ -205,15 +221,19 @@ class UserInfoView(View):
         user = request.user
         user_info = User.objects.get(id = user.id)
 
-        user_info = {
-            'phone' : user_info.phone,
-            'name'  : user_info.name,
-            'email' : user_info.email,
-            'team'  : user_info.team,
-            'position' : user_info.position
-        }
-        
-        return JsonResponse({'user_info' : user_info}, status = 200)
+        try:
+            user_info = {
+                    'phone' : user_info.phone,
+                    'name'  : user_info.name,
+                    'email' : user_info.email,
+                    'team'  : user_info.team,
+                    'position' : user_info.position,
+                    'admin' : user_info.admin
+                }
+
+            return JsonResponse({'user_info' : user_info}, status = 200)
+        except:
+            return JsonResponse({'message' : "예외 사항 발생"}, status = 403)
 
 class HealthCheckView(View):
     def health(request):
