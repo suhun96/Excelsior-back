@@ -233,27 +233,219 @@ class ComponentInfoView(View):
         except:
             return JsonResponse({'message' : '예외 사항 발생'}, status = 403)
           
-class CreateBomInfoView(View):
+class BomInfoView(View):
+    def get(self, request):
+        code = request.GET.get('code', None)
+        search_word = request.GET.get('search_word')
+        name = request.GET.get('name')
+
+        try:
+            if code == None:
+                q = Q()
+                if name:
+                    q &= Q(name__icontains = name)
+                if code:
+                    q &= Q(code__icontains = code)
+                if search_word:
+                    q &= Q(search_word__icontains = search_word)
+                
+                result = list(Bom.objects.filter(q).values(
+                'code',
+                'quantity',
+                'safe_quantity',
+                'search_word',
+                'name',
+                'etc'
+                ))
+                
+                return JsonResponse({'bom_info' : result}, status = 200)
+            
+            if code == code:
+                result = list(Bom.objects.filter(code = code).values(
+                    'code',
+                    'quantity',
+                    'safe_quantity',
+                    'search_word',
+                    'name',
+                    'etc'
+                ))
+                bom_comp_codes = BomComponent.objects.filter(bom_code = code).values('com_code', 'com_quan')
+                dict = {}
+                for code in bom_comp_codes:
+                    dict.update({code['com_code'] : code['com_quan']})
+            
+                return JsonResponse({'Info' : result, 'component' : dict}, status = 200)
+        except:
+            return JsonResponse({'message' : '예외 상황 발생'}, status = 403)
+
     def post(self, request):
-        input_data = request.POST
+        input_data = json.loads(request.body)
 
         try:
             with transaction.atomic():
-                bom_code = component_code_generator(input_data['pg_code'], input_data['cp_code'])
+                bom_code = component_code_generator(input_data['pg_code'], 'HV')
 
                 # 제품 정보
-                new_bom = Bom.objects.create(
+                Bom.objects.create(
                     code = bom_code,
                     quantity = 0,
                     safe_quantity = input_data['safe_quantity'],
                     search_word = input_data['search_word'],
                     name = input_data['name']
                 )
+                # BomComponent 생성
+                for com_code, quantity in input_data['com_codes'].items():
+                    BomComponent.objects.create(
+                        bom_code = bom_code,
+                        com_code = com_code,
+                        com_quan = quantity
+                    )
             return JsonResponse({f'{bom_code}' : 'Product information has been registered.'}, status = 200)
         except KeyError:
             return JsonResponse({'message' : 'Key error'}, status = 403)
 
-        
+    def put(self, request):
+        modify_data = json.loads(request.body)
+        bom_code = request.GET.get('code')
+        bom = Bom.objects.filter(code = bom_code)
+
+        if bom.exists() == False:
+            return JsonResponse({'message' : '존재하지 않는 제품입니다.'}, status = 403)
+        try:
+            with transaction.atomic():
+                UPDATE_SET = {}
+                
+                for key, value in modify_data.items():
+                    check_list = ['quantity', 'safe_quantity', 'search_word', 'name','etc']
+                    if key in check_list:
+                        UPDATE_SET.update({key : value})
+                    else:
+                        pass
+
+                Bom.objects.filter(code = bom_code).update(**UPDATE_SET)
+                return JsonResponse({'message' : 'Check update'}, status = 200)
+        except:
+            return JsonResponse({'message' : '예외 사항 발생'}, status = 403)
+
+class SetInfoView(View):
+    def get(self, request):
+        code = request.GET.get('code', None)
+        search_word = request.GET.get('search_word')
+        name = request.GET.get('name')
+
+        try:
+            if code == None:
+                q = Q()
+                if name:
+                    q &= Q(name__icontains = name)
+                if code:
+                    q &= Q(code__icontains = code)
+                if search_word:
+                    q &= Q(search_word__icontains = search_word)
+                
+                result = list(Set.objects.filter(q).values(
+                'code',
+                'quantity',
+                'safe_quantity',
+                'search_word',
+                'name',
+                'etc'
+                ))
+                
+                return JsonResponse({'set_info' : result}, status = 200)
+            
+            if code == code:
+                result = list(Set.objects.filter(code = code).values(
+                    'code',
+                    'quantity',
+                    'safe_quantity',
+                    'search_word',
+                    'name',
+                    'etc'
+                ))
+                set_comp_codes = SetComponent.objects.filter(set_code = code).values('com_code', 'com_quan')
+                dict = {}
+                for code in set_comp_codes:
+                    dict.update({code['com_code'] : code['com_quan']})
+            
+                return JsonResponse({'Info' : result, 'component' : dict}, status = 200)
+        except:
+            return JsonResponse({'message' : '예외 상황 발생'}, status = 403)
+
+    def post(self, request):
+        input_data = json.loads(request.body)
+
+        try:
+            with transaction.atomic():
+                set_code = component_code_generator(input_data['pg_code'], 'HV')
+
+                # 제품 정보
+                Set.objects.create(
+                    code = set_code,
+                    quantity = 0,
+                    safe_quantity = input_data['safe_quantity'],
+                    search_word = input_data['search_word'],
+                    name = input_data['name']
+                )
+                # SetComponent 생성
+                for com_code, quantity in input_data['com_codes'].items():
+                    SetComponent.objects.create(
+                        set_code = set_code,
+                        com_code = com_code,
+                        com_quan = quantity
+                    )
+            return JsonResponse({f'{set_code}' : 'Product information has been registered.'}, status = 200)
+        except KeyError:
+            return JsonResponse({'message' : 'Key error'}, status = 403)
+    
+    def put(self, request):
+        modify_data = json.loads(request.body)
+        set_code = request.GET.get('code')
+        set = Set.objects.filter(code = set_code)
+
+        if set.exists() == False:
+            return JsonResponse({'message' : '존재하지 않는 제품입니다.'}, status = 403)
+        try:
+            with transaction.atomic():
+                UPDATE_SET = {}
+                
+                for key, value in modify_data.items():
+                    check_list = ['quantity','safe_quantity','search_word', 'name','etc']
+                    if key in check_list:
+                        UPDATE_SET.update({key : value})
+                    else:
+                        pass
+
+                Bom.objects.filter(code = set_code).update(**UPDATE_SET)
+                return JsonResponse({'message' : 'Check update'}, status = 200)
+        except:
+            return JsonResponse({'message' : '예외 사항 발생'}, status = 403)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # class CreateInboundOrderView(View):
 #     @jwt_decoder
