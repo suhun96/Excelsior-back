@@ -159,7 +159,11 @@ class AdminModifyView(View):
                         UPDATE_SET.update({key : hashed_password.decode('utf-8')})
 
                     else:
-                        UPDATE_SET.update({key : value})
+                        key_check_list = ['phone', 'name', 'email', 'team', 'position']
+                        if key in key_check_list:
+                            UPDATE_SET.update({key : value})
+                        else:
+                            pass
                 # 변경 사항 업데이트
                 User.objects.filter(phone = modify_user).update(**UPDATE_SET)
             
