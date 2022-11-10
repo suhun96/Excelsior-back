@@ -158,12 +158,11 @@ class AdminModifyView(View):
                         # 비밀번호 decode 후 저장.
                         hashed_password = bcrypt.hashpw(value.encode('utf-8'), new_salt)
                         UPDATE_SET.update({key : hashed_password.decode('utf-8')})
-
+                        
                     else:
                         UPDATE_SET.update({key : value})
                 # 변경 사항 업데이트
                 User.objects.filter(phone = modify_user).update(**UPDATE_SET)
-            
                 return JsonResponse({'message' : 'check update'}, status = 200)
         except:
             return JsonResponse({'message' : '예외 사항이 발생했습니다.'}, status = 400)
