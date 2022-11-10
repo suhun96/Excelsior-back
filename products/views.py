@@ -145,6 +145,25 @@ class CompanyView(View):
         except KeyError:
             return JsonResponse({'message' : 'KEY ERROR'}, status = 403)
 
+    def put(self, request):
+        modify_data = json.loads(request.body)
+        company_code = request.GET.get('code')
+        company = Company.objects.filter(code = company_code)
+
+        if company.exists() == False:
+            return JsonResponse({'message' : "존재하지 않는 회사입니다."}, status = 403)
+        try:
+            with transaction.atomic():
+                UPDATE_SET = {}
+
+                for key, value in modify_data.items():
+                    UPDATE_SET.update({ key : value })
+                    
+                Company.objects.filter(code = company_code).update(**UPDATE_SET)
+                return JsonResponse({'message' : '업데이트 내역을 확인해 주세요~!!'}, status = 200)
+        except:
+            return JsonResponse({'message' : "예외 사항이 발생했습니다."}, status = 403)
+
 class ComponentInfoView(View):
     def get(self, request):
         code = request.GET.get('code')
@@ -195,25 +214,25 @@ class ComponentInfoView(View):
     def put(self, request):
         body_data= json.loads(request.body)
         # try:
-        comp_id = request.GET.get('id')
-        component = Component.objects.filter(id = comp_id)
+        comp_code = request.GET.get('code')
+        component = Component.objects.filter(code = comp_code)
 
         if component.exists() == False:
-            return JsonResponse({'message' : "존재하지 않는 제품입니다."})
+            return JsonResponse({'message' : "존재하지 않는 제품입니다."}, status = 403)
+        try:
+            with transaction.atomic():
+                UPDATE_SET = {}
+                
+                for key, value in body_data.items():
+                    UPDATE_SET.update({key : value})
+                
+                Component.objects.filter(code = comp_code).update(**UPDATE_SET)
 
-        with transaction.atomic():
-            UPDATE_SET = {}
-            
-            for key, value in body_data.items():
-                UPDATE_SET.update({key : value})
-            
-            Component.objects.update(**UPDATE_SET)
-
-        return JsonResponse({'message' : 'Check update'}, status = 200)
-        # except KeyError:
-        #     return JsonResponse({'message' : 'KeyError'}, status = 403)
-        # except:
-        #     return JsonResponse({'message' : '예외 사항 발생'}, status = 403)
+                return JsonResponse({'message' : 'Check update'}, status = 200)
+        except KeyError:
+            return JsonResponse({'message' : 'KeyError'}, status = 403)
+        except:
+            return JsonResponse({'message' : '예외 사항 발생'}, status = 403)
           
 class CreateBomInfoView(View):
     def post(self, request):
