@@ -81,11 +81,12 @@ class PermissionSignUpView(View):
                 if user.admin == False:
                     return JsonResponse({'message' : '당신은 권한이 없습니다. '}, status = 403)
 
-                if User.objects.get(phone = input_data['phone']).status == False:
-                    User.objects.filter( phone = input_data['phone']).update( status = True)
+                if input_data['status'] == "False":
+                    User.objects.filter( phone = input_data['phone']).update( status = False)
                     return JsonResponse({'message' : '사용이 허가 되었습니다'}, status = 200)
-                else:
-                    User.objects.filter( phone = input_data['phone']).update( status = False )
+                
+                if input_data['status'] == "True": 
+                    User.objects.filter( phone = input_data['phone']).update( status = True)
                     return JsonResponse({'message' : '사용이 불허 되었습니다.'}, status = 200)
 
         except Exception:
