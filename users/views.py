@@ -46,7 +46,8 @@ class SignUpView(View):
                     'email'       : data['email'],
                     'team'        : data['team'],
                     'password'    : hashed_password.decode('utf-8'),    # 기본 비밀번호
-                    'position'    : data['position'], 
+                    'position'    : data['position'],
+                    'status'      : False 
                     # admin  False / status 기본적으로 True (True = 활성화 , False = 비활성화)  
                     }
                     )
@@ -197,26 +198,33 @@ class ChangeStatusView(View):
 class UserListView(View):
     @jwt_decoder 
     def get(self, request):
-        User_List = User.objects.all()
-        admin_user = request.user
+        user = request.user
+        
+        if User.objects.filter(id = user.id, status = True ).exists() == False:
+            return JsonResponse({'message' : "존재하지 않는 유저로부터 요청이 왔습니다."}, status = 403)
 
-        user_list = [{
-            'use_id'    : user.id, 
-            'phone'     : user.phone,
-            'name'      : user.name,
-            'position'  : user.position,
-            'status'    : user.status
-        } for user in User_List]
+        else:
+            user_list = list(User.objects.all().values(
+                'phone',
+                'name',
+                'email',
+                'team',
+                'position',
+                'admin',
+                'status'
+            )) 
+            return JsonResponse({'user_list' : user_list} , status = 200)
 
-        return JsonResponse({'user_list' : user_list} , status = 200)
-
-class UserInfoView(View):
+class UserMyInfoView(View):
     @jwt_decoder
     def get(self, request):
         user = request.user
         user_info = User.objects.get(id = user.id)
-        check_admin = user_info.admin
+        # check_admin = user_info.admin
         try:
+            if User.objects.filter(id = user.id, status = True ).exists() == False:
+                return JsonResponse({'message' : "존재하지 않는 유저로부터 요청이 왔습니다."}, status = 403)
+            
             user_info = {
                     'phone' : user_info.phone,
                     'name'  : user_info.name,
@@ -226,19 +234,19 @@ class UserInfoView(View):
                     'admin' : user_info.admin
                 }
 
-            if not check_admin == 1:
-                return JsonResponse({'user_info' : user_info}, status = 200)
+            # if not check_admin == 1:
+            #     return JsonResponse({'user_info' : user_info}, status = 200) # 일반유저
             
-            if check_admin == 1:
-                user_list = list(User.objects.filter().values(
-                    'phone',
-                    'name',
-                    'email',
-                    'team',
-                    'position',
-                    'admin'
-                ))
-                return JsonResponse({'user_info' : user_info, 'user_list' : user_list}, status = 200)
+            # if check_admin == 1:
+            #     user_list = list(User.objects.filter().values(
+            #         'phone',
+            #         'name',
+            #         'email',
+            #         'team',
+            #         'position',
+            #         'admin'
+            #     ))
+                # return JsonResponse({'user_info' : user_info, 'user_list' : user_list}, status = 200) # 관리자
         except:
             return JsonResponse({'message' : "예외 사항 발생"}, status = 403)
 
