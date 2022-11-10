@@ -128,6 +128,22 @@ class CheckPasswordView(View):
 
         return JsonResponse({'message' : 'ok' }, status = 200)
 
+class AdminModifyView(View):
+    @jwt_decoder
+    def post(self, request):
+        modify_data = request.POST
+        user = request.user
+
+        if User.objects.get(id = user.id).admin == False:
+            return JsonResponse({'message' : '권한이 없는 요청입니다.'}, status = 400)
+        try:
+            with transaction.atomic():
+                
+            
+                return
+        except:
+            return
+
 class ModifyView(View):
     @jwt_decoder
     def post(self, request):
