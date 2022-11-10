@@ -223,7 +223,6 @@ class UserMyInfoView(View):
     def get(self, request):
         user = request.user
         user_info = User.objects.get(id = user.id)
-    
         try:
             if User.objects.filter(id = user.id, status = True ).exists() == False:
                 return JsonResponse({'message' : "존재하지 않는 유저로부터 요청이 왔습니다."}, status = 403)
