@@ -11,17 +11,17 @@ class ProductGroup(models.Model):
 
 class Company(models.Model): # managers 확인 하세요!
     name         = models.CharField(max_length = 60, blank = False)
+    keyword      = models.CharField(max_length = 150)
     code         = models.CharField(max_length = 10, blank = False)
-    owner        = models.CharField(max_length = 30, blank = True)
+    owner        = models.CharField(max_length = 30)
     biz_no       = models.CharField(max_length = 30)
     biz_type     = models.CharField(max_length = 100)
     biz_item     = models.CharField(max_length = 100)
-    phone        = models.CharField(max_length = 100)
+    phone        = models.CharField(max_length = 100, blank = False)
     fax          = models.CharField(max_length = 100)
-    mobile       = models.CharField(max_length = 13, blank = True)
     email        = models.CharField(max_length = 100)
-    address_main = models.CharField(max_length = 120, blank = False)
-    address_desc = models.CharField(max_length = 120, blank = False)
+    address_main = models.CharField(max_length = 120)
+    address_desc = models.CharField(max_length = 120)
     zip_code     = models.CharField(max_length = 100)
 
     class Meta:
@@ -30,7 +30,7 @@ class Company(models.Model): # managers 확인 하세요!
 class CompanyETC(models.Model):
     comp_code = models.CharField(max_length = 10, blank = False)
     no        = models.IntegerField()
-    title     = models.CharField(max_length = 120, blank = False)
+    title     = models.CharField(max_length = 120)
     contents  = models.CharField(max_length = 700) 
     status    = models.BooleanField(default = False)
 

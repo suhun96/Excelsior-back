@@ -75,72 +75,76 @@ class ProductGroupView(View):
 
 class CompanyView(View):
     def get(self, request):
-        name = request.GET.get('name', None)
-        code = request.GET.get('code', None)
-        manager = request.GET.get('manager', None)
-        address = request.GET.get('address', None)
-        telephone = request.GET.get('telephone', None)
-        mobilephone = request.GET.get('mobilephone', None)
-        manage_tag = request.GET.get('manage_tag', None)
         
-        q = Q()
-        if name:
-            q &= Q(name__icontains = name)
-        if code:
-            q &= Q(code__icontains = code)
-        if manager:
-            q &= Q(managers__icontains = manager)
-        if address:
-            q &= Q(address__icontains = address)
-        if telephone:
-            q &= Q(telephone__icontains = telephone)
-        if mobilephone:
-            q &= Q(mobilephone__icontains = mobilephone)
-        if manage_tag:
-            q &= Q(manage_tag__icontains = manage_tag)
+        filter_options = {
+            'name'     : 'name__icontains',
+            'keyword'  : 'keyword__icontains',
+            'code'     : 'code__icontains',
+            'owner'    : 'ownet__icontains',
+            'biz_no'   : 'biz_no__icontains',
+            'biz_type' : 'biz_type__icontains',
+            'biz_item' : 'biz_item__icontains',
+            'phone'    : 'phone__icontains',
+            'fax'      : 'fax__icontains',
+            'mobile'   : 'mobile__icontains',
+            'email'    : 'email__icontains',
+            'address_main' : 'address_main__icontains',
+            'address_desc' : 'address_desc__icontains',
+            'zip_code' : 'zip_code__icontains'
+        }
 
-        result = list(Company.objects.filter(q).values())
+        filter_set = { filter_options.get(key) : value for (key, value) in request.GET.items() if filter_options.get(key) }
+        
+        result = list(Company.objects.filter(**filter_set).values())
 
         return JsonResponse({'message' : result} , status = 200)
 
-    @jwt_decoder
-    @check_status 
     def post(self, request):
         input_data = request.POST
-
+        
         try:
-            if not "name" in input_data or not "code" in input_data:
-                return JsonResponse({'message' : 'Please enter the correct value.'}, status = 403)
+            with transaction.atomic():
+                # 필수값 (이름, 코드, 번호)이 있는지 확인 없으면 에러 발생.
+                if not "name" in input_data or not "code" in input_data or not "phone" in input_data:
+                    return JsonResponse({'message' : 'Please enter the correct value.'}, status = 403)
+            
+                create_options = ['name','keyword','code','owner','biz_no','biz_type','biz_item','phone','fax','email','address_main','address_desc','zip_code']
 
-            new_CP , is_created = Company.objects.filter(
-                Q(name = input_data['name']) | Q(code = input_data['code'])
-            ).get_or_create(
-                defaults= {
-                    'name'       : input_data['name'],
-                    'code'       : input_data['code'],
-                    'address'    : input_data['address'],
-                    'managers'   : input_data['managers'],
-                    'telephone'  : input_data['telephone'],
-                    'mobilephone': input_data['mobilephone'],
-                    'manage_tag' : input_data['manage_tag'],
-                    'etc'        : input_data['etc']
-                })
+                CREATE_SET = {}
 
-            if is_created == False:
-                return JsonResponse({'messaga' : 'The company code(name) is already registered.'}, status = 403)      
+                # create_options 로 request.POST 의 키값이 정확한지 확인.
+                for key in dict(request.POST).keys():
+                    if key in create_options:
+                        CREATE_SET.update({ key : request.POST[key] })
+                    else:
+                        return JsonResponse({'message' : '잘못된 키값이 들어오고 있습니다.'}, status = 403)
+        
+                # 중복 생성 방지.
+                new_company , is_created = Company.objects.filter(
+                    Q(name = input_data['name']) | Q(code = input_data['code'])
+                ).get_or_create(
+                    defaults = {**CREATE_SET} )
+                
+                if is_created == False:
+                    return JsonResponse({'messaga' : 'The company code(name) is already registered.'}, status = 403)      
 
-            check_CP = list(Company.objects.filter(id = new_CP.id).values(
-                'name',       
-                'code',      
-                'address',    
-                'managers',   
-                'telephone',  
-                'mobilephone',
-                'manage_tag', 
-                'etc'        
-            ))
+                check_created = list(Company.objects.filter(id = new_company.id).values(
+                    'name',     
+                    'keyword',  
+                    'code',     
+                    'owner',    
+                    'biz_no',   
+                    'biz_type', 
+                    'biz_item', 
+                    'phone',    
+                    'fax',         
+                    'email',    
+                    'address_main', 
+                    'address_desc', 
+                    'zip_code',  
+                ))
 
-            return JsonResponse({'message' : check_CP}, status = 200)
+            return JsonResponse({'message' : check_created}, status = 200)
        
         except KeyError:
             return JsonResponse({'message' : 'KEY ERROR'}, status = 403)

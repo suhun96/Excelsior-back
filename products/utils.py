@@ -74,6 +74,75 @@ def product_history_generator(code, quantity, price ,etc):
         except KeyError:
             return JsonResponse({'message' : 'Key Error'}, status = 403)
 
+def code_generator_d1(pg_code, cp_code):
+        product_group  = ProductGroup.objects.filter(code = pg_code)
+        company        = Company.objects.filter(code = cp_code)
+        
+        # 제품 그룹이 있는지 체크
+        if product_group.exists() == False:
+            raise ValueError('Product group that does not exist.')
+        # 회사가 등록이 되어있는지
+        if company.exists() == False:
+            raise ValueError('Company (trade name) that does not exist.')
+
+        CPPG = cp_code + pg_code # SSPP 
+        # 형번을 생성 등록된 제품 정보를 참고해 CPPG 가 존재하면 그 다음 형번을 부여 없으면 1로 시작.
+        if ProductD1.objects.filter(code__icontains = CPPG).exists():
+            latest_product_code = ProductD1.objects.filter(code__icontains = CPPG).latest('created_at').code
+            model_number = int(latest_product_code[5:7]) + 1
+        else:
+            model_number = 1
+
+        model_number = str(model_number).zfill(3)
+        # 제품 시리얼 코드 생성 SSPP001
+        product_D1_code = cp_code + pg_code + model_number
+        
+        return product_D1_code
+
+def code_generator_d2(pg_code, cp_code):
+        product_group  = ProductGroup.objects.filter(code = pg_code)
+        company        = Company.objects.filter(code = cp_code)
+        
+        # 제품 그룹이 있는지 체크
+        if product_group.exists() == False:
+            raise ValueError('Product group that does not exist.')
+        # 회사가 등록이 되어있는지
+        if company.exists() == False:
+            raise ValueError('Company (trade name) that does not exist.')
+
+        CPPG = cp_code + pg_code # SSPP 
+        # 형번을 생성 등록된 제품 정보를 참고해 CPPG 가 존재하면 그 다음 형번을 부여 없으면 1로 시작.
+        if ProductD2.objects.filter(code__icontains = CPPG).exists():
+            latest_product_code = ProductD2.objects.filter(code__icontains = CPPG).latest('created_at').code
+            model_number = int(latest_product_code[5:7]) + 1
+        else:
+            model_number = 1
+
+        model_number = str(model_number).zfill(3)
+        # 제품 시리얼 코드 생성 SSPP001
+        bom_code = cp_code + pg_code + model_number
+        
+        return bom_code
+
+
+
+# def print_barcode(product_code, yymmdd):
+#     # 제품 정보에서 name 가져옴 (product_code를 이용)
+#     name = ProductInfo.objects.get(product_code = product_code).name
+    
+#     # product_code와 yymmdd를 바코드안에 넣어서 원하는 값을 찾음
+#     barcodes = ProductHis.objects.filter(
+#         Q(product_code = product_code) & Q(barcode__icontains = yymmdd)
+#     ).values('barcode')
+    
+#     dict_print = [] # 딕셔너리를 생성한 뒤 수정사항 반영.
+#     for i in range(len(barcodes)):
+#         dictx = dict({'name' : name, 'barcode' : barcodes[i]['barcode']})
+#         dict_print.append(dictx)
+
+#     return dict_print
+
+
 # def update_product_his(product_code):
 #     count = ProductHis.objects.filter(product_code = product_code, use_status = 1).count()
 #     ProductInfo.objects.filter(product_code = product_code).update(quantity = count, updated_at = datetime.now())
@@ -163,69 +232,3 @@ def product_history_generator(code, quantity, price ,etc):
 #             return print('기존 제품을 참고하여 히스토리 생성완료')
 #     except KeyError:
 #         return JsonResponse({'message' : 'Key Error'}, status = 403)
-
-def code_generator_d1(pg_code, cp_code):
-        product_group  = ProductGroup.objects.filter(code = pg_code)
-        company        = Company.objects.filter(code = cp_code)
-        
-        # 제품 그룹이 있는지 체크
-        if product_group.exists() == False:
-            raise ValueError('Product group that does not exist.')
-        # 회사가 등록이 되어있는지
-        if company.exists() == False:
-            raise ValueError('Company (trade name) that does not exist.')
-
-        CPPG = cp_code + pg_code # SSPP 
-        # 형번을 생성 등록된 제품 정보를 참고해 CPPG 가 존재하면 그 다음 형번을 부여 없으면 1로 시작.
-        if ProductD1.objects.filter(code__icontains = CPPG).exists():
-            latest_product_code = ProductD1.objects.filter(code__icontains = CPPG).latest('created_at').code
-            model_number = int(latest_product_code[5:7]) + 1
-        else:
-            model_number = 1
-
-        model_number = str(model_number).zfill(3)
-        # 제품 시리얼 코드 생성 SSPP001
-        product_D1_code = cp_code + pg_code + model_number
-        
-        return product_D1_code
-
-def bom_code_generator(pg_code, cp_code):
-        product_group  = ProductGroup.objects.filter(code = pg_code)
-        company        = Company.objects.filter(code = cp_code)
-        
-        # 제품 그룹이 있는지 체크
-        if product_group.exists() == False:
-            raise ValueError('Product group that does not exist.')
-        # 회사가 등록이 되어있는지
-        if company.exists() == False:
-            raise ValueError('Company (trade name) that does not exist.')
-
-        CPPG = cp_code + pg_code # SSPP 
-        # 형번을 생성 등록된 제품 정보를 참고해 CPPG 가 존재하면 그 다음 형번을 부여 없으면 1로 시작.
-        if Bom.objects.filter(code__icontains = CPPG).exists():
-            latest_product_code = Bom.objects.filter(code__icontains = CPPG).latest('created_at').code
-            model_number = int(latest_product_code[5:7]) + 1
-        else:
-            model_number = 1
-
-        model_number = str(model_number).zfill(3)
-        # 제품 시리얼 코드 생성 SSPP001
-        bom_code = cp_code + pg_code + model_number
-        
-        return bom_code
-
-# def print_barcode(product_code, yymmdd):
-#     # 제품 정보에서 name 가져옴 (product_code를 이용)
-#     name = ProductInfo.objects.get(product_code = product_code).name
-    
-#     # product_code와 yymmdd를 바코드안에 넣어서 원하는 값을 찾음
-#     barcodes = ProductHis.objects.filter(
-#         Q(product_code = product_code) & Q(barcode__icontains = yymmdd)
-#     ).values('barcode')
-    
-#     dict_print = [] # 딕셔너리를 생성한 뒤 수정사항 반영.
-#     for i in range(len(barcodes)):
-#         dictx = dict({'name' : name, 'barcode' : barcodes[i]['barcode']})
-#         dict_print.append(dictx)
-
-#     return dict_print
