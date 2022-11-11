@@ -164,7 +164,7 @@ class CompanyView(View):
         except:
             return JsonResponse({'message' : "예외 사항이 발생했습니다."}, status = 403)
 
-class ComponentInfoView(View):
+class ProductD1InfoView(View):
     def get(self, request):
         code = request.GET.get('code')
         search_word = request.GET.get('search_word')
@@ -179,7 +179,7 @@ class ComponentInfoView(View):
             if search_word:
                 q &= Q(search_word__icontains = search_word)
             
-            result = list(Component.objects.filter(q).values(
+            result = list(ProductD1.objects.filter(q).values(
                 'code',
                 'quantity',
                 'safe_quantity',
@@ -197,26 +197,26 @@ class ComponentInfoView(View):
         print(input_data)
         try:
             with transaction.atomic():
-                component_code = component_code_generator(input_data['pg_code'], input_data['cp_code'])
+                product_D1_code = code_generator_d1(input_data['pg_code'], input_data['cp_code'])
 
                 # 제품 정보
-                Component.objects.create(
-                    code = component_code,
+                ProductD1.objects.create(
+                    code = product_D1_code,
                     quantity = 0,
                     safe_quantity = input_data['safe_quantity'],
                     search_word = input_data['search_word'],
                     name = input_data['name']
                 )
-                return JsonResponse({f'{component_code}' : 'Product information has been registered.'}, status = 200)
+                return JsonResponse({f'{product_D1_code}' : 'Product information has been registered.'}, status = 200)
         except KeyError:
             return JsonResponse({'message' : 'Key error'}, status = 403)
 
     def put(self, request):
         body_data= json.loads(request.body)
         comp_code = request.GET.get('code')
-        component = Component.objects.filter(code = comp_code)
+        product_D1 = ProductD1.objects.filter(code = comp_code)
 
-        if component.exists() == False:
+        if product_D1.exists() == False:
             return JsonResponse({'message' : "존재하지 않는 제품입니다."}, status = 403)
         try:
             with transaction.atomic():
@@ -225,7 +225,7 @@ class ComponentInfoView(View):
                 for key, value in body_data.items():
                     UPDATE_SET.update({key : value})
                 
-                Component.objects.filter(code = comp_code).update(**UPDATE_SET)
+                ProductD1.objects.filter(code = comp_code).update(**UPDATE_SET)
 
                 return JsonResponse({'message' : 'Check update'}, status = 200)
         except KeyError:
@@ -233,7 +233,7 @@ class ComponentInfoView(View):
         except:
             return JsonResponse({'message' : '예외 사항 발생'}, status = 403)
           
-class BomInfoView(View):
+class ProductD2InfoView(View):
     def get(self, request):
         code = request.GET.get('code', None)
         search_word = request.GET.get('search_word')
@@ -249,19 +249,18 @@ class BomInfoView(View):
                 if search_word:
                     q &= Q(search_word__icontains = search_word)
                 
-                result = list(Bom.objects.filter(q).values(
+                result = list(ProductD2.objects.filter(q).values(
                 'code',
                 'quantity',
                 'safe_quantity',
                 'search_word',
-                'name',
-                'etc'
+                'name'
                 ))
                 
                 return JsonResponse({'bom_info' : result}, status = 200)
             
             if code == code:
-                result = list(Bom.objects.filter(code = code).values(
+                result = list(ProductD2.objects.filter(code = code).values(
                     'code',
                     'quantity',
                     'safe_quantity',
@@ -269,7 +268,7 @@ class BomInfoView(View):
                     'name',
                     'etc'
                 ))
-                bom_comp_codes = BomComponent.objects.filter(bom_code = code).values('com_code', 'com_quan')
+                bom_comp_codes = ProductD2Composition.objects.filter(bom_code = code).values('com_code', 'com_quan')
                 dict = {}
                 for code in bom_comp_codes:
                     dict.update({code['com_code'] : code['com_quan']})
@@ -283,10 +282,10 @@ class BomInfoView(View):
 
         try:
             with transaction.atomic():
-                bom_code = component_code_generator(input_data['pg_code'], 'HV')
+                bom_code = code_generator_d1(input_data['pg_code'], 'HV')
 
                 # 제품 정보
-                Bom.objects.create(
+                ProductD2.objects.create(
                     code = bom_code,
                     quantity = 0,
                     safe_quantity = input_data['safe_quantity'],

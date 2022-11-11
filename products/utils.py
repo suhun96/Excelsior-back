@@ -164,7 +164,7 @@ def product_history_generator(code, quantity, price ,etc):
 #     except KeyError:
 #         return JsonResponse({'message' : 'Key Error'}, status = 403)
 
-def component_code_generator(pg_code, cp_code):
+def code_generator_d1(pg_code, cp_code):
         product_group  = ProductGroup.objects.filter(code = pg_code)
         company        = Company.objects.filter(code = cp_code)
         
@@ -177,17 +177,17 @@ def component_code_generator(pg_code, cp_code):
 
         CPPG = cp_code + pg_code # SSPP 
         # 형번을 생성 등록된 제품 정보를 참고해 CPPG 가 존재하면 그 다음 형번을 부여 없으면 1로 시작.
-        if Component.objects.filter(code__icontains = CPPG).exists():
-            latest_product_code = Component.objects.filter(code__icontains = CPPG).latest('created_at').code
+        if ProductD1.objects.filter(code__icontains = CPPG).exists():
+            latest_product_code = ProductD1.objects.filter(code__icontains = CPPG).latest('created_at').code
             model_number = int(latest_product_code[5:7]) + 1
         else:
             model_number = 1
 
         model_number = str(model_number).zfill(3)
         # 제품 시리얼 코드 생성 SSPP001
-        component_code = cp_code + pg_code + model_number
+        product_D1_code = cp_code + pg_code + model_number
         
-        return component_code
+        return product_D1_code
 
 def bom_code_generator(pg_code, cp_code):
         product_group  = ProductGroup.objects.filter(code = pg_code)

@@ -10,72 +10,101 @@ class ProductGroup(models.Model):
         db_table = 'product_groups'
 
 class Company(models.Model): # managers 확인 하세요!
-    name        = models.CharField(max_length = 60, blank = False)
-    code        = models.CharField(max_length = 10, blank = False)
-    address     = models.CharField(max_length = 120, blank = False)
-    managers    = models.CharField(max_length = 30, blank = False)
-    telephone   = models.CharField(max_length = 20, blank = False)
-    mobilephone = models.CharField(max_length = 13, blank = False)
-    manage_tag  = models.CharField(max_length = 30, blank = False)
-    etc         = models.CharField(max_length = 3000, blank = False)
+    name         = models.CharField(max_length = 60, blank = False)
+    code         = models.CharField(max_length = 10, blank = False)
+    owner        = models.CharField(max_length = 30, blank = True)
+    biz_no       = models.CharField(max_length = 30)
+    biz_type     = models.CharField(max_length = 100)
+    biz_item     = models.CharField(max_length = 100)
+    phone        = models.CharField(max_length = 100)
+    fax          = models.CharField(max_length = 100)
+    mobile       = models.CharField(max_length = 13, blank = True)
+    email        = models.CharField(max_length = 100)
+    address_main = models.CharField(max_length = 120, blank = False)
+    address_desc = models.CharField(max_length = 120, blank = False)
+    zip_code     = models.CharField(max_length = 100)
 
     class Meta:
         db_table = 'companies'
 
+class CompanyETC(models.Model):
+    comp_code = models.CharField(max_length = 10, blank = False)
+    no        = models.IntegerField()
+    title     = models.CharField(max_length = 120, blank = False)
+    contents  = models.CharField(max_length = 700) 
+    status    = models.BooleanField(default = False)
+
+    class Meta:
+        db_table = 'company_etc'
+
+class CompanyPhonebook(models.Model):
+    comp_code = models.CharField(max_length = 10, blank = False)
+    name    = models.CharField(max_length = 20, blank = True)
+    mobile  = models.CharField(max_length = 20, blank = True)
+    email   = models.CharField(max_length = 100, blank= True)
+    class Meta:
+        db_table = 'company_phonebook'
 # -----------------------------------------------------------------
 
 # Depth 1
-class Component(models.Model):
+class ProductD1(models.Model):
     code          = models.CharField(max_length = 10, blank = False)
     quantity      = models.IntegerField()
     safe_quantity = models.IntegerField()
     search_word   = models.CharField(max_length = 150, blank = False)
     name          = models.CharField(max_length = 100, blank = False)
-    etc           = models.CharField(max_length = 3000, blank = True)
     created_at    = models.DateTimeField(auto_now_add = True)
     
     class Meta:
-        db_table = 'components'
+        db_table = 'productD1'
 
 # Depth 2
-class Bom(models.Model):
+class ProductD2(models.Model):
     code          = models.CharField(max_length = 10, blank = False)
     quantity      = models.IntegerField()
     safe_quantity = models.IntegerField()
     search_word   = models.CharField(max_length = 150, blank = False)
     name          = models.CharField(max_length = 100, blank = False)
-    etc           = models.CharField(max_length = 3000, blank = True)
 
     class Meta:
-        db_table = 'boms'
+        db_table = 'productD2'
 
-class BomComponent(models.Model):
-    bom_code = models.CharField(max_length = 10, blank = False)
+class ProductD2Composition(models.Model):
+    d2_code = models.CharField(max_length = 10, blank = False)
     com_code = models.CharField(max_length = 10, blank = False)
     com_quan = models.IntegerField()
     
     class Meta:
-        db_table = 'bom_components'
+        db_table = 'productD2_composition'
 
 # Depth 3
-class Set(models.Model):
+class ProductD3(models.Model):
     code          = models.CharField(max_length = 10, blank = False)
     quantity      = models.IntegerField()
     safe_quantity = models.IntegerField()
     search_word   = models.CharField(max_length = 150, blank = False)
     name          = models.CharField(max_length = 100, blank = False)
-    etc          = models.CharField(max_length = 3000, blank = True)
 
     class Meta:
-        db_table = 'sets'
+        db_table = 'productD3'
 
-class SetComponent(models.Model):
-    set_code = models.CharField(max_length = 10, blank = False)
+class ProductD3Composition(models.Model):
+    d3_code = models.CharField(max_length = 10, blank = False)
     com_code = models.CharField(max_length = 10, blank = False)
     com_quan = models.IntegerField()
 
     class Meta:
-        db_table = 'set_components'
+        db_table = 'productD3_composition'
+
+class ProductEtc(models.Model):
+    product_code = models.CharField(max_length = 10, blank = False)
+    no           = models.IntegerField()
+    title        = models.CharField(max_length = 120, blank = False)
+    contents     = models.CharField(max_length = 3000)
+
+    class Meta:
+        db_table = 'product_etc'
+
 
 # barcode history
 class ProductHis(models.Model):
