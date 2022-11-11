@@ -145,7 +145,6 @@ class CompanyView(View):
                 ))
 
             return JsonResponse({'message' : check_created}, status = 200)
-       
         except KeyError:
             return JsonResponse({'message' : 'KEY ERROR'}, status = 403)
 
@@ -160,7 +159,11 @@ class CompanyView(View):
             with transaction.atomic():
                 UPDATE_SET = {}
 
+                update_options = ['name','keyword','owner','biz_no','biz_type','biz_item','phone','fax','email','address_main','address_desc','zip_code']
+
                 for key, value in modify_data.items():
+                    if not key in update_options:
+                        return JsonResponse({'message' : f'{key} 존재하지 않는 키값입니다.'}, status = 403)
                     UPDATE_SET.update({ key : value })
                     
                 Company.objects.filter(code = company_code).update(**UPDATE_SET)
