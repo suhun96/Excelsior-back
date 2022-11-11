@@ -53,7 +53,7 @@ class SignUpView(View):
                     )
 
                 if not is_created:
-                    return JsonResponse({'messaga' : 'The phone number is already registered.'}, status = 403)
+                    return JsonResponse({'message' : 'The phone number is already registered.'}, status = 403)
                 
                 check_user_info = list(User.objects.filter(id = new_user.id).values(
                     "phone",
