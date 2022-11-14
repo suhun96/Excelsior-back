@@ -178,8 +178,31 @@ class CompanyEtcView(View):
     
     def post(self, request):
         input_data = request.POST
-        return
-    
+
+        if Company.objects.filter(code = input_data['code']).exists() == False:
+            return JsonResponse({'message' : '존재하지 않는 회사 코드입니다. 코드를 확인해주세요'}, status = 403)
+        
+        if CompanyETC.objects.filter(comp_code = input_data['code']).count() == 10:
+            return JsonResponse({'message' : '등록 가능한 비고란을 전부 사용중 입니다.'}, status = 403)
+
+        if CompanyETC.objects.filter(comp_code = input_data['code'], no = 1).exists() == False:
+            CompanyETC.objects.create(
+                comp_code = input_data['code'],
+                no = 1,
+                title = input_data['title'],
+                contents = input_data['contents'],
+                status = True
+            )
+        else:
+            last_no = CompanyETC.objects.filter(comp_code = input_data['code']).last().no
+            CompanyETC.objects.create(
+                comp_code = input_data['code'],
+                no = last_no + 1,
+                title = input_data['title'],
+                contents = input_data['contents'],
+                status = True
+            )
+        return JsonResponse({'test' : 'check'}, status = 200)
     def put(sefl, request):
         company_code = request.GET.get('code')
         modify_data = json.loads(request.body)
