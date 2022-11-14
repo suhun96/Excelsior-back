@@ -29,11 +29,10 @@ class Company(models.Model): # managers 확인 하세요!
 
 class CompanyETC(models.Model):
     comp_code = models.CharField(max_length = 10, blank = False)
-    no        = models.IntegerField()
     title     = models.CharField(max_length = 120)
     contents  = models.CharField(max_length = 700) 
     status    = models.BooleanField(default = False)
-
+    
     class Meta:
         db_table = 'company_etc'
 
