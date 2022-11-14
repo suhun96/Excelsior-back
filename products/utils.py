@@ -120,9 +120,34 @@ def code_generator_d2(pg_code, cp_code):
 
         model_number = str(model_number).zfill(3)
         # 제품 시리얼 코드 생성 SSPP001
-        bom_code = cp_code + pg_code + model_number
+        d2_code = cp_code + pg_code + model_number
         
-        return bom_code
+        return d2_code
+
+def code_generator_d3(pg_code, cp_code):
+        product_group  = ProductGroup.objects.filter(code = pg_code)
+        company        = Company.objects.filter(code = cp_code)
+        
+        # 제품 그룹이 있는지 체크
+        if product_group.exists() == False:
+            raise ValueError('Product group that does not exist.')
+        # 회사가 등록이 되어있는지
+        if company.exists() == False:
+            raise ValueError('Company (trade name) that does not exist.')
+
+        CPPG = cp_code + pg_code # SSPP 
+        # 형번을 생성 등록된 제품 정보를 참고해 CPPG 가 존재하면 그 다음 형번을 부여 없으면 1로 시작.
+        if ProductD3.objects.filter(code__icontains = CPPG).exists():
+            latest_product_code = ProductD3.objects.filter(code__icontains = CPPG).latest('created_at').code
+            model_number = int(latest_product_code[5:7]) + 1
+        else:
+            model_number = 1
+
+        model_number = str(model_number).zfill(3)
+        # 제품 시리얼 코드 생성 SSPP001
+        d3_code = cp_code + pg_code + model_number
+        
+        return d3_code
 
 
 
