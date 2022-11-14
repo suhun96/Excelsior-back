@@ -230,13 +230,60 @@ class CompanyEtcView(View):
 
 class CompanyPhonebookView(View):
     def get(self, request):
-        return
+        company_code = request.GET.get('code')
+
+        check = list(CompanyPhonebook.objects.filter(comp_code = company_code).values(
+            'id',
+            'name',
+            'mobile',
+            'email'
+        ))
+
+        return JsonResponse({'message' : check}, status = 200)
     
     def post(self, request):
-        return
+        input_data = request.POST
+
+        if Company.objects.filter(code = input_data['code']).exists() == False:
+            return JsonResponse({'message' : '존재하지 않는 회사 코드입니다. 코드를 확인해주세요'}, status = 403)
+        
+        if CompanyPhonebook.objects.filter(comp_code = input_data['code']).count() == 5:
+            return JsonResponse({'message' : '등록 가능한 추가 전화번호부를 전부 사용중 입니다.'}, status = 403)
+
+        CompanyPhonebook.objects.create(
+            comp_code = input_data['code'],
+            name = input_data['name'],
+            mobile = input_data['mobile'],
+            email = input_data['email']
+            )
+
+        return JsonResponse({'test' : 'check'}, status = 200)
     
     def put(self, request):
-        return
+        company_code = request.GET.get('code')
+        company_phonebook_id = request.GET.get('id')
+        modify_data = json.loads(request.body)
+
+        if Company.objects.filter(code = company_code).exists() == False:
+            return JsonResponse({'message' : '존재하지 않는 회사 코드입니다. 코드를 확인해주세요.'}, status = 403)
+        
+        if CompanyPhonebook.objects.filter(id = company_phonebook_id, comp_code = company_code).exists() == False:
+            return JsonResponse({'message' : '존재하지 않는 정보를 수정할 수 없습니다.'}, status = 403)
+        try:
+            with transaction.atomic():
+                UPDATE_SET = {}
+
+                update_options = ['name', 'mobile', 'email']
+
+                for key, value in modify_data.items():
+                    if not key in update_options:
+                        return JsonResponse({'message' : f'{key} 존재하지 않는 키 값입니다.'}, status = 403)
+                    UPDATE_SET.update({ key : value})
+
+                CompanyPhonebook.objects.filter(id = company_phonebook_id, comp_code = company_code).update(**UPDATE_SET)
+                return JsonResponse({'message' : '업데이트 내역을 확인해 주세요~!!'}, status = 200)    
+        except:   
+            return JsonResponse({'message' : '예외 사항이 발생, 로직을 정지합니다. 삐빅'}, status = 403)
     
 
 class ProductD1InfoView(View):
