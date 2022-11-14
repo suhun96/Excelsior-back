@@ -41,6 +41,7 @@ class CompanyPhonebook(models.Model):
     name    = models.CharField(max_length = 20, blank = True)
     mobile  = models.CharField(max_length = 20, blank = True)
     email   = models.CharField(max_length = 100, blank= True)
+    
     class Meta:
         db_table = 'company_phonebook'
 # -----------------------------------------------------------------
@@ -64,6 +65,7 @@ class ProductD2(models.Model):
     safe_quantity = models.IntegerField()
     search_word   = models.CharField(max_length = 150, blank = False)
     name          = models.CharField(max_length = 100, blank = False)
+    created_at    = models.DateTimeField(auto_now_add = True)
 
     class Meta:
         db_table = 'productD2'
@@ -83,6 +85,7 @@ class ProductD3(models.Model):
     safe_quantity = models.IntegerField()
     search_word   = models.CharField(max_length = 150, blank = False)
     name          = models.CharField(max_length = 100, blank = False)
+    created_at    = models.DateTimeField(auto_now_add = True)
 
     class Meta:
         db_table = 'productD3'
