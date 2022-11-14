@@ -171,6 +171,38 @@ class CompanyView(View):
         except:
             return JsonResponse({'message' : "예외 사항이 발생했습니다."}, status = 403)
 
+class CompanyEtcView(View):
+    def get(self, request):
+        company_code = request.GET.get('code')
+        return
+    
+    def post(self, request):
+        input_data = request.POST
+        return
+    
+    def put(sefl, request):
+        company_code = request.GET.get('code')
+        modify_data = json.loads(request.body)
+        company = Company.objects.filter(code = company_code)
+
+        if company.exists() == False:
+            return JsonResponse({'message' : '존재하지 않는 회사 코드입니다. 코드를 확인해주세요.'}, status = 403)
+        try:
+            with transaction.atomic():
+                UPDATE_SET = {}
+
+                update_options = ['no', 'title', 'contents', 'status']
+
+                for key, value in modify_data.items():
+                    if not key in update_options:
+                        return JsonResponse({'message' : f'{key} 존재하지 않는 키 값입니다.'}, status = 403)
+                    UPDATE_SET.update({ key : value})
+
+                Company.objects.filter(code = company_code).update(**UPDATE_SET)
+                return JsonResponse({'message' : '업데이트 내역을 확인해 주세요~!!'}, status = 200)    
+        except:   
+            return JsonResponse({'message' : '예외 사항이 발생, 로직을 정지합니다. 삐빅'}, status = 403)
+
 class ProductD1InfoView(View):
     def get(self, request):
         code = request.GET.get('code')
