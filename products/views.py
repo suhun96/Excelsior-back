@@ -67,7 +67,6 @@ class ProductGroupView(View):
             ))
 
             return JsonResponse({'message' : check_PG}, status = 200)
-       
         except KeyError:
             return JsonResponse({'message' : 'KEY ERROR'}, status = 403)
 
@@ -153,6 +152,7 @@ class CompanyView(View):
 
         if company.exists() == False:
             return JsonResponse({'message' : "존재하지 않는 회사입니다."}, status = 403)
+        
         try:
             with transaction.atomic():
                 UPDATE_SET = {}
@@ -198,7 +198,7 @@ class CompanyEtcView(View):
             status = True
             )
 
-        return JsonResponse({'test' : 'check'}, status = 200)
+        return JsonResponse({'message' : '추가 사항이 등록 되었습니다.'}, status = 200)
 
     def put(sefl, request):
         company_code = request.GET.get('code')
@@ -210,6 +210,7 @@ class CompanyEtcView(View):
         
         if CompanyETC.objects.filter(id = company_etc_id, comp_code = company_code).exists() == False:
             return JsonResponse({'message' : '존재하지 않는 정보를 수정할 수 없습니다.'}, status = 403)
+        
         try:
             with transaction.atomic():
                 UPDATE_SET = {}
@@ -267,6 +268,7 @@ class CompanyPhonebookView(View):
         
         if CompanyPhonebook.objects.filter(id = company_phonebook_id, comp_code = company_code).exists() == False:
             return JsonResponse({'message' : '존재하지 않는 정보를 수정할 수 없습니다.'}, status = 403)
+        
         try:
             with transaction.atomic():
                 UPDATE_SET = {}
@@ -426,21 +428,23 @@ class ProductD2InfoView(View):
         d2_code = request.GET.get('code')
         d2 = ProductD2.objects.filter(code = d2_code)
 
+        # D2에 등록된 제품인지 확인.
         if d2.exists() == False:
             return JsonResponse({'message' : '존재하지 않는 제품입니다.'}, status = 403)
+        
         try:
             with transaction.atomic():
                 UPDATE_SET = {}
                 
                 for key, value in modify_data.items():
                     check_list = ['quantity', 'safe_quantity', 'search_word', 'name']
-                    
+
                     if key in check_list:
                         UPDATE_SET.update({key : value})
                     
                     if key == 'components':
                         for com_code in modify_data['components'].keys():
-                            if   ProductD1.objects.filter(code = com_code).exists():
+                            if ProductD1.objects.filter(code = com_code).exists():
                                 pass
                             else:
                                 return JsonResponse({'message' : f'{ com_code }존재하지 않는다 !'}, status = 403)
@@ -506,6 +510,7 @@ class ProductD3InfoView(View):
 
         try:
             with transaction.atomic():
+                # D3 코드생성 기준 정해야함.
                 d3_code = code_generator_d3('ST', 'EX')
 
                 # 제품 정보
@@ -516,16 +521,18 @@ class ProductD3InfoView(View):
                     search_word = input_data['search_word'],
                     name = input_data['name']
                 )
-                # ProductD3Composition 생성
-                for com_code, quantity in input_data['com_codes'].items():
+                # components 제품 코드 확인
+                for com_code in input_data['components'].keys():
                     if ProductD1.objects.filter(code = com_code).exists():
-                        ProductD3Composition.objects.create(d3_code = d3_code, com_code = com_code, com_quan = quantity)
-                    
+                        pass
                     elif ProductD2.objects.filter(code = com_code).exists():
-                        ProductD3Composition.objects.create(d3_code = d3_code, com_code = com_code, com_quan = quantity)                  
-                    
+                        pass
                     else:
-                        return JsonResponse({'message' : '존재하지 않는 제품 정보입니다.'}, status = 403)
+                        raise KeyError
+                
+                # ProductD3Composition 생성
+                for com_code, quantity in input_data['components'].items():
+                    ProductD3Composition.objects.filter(d3_code = d3_code, com_code = com_code, com_quan = quantity)
             
             return JsonResponse({f'{d3_code}' : 'Product information has been registered.'}, status = 200)
         except KeyError:
@@ -536,6 +543,7 @@ class ProductD3InfoView(View):
         d3_code = request.GET.get('code')
         d3 = ProductD3.objects.filter(code = d3_code)
 
+        # Product D3가 등록된 제품인지 확인.
         if d3.exists() == False:
             return JsonResponse({'message' : '존재하지 않는 제품입니다.'}, status = 403)
         try:
@@ -543,11 +551,17 @@ class ProductD3InfoView(View):
                 UPDATE_SET = {}
                 
                 for key, value in modify_data.items():
+                    # 업데이트 키 값 확인.
                     check_list = ['quantity', 'safe_quantity','search_word', 'name']
                     if key in check_list:
                         UPDATE_SET.update({key : value})
                     
+                    # 구성품 업데이트.
+                    # 빈 값 제거.
                     if key == 'components':
+                        if modify_data['components'] == {}:
+                            return JsonResponse({'message' : '빈 값을 받았습니다.'}, status = 403)
+                        # 구성품이 D1,D2에 등록된 상품인지 체크
                         for com_code in modify_data['components'].keys():
                             if   ProductD1.objects.filter(code = com_code).exists():
                                 pass
@@ -555,9 +569,9 @@ class ProductD3InfoView(View):
                                 pass
                             else:
                                 return JsonResponse({'message' : '존재하지 않는다 !'}, status = 403)
-                       
+                        # 체크 후 이 전에 등록 되었던 구성품 전부 삭제.
                         ProductD3Composition.objects.filter(d3_code = d3_code).delete()
-                        
+                        # 새로운 구성품 등록.
                         for com_code, quantity in modify_data['components'].items():
                             ProductD3Composition.objects.create(d3_code = d3_code, com_code = com_code, com_quan = quantity)
 
