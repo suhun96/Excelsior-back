@@ -412,11 +412,11 @@ class ProductD2InfoView(View):
                 )
                 # ProductD2Composition 생성
                 for com_code, quantity in input_data['components'].items():
-                    ProductD2Composition.objects.create(
-                        d2_code = d2_code,
-                        com_code = com_code,
-                        com_quan = quantity
-                    )
+                    if not ProductD1.objects.filter(code = com_code).exists():
+                        return JsonResponse({'message' : f'{com_code}는 존재하지 않는 코드입니다.'}, status = 403)
+                    
+                    ProductD2Composition.objects.create( d2_code = d2_code, com_code = com_code, com_quan = quantity)
+
             return JsonResponse({f'{d2_code}' : 'Product information has been registered.'}, status = 200)
         except KeyError:
             return JsonResponse({'message' : 'Key error'}, status = 403)
@@ -443,12 +443,13 @@ class ProductD2InfoView(View):
                             if   ProductD1.objects.filter(code = com_code).exists():
                                 pass
                             else:
-                                return JsonResponse({'message' : '존재하지 않는다 !'}, status = 403)
+                                return JsonResponse({'message' : f'{ com_code }존재하지 않는다 !'}, status = 403)
                         
                         ProductD2Composition.objects.filter(d2_code = d2_code).delete()
                         
                         for com_code, quantity in modify_data['components'].items():
                             ProductD2Composition.objects.create(d2_code = d2_code, com_code = com_code, com_quan = quantity)
+                    
                     else:
                         pass
 
@@ -491,7 +492,7 @@ class ProductD3InfoView(View):
                     'search_word',
                     'name'
                 ))
-                set_comp_codes = ProductD3Composition.objects.filter(set_code = code).values('com_code', 'com_quan')
+                set_comp_codes = ProductD3Composition.objects.filter(d3_code = code).values('com_code', 'com_quan')
                 dict = {}
                 for code in set_comp_codes:
                     dict.update({code['com_code'] : code['com_quan']})
