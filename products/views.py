@@ -169,64 +169,59 @@ class CompanyView(View):
         except:
             return JsonResponse({'message' : "예외 사항이 발생했습니다."}, status = 403)
 
-class CompanyEtcView(View):
-    def get(self, request):
-        company_code = request.GET.get('code')
-
-        check = list(CompanyETC.objects.filter(comp_code = company_code).values(
-            'id',
-            'title',
-            'contents',
-            'status'
-        ))
-
-        return JsonResponse({'message' : check}, status = 200)
-    
+class CompanyEtcTitleView(View):
     def post(self, request):
         input_data = request.POST
-
-        if Company.objects.filter(code = input_data['code']).exists() == False:
-            return JsonResponse({'message' : '존재하지 않는 회사 코드입니다. 코드를 확인해주세요'}, status = 403)
         
-        if CompanyETC.objects.filter(comp_code = input_data['code']).count() == 10:
-            return JsonResponse({'message' : '등록 가능한 비고란을 전부 사용중 입니다.'}, status = 403)
+        # 나중에 권한 적용
+        CompanyEtcTitle.objects.create(
+            title = input_data['title']
+        )
+        return JsonResponse({'message' : '제목 생성 완료!'}, status = 200)
 
-        CompanyETC.objects.create(
-            comp_code = input_data['code'],
-            title = input_data['title'],
-            contents = input_data['contents'],
-            status = True
-            )
+    def get(self, request):
 
-        return JsonResponse({'message' : '추가 사항이 등록 되었습니다.'}, status = 200)
+        title_list = list(CompanyEtcTitle.objects.all().values('id','title','status')) 
 
-    def put(sefl, request):
-        company_code = request.GET.get('code')
-        company_etc_id = request.GET.get('id')
+        return JsonResponse({'message' : title_list}, status = 200)   
+
+    def put(self, request):
+        title_id = request.GET.get('id')
         modify_data = json.loads(request.body)
 
-        if Company.objects.filter(code = company_code).exists() == False:
-            return JsonResponse({'message' : '존재하지 않는 회사 코드입니다. 코드를 확인해주세요.'}, status = 403)
-        
-        if CompanyETC.objects.filter(id = company_etc_id, comp_code = company_code).exists() == False:
-            return JsonResponse({'message' : '존재하지 않는 정보를 수정할 수 없습니다.'}, status = 403)
-        
         try:
             with transaction.atomic():
                 UPDATE_SET = {}
-
-                update_options = ['title', 'contents', 'status']
+                update_options = ['title', 'status']
 
                 for key, value in modify_data.items():
                     if not key in update_options:
-                        return JsonResponse({'message' : f'{key} 존재하지 않는 키 값입니다.'}, status = 403)
-                    UPDATE_SET.update({ key : value})
+                        return JsonResponse({'message' : '없는 키값'}, status = 403) 
+                    UPDATE_SET.update({key : value})
+                
+                CompanyEtcTitle.objects.filter(id = title_id).update(**UPDATE_SET)
+                return JsonResponse({'message' : 'updated'}, status = 200)
+        except:
+            return JsonResponse({'message' : '예외 사항 발생'}, status = 403)
 
-                CompanyETC.objects.filter(id = company_etc_id, comp_code = company_code).update(**UPDATE_SET)
-                return JsonResponse({'message' : '업데이트 내역을 확인해 주세요~!!'}, status = 200)    
-        except:   
-            return JsonResponse({'message' : '예외 사항이 발생, 로직을 정지합니다. 삐빅'}, status = 403)
+class CompanyEtcDescView(View):
+    def post(self, request):
+        input_data = request.POST
 
+        CompanyEtcDesc.objects.create(comp_code = input_data['comp_code'], company_etc_title_id = input_data['title_id'], contents = input_data['contents'])
+
+        return JsonResponse({'message' : 'ok'}, status = 200)
+
+    def get(self, request):
+        comp_code = request.GET.get('comp_code')
+
+        desc_list = list(CompanyEtcDesc.objects.filter(comp_code = comp_code).values(
+            'company_etc_title',
+            'contents'
+        ))
+        return JsonResponse({'message' : desc_list}, status = 200)
+        
+        
 class CompanyPhonebookView(View):
     def get(self, request):
         company_code = request.GET.get('code')
