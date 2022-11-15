@@ -1,9 +1,11 @@
 from django.db       import models
 from products.models import *
 # Create your models here.
+class Location(models.Model):
+    code = 
 
 class LocationProduct(models.Model):
-    Location       = models.CharField(max_length=20, blank= False)
+    Location_code  = models.CharField(max_length=20, blank= False)
     product_code   = models.CharField(max_length = 10, blank = False)
     desc           = models.CharField(max_length=20 , blank = False)
     quantity       = models.IntegerField(default = 0)
