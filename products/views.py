@@ -174,10 +174,24 @@ class CompanyEtcTitleView(View):
         input_data = request.POST
         
         # 나중에 권한 적용
-        CompanyEtcTitle.objects.create(
-            title = input_data['title']
-        )
-        return JsonResponse({'message' : '제목 생성 완료!'}, status = 200)
+        # try:
+        # with transaction.atomic()
+        UPDATE_SET = {}
+        update_options = ['company_etc_title', 'company_etc_status']
+        set_1 = {
+            'conpany_etc_title' : 'title',
+            'company_etc_status' : 'status'
+        }
+        for key, value in input_data.items():
+            if key in update_options:
+                
+                UPDATE_SET.update({set_1.get(key) : value})                    
+        
+        CompanyEtcTitle.objects.filter(id = int(input_data['company_etc_id'])).update(**UPDATE_SET)
+        return JsonResponse({'message' : 'updated'}, status = 200)
+        # except:
+        #     return JsonResponse({'message' : '예외 사항 발생'}, status = 403)
+        
 
     def get(self, request):
 
@@ -186,20 +200,21 @@ class CompanyEtcTitleView(View):
         return JsonResponse({'message' : title_list}, status = 200)   
 
     def put(self, request):
-        title_id = request.GET.get('id')
+        title_id = request.GET.get('company_etc_id')
+        int_title_id = int(title_id)
         modify_data = json.loads(request.body)
 
         try:
             with transaction.atomic():
                 UPDATE_SET = {}
-                update_options = ['title', 'status']
+                update_options = ['company_etc_title', 'company_etc_status']
 
                 for key, value in modify_data.items():
                     if not key in update_options:
                         return JsonResponse({'message' : '없는 키값'}, status = 403) 
                     UPDATE_SET.update({key : value})
                 
-                CompanyEtcTitle.objects.filter(id = title_id).update(**UPDATE_SET)
+                CompanyEtcTitle.objects.filter(id = int_title_id).update(**UPDATE_SET)
                 return JsonResponse({'message' : 'updated'}, status = 200)
         except:
             return JsonResponse({'message' : '예외 사항 발생'}, status = 403)
@@ -220,7 +235,6 @@ class CompanyEtcDescView(View):
             'contents'
         ))
         return JsonResponse({'message' : desc_list}, status = 200)
-        
         
 class CompanyPhonebookView(View):
     def get(self, request):
