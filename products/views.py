@@ -174,22 +174,24 @@ class CompanyEtcTitleView(View):
         input_data = request.POST
         
         # 나중에 권한 적용
-
         try:
             with transaction.atomic():
                 UPDATE_SET = {}
-                update_options = ['company_etc_title', 'company_etc_status']
 
                 for key, value in input_data.items():
                     if key == 'company_etc_title':
                         UPDATE_SET.update({'title' : value})
                     if key == 'company_etc_status':
-                        UPDATE_SET.update({'status': value})
+                        if value == 'false':
+                            UPDATE_SET.update({'status': False})
+                        elif value == 'true':
+                            UPDATE_SET.update({'status': True})
 
                 CompanyEtcTitle.objects.filter(id = input_data['company_etc_id']).update(**UPDATE_SET)
                 return JsonResponse({'message' : 'updated'}, status = 200)
         except:
             return JsonResponse({'message' : '예외 사항 발생'}, status = 403)
+        
 
     def get(self, request):
 
@@ -232,16 +234,12 @@ class CompanyEtcDescView(View):
             'contents'
         ))
         return JsonResponse({'message' : desc_list}, status = 200)
-<<<<<<< HEAD
-        
-=======
 
     def put(self, request):
         comp_code = request.GET.get('comp_code')
         modify_data = json.loads(request.body)
 
 
->>>>>>> origin
 class CompanyPhonebookView(View):
     def get(self, request):
         company_code = request.GET.get('code')
