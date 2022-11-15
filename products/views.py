@@ -40,8 +40,6 @@ class ProductGroupView(View):
         except:
             return JsonResponse({'message' : '예외 상황 발생'}, status = 403)
    
-    @jwt_decoder
-    @check_status
     def post(self, request):
         input_data = request.POST
 
@@ -69,7 +67,6 @@ class ProductGroupView(View):
             ))
 
             return JsonResponse({'message' : check_PG}, status = 200)
-       
         except KeyError:
             return JsonResponse({'message' : 'KEY ERROR'}, status = 403)
 
@@ -155,6 +152,7 @@ class CompanyView(View):
 
         if company.exists() == False:
             return JsonResponse({'message' : "존재하지 않는 회사입니다."}, status = 403)
+        
         try:
             with transaction.atomic():
                 UPDATE_SET = {}
@@ -171,38 +169,117 @@ class CompanyView(View):
         except:
             return JsonResponse({'message' : "예외 사항이 발생했습니다."}, status = 403)
 
-class CompanyEtcView(View):
+class CompanyEtcTitleView(View):
+    def post(self, request):
+        input_data = request.POST
+        
+        # 나중에 권한 적용
+        CompanyEtcTitle.objects.create(
+            title = input_data['title']
+        )
+        return JsonResponse({'message' : '제목 생성 완료!'}, status = 200)
+
+    def get(self, request):
+
+        title_list = list(CompanyEtcTitle.objects.all().values('id','title','status')) 
+
+        return JsonResponse({'message' : title_list}, status = 200)   
+
+    def put(self, request):
+        title_id = request.GET.get('id')
+        modify_data = json.loads(request.body)
+
+        try:
+            with transaction.atomic():
+                UPDATE_SET = {}
+                update_options = ['title', 'status']
+
+                for key, value in modify_data.items():
+                    if not key in update_options:
+                        return JsonResponse({'message' : '없는 키값'}, status = 403) 
+                    UPDATE_SET.update({key : value})
+                
+                CompanyEtcTitle.objects.filter(id = title_id).update(**UPDATE_SET)
+                return JsonResponse({'message' : 'updated'}, status = 200)
+        except:
+            return JsonResponse({'message' : '예외 사항 발생'}, status = 403)
+
+class CompanyEtcDescView(View):
+    def post(self, request):
+        input_data = request.POST
+
+        CompanyEtcDesc.objects.create(comp_code = input_data['comp_code'], company_etc_title_id = input_data['title_id'], contents = input_data['contents'])
+
+        return JsonResponse({'message' : 'ok'}, status = 200)
+
+    def get(self, request):
+        comp_code = request.GET.get('comp_code')
+
+        desc_list = list(CompanyEtcDesc.objects.filter(comp_code = comp_code).values(
+            'company_etc_title',
+            'contents'
+        ))
+        return JsonResponse({'message' : desc_list}, status = 200)
+        
+        
+class CompanyPhonebookView(View):
     def get(self, request):
         company_code = request.GET.get('code')
-        return
+
+        check = list(CompanyPhonebook.objects.filter(comp_code = company_code).values(
+            'id',
+            'name',
+            'mobile',
+            'email'
+        ))
+
+        return JsonResponse({'message' : check}, status = 200)
     
     def post(self, request):
         input_data = request.POST
-        return
-    
-    def put(sefl, request):
-        company_code = request.GET.get('code')
-        modify_data = json.loads(request.body)
-        company = Company.objects.filter(code = company_code)
 
-        if company.exists() == False:
+        if Company.objects.filter(code = input_data['code']).exists() == False:
+            return JsonResponse({'message' : '존재하지 않는 회사 코드입니다. 코드를 확인해주세요'}, status = 403)
+        
+        if CompanyPhonebook.objects.filter(comp_code = input_data['code']).count() == 5:
+            return JsonResponse({'message' : '등록 가능한 추가 전화번호부를 전부 사용중 입니다.'}, status = 403)
+
+        CompanyPhonebook.objects.create(
+            comp_code = input_data['code'],
+            name = input_data['name'],
+            mobile = input_data['mobile'],
+            email = input_data['email']
+            )
+
+        return JsonResponse({'test' : 'check'}, status = 200)
+    
+    def put(self, request):
+        company_code = request.GET.get('code')
+        company_phonebook_id = request.GET.get('id')
+        modify_data = json.loads(request.body)
+
+        if Company.objects.filter(code = company_code).exists() == False:
             return JsonResponse({'message' : '존재하지 않는 회사 코드입니다. 코드를 확인해주세요.'}, status = 403)
+        
+        if CompanyPhonebook.objects.filter(id = company_phonebook_id, comp_code = company_code).exists() == False:
+            return JsonResponse({'message' : '존재하지 않는 정보를 수정할 수 없습니다.'}, status = 403)
+        
         try:
             with transaction.atomic():
                 UPDATE_SET = {}
 
-                update_options = ['no', 'title', 'contents', 'status']
+                update_options = ['name', 'mobile', 'email']
 
                 for key, value in modify_data.items():
                     if not key in update_options:
                         return JsonResponse({'message' : f'{key} 존재하지 않는 키 값입니다.'}, status = 403)
                     UPDATE_SET.update({ key : value})
 
-                Company.objects.filter(code = company_code).update(**UPDATE_SET)
+                CompanyPhonebook.objects.filter(id = company_phonebook_id, comp_code = company_code).update(**UPDATE_SET)
                 return JsonResponse({'message' : '업데이트 내역을 확인해 주세요~!!'}, status = 200)    
         except:   
             return JsonResponse({'message' : '예외 사항이 발생, 로직을 정지합니다. 삐빅'}, status = 403)
-
+    
 class ProductD1InfoView(View):
     def get(self, request):
         code = request.GET.get('code')
@@ -219,12 +296,12 @@ class ProductD1InfoView(View):
                 q &= Q(search_word__icontains = search_word)
             
             result = list(ProductD1.objects.filter(q).values(
+                'id',
                 'code',
                 'quantity',
                 'safe_quantity',
                 'search_word',
-                'name',
-                'etc'
+                'name'
             ))
         
             return JsonResponse({'message' : result}, status = 200)
@@ -233,7 +310,7 @@ class ProductD1InfoView(View):
     
     def post(self, request):
         input_data = request.POST
-        print(input_data)
+        
         try:
             with transaction.atomic():
                 product_D1_code = code_generator_d1(input_data['pg_code'], input_data['cp_code'])
@@ -304,12 +381,11 @@ class ProductD2InfoView(View):
                     'quantity',
                     'safe_quantity',
                     'search_word',
-                    'name',
-                    'etc'
+                    'name'
                 ))
-                bom_comp_codes = ProductD2Composition.objects.filter(bom_code = code).values('com_code', 'com_quan')
+                d2_comp_codes = ProductD2Composition.objects.filter(d2_code = code).values('com_code', 'com_quan')
                 dict = {}
-                for code in bom_comp_codes:
+                for code in d2_comp_codes:
                     dict.update({code['com_code'] : code['com_quan']})
             
                 return JsonResponse({'Info' : result, 'component' : dict}, status = 200)
@@ -321,51 +397,67 @@ class ProductD2InfoView(View):
 
         try:
             with transaction.atomic():
-                bom_code = code_generator_d1(input_data['pg_code'], 'HV')
+                d2_code = code_generator_d2(input_data['pg_code'], 'EX')
 
                 # 제품 정보
                 ProductD2.objects.create(
-                    code = bom_code,
+                    code = d2_code,
                     quantity = 0,
                     safe_quantity = input_data['safe_quantity'],
                     search_word = input_data['search_word'],
                     name = input_data['name']
                 )
-                # BomComponent 생성
-                for com_code, quantity in input_data['com_codes'].items():
-                    BomComponent.objects.create(
-                        bom_code = bom_code,
-                        com_code = com_code,
-                        com_quan = quantity
-                    )
-            return JsonResponse({f'{bom_code}' : 'Product information has been registered.'}, status = 200)
+                # ProductD2Composition 생성
+                for com_code, quantity in input_data['components'].items():
+                    if not ProductD1.objects.filter(code = com_code).exists():
+                        return JsonResponse({'message' : f'{com_code}는 존재하지 않는 코드입니다.'}, status = 403)
+                    
+                    ProductD2Composition.objects.create( d2_code = d2_code, com_code = com_code, com_quan = quantity)
+
+            return JsonResponse({f'{d2_code}' : 'Product information has been registered.'}, status = 200)
         except KeyError:
             return JsonResponse({'message' : 'Key error'}, status = 403)
 
     def put(self, request):
         modify_data = json.loads(request.body)
-        bom_code = request.GET.get('code')
-        bom = Bom.objects.filter(code = bom_code)
+        d2_code = request.GET.get('code')
+        d2 = ProductD2.objects.filter(code = d2_code)
 
-        if bom.exists() == False:
+        # D2에 등록된 제품인지 확인.
+        if d2.exists() == False:
             return JsonResponse({'message' : '존재하지 않는 제품입니다.'}, status = 403)
+        
         try:
             with transaction.atomic():
                 UPDATE_SET = {}
                 
                 for key, value in modify_data.items():
-                    check_list = ['quantity', 'safe_quantity', 'search_word', 'name','etc']
+                    check_list = ['quantity', 'safe_quantity', 'search_word', 'name']
+
                     if key in check_list:
                         UPDATE_SET.update({key : value})
+                    
+                    if key == 'components':
+                        for com_code in modify_data['components'].keys():
+                            if ProductD1.objects.filter(code = com_code).exists():
+                                pass
+                            else:
+                                return JsonResponse({'message' : f'{ com_code }존재하지 않는다 !'}, status = 403)
+                        
+                        ProductD2Composition.objects.filter(d2_code = d2_code).delete()
+                        
+                        for com_code, quantity in modify_data['components'].items():
+                            ProductD2Composition.objects.create(d2_code = d2_code, com_code = com_code, com_quan = quantity)
+                    
                     else:
                         pass
 
-                Bom.objects.filter(code = bom_code).update(**UPDATE_SET)
+                ProductD2.objects.filter(code = d2_code).update(**UPDATE_SET)
                 return JsonResponse({'message' : 'Check update'}, status = 200)
         except:
             return JsonResponse({'message' : '예외 사항 발생'}, status = 403)
 
-class SetInfoView(View):
+class ProductD3InfoView(View):
     def get(self, request):
         code = request.GET.get('code', None)
         search_word = request.GET.get('search_word')
@@ -381,27 +473,25 @@ class SetInfoView(View):
                 if search_word:
                     q &= Q(search_word__icontains = search_word)
                 
-                result = list(Set.objects.filter(q).values(
+                result = list(ProductD3.objects.filter(q).values(
                 'code',
                 'quantity',
                 'safe_quantity',
                 'search_word',
-                'name',
-                'etc'
+                'name'
                 ))
                 
                 return JsonResponse({'set_info' : result}, status = 200)
             
             if code == code:
-                result = list(Set.objects.filter(code = code).values(
+                result = list(ProductD3.objects.filter(code = code).values(
                     'code',
                     'quantity',
                     'safe_quantity',
                     'search_word',
-                    'name',
-                    'etc'
+                    'name'
                 ))
-                set_comp_codes = SetComponent.objects.filter(set_code = code).values('com_code', 'com_quan')
+                set_comp_codes = ProductD3Composition.objects.filter(d3_code = code).values('com_code', 'com_quan')
                 dict = {}
                 for code in set_comp_codes:
                     dict.update({code['com_code'] : code['com_quan']})
@@ -415,46 +505,72 @@ class SetInfoView(View):
 
         try:
             with transaction.atomic():
-                set_code = component_code_generator(input_data['pg_code'], 'HV')
+                # D3 코드생성 기준 정해야함.
+                d3_code = code_generator_d3('ST', 'EX')
 
                 # 제품 정보
-                Set.objects.create(
-                    code = set_code,
+                ProductD3.objects.create(
+                    code = d3_code,
                     quantity = 0,
                     safe_quantity = input_data['safe_quantity'],
                     search_word = input_data['search_word'],
                     name = input_data['name']
                 )
-                # SetComponent 생성
-                for com_code, quantity in input_data['com_codes'].items():
-                    SetComponent.objects.create(
-                        set_code = set_code,
-                        com_code = com_code,
-                        com_quan = quantity
-                    )
-            return JsonResponse({f'{set_code}' : 'Product information has been registered.'}, status = 200)
+                # components 제품 코드 확인
+                for com_code in input_data['components'].keys():
+                    if ProductD1.objects.filter(code = com_code).exists():
+                        pass
+                    elif ProductD2.objects.filter(code = com_code).exists():
+                        pass
+                    else:
+                        raise KeyError
+                
+                # ProductD3Composition 생성
+                for com_code, quantity in input_data['components'].items():
+                    ProductD3Composition.objects.filter(d3_code = d3_code, com_code = com_code, com_quan = quantity)
+            
+            return JsonResponse({f'{d3_code}' : 'Product information has been registered.'}, status = 200)
         except KeyError:
             return JsonResponse({'message' : 'Key error'}, status = 403)
     
     def put(self, request):
         modify_data = json.loads(request.body)
-        set_code = request.GET.get('code')
-        set = Set.objects.filter(code = set_code)
+        d3_code = request.GET.get('code')
+        d3 = ProductD3.objects.filter(code = d3_code)
 
-        if set.exists() == False:
+        # Product D3가 등록된 제품인지 확인.
+        if d3.exists() == False:
             return JsonResponse({'message' : '존재하지 않는 제품입니다.'}, status = 403)
         try:
             with transaction.atomic():
                 UPDATE_SET = {}
                 
                 for key, value in modify_data.items():
-                    check_list = ['quantity','safe_quantity','search_word', 'name','etc']
+                    # 업데이트 키 값 확인.
+                    check_list = ['quantity', 'safe_quantity','search_word', 'name']
                     if key in check_list:
                         UPDATE_SET.update({key : value})
-                    else:
-                        pass
+                    
+                    # 구성품 업데이트.
+                    # 빈 값 제거.
+                    if key == 'components':
+                        if modify_data['components'] == {}:
+                            return JsonResponse({'message' : '빈 값을 받았습니다.'}, status = 403)
+                        # 구성품이 D1,D2에 등록된 상품인지 체크
+                        for com_code in modify_data['components'].keys():
+                            if   ProductD1.objects.filter(code = com_code).exists():
+                                pass
+                            elif ProductD2.objects.filter(code = com_code).exists():
+                                pass
+                            else:
+                                return JsonResponse({'message' : '존재하지 않는다 !'}, status = 403)
+                        # 체크 후 이 전에 등록 되었던 구성품 전부 삭제.
+                        ProductD3Composition.objects.filter(d3_code = d3_code).delete()
+                        # 새로운 구성품 등록.
+                        for com_code, quantity in modify_data['components'].items():
+                            ProductD3Composition.objects.create(d3_code = d3_code, com_code = com_code, com_quan = quantity)
 
-                Bom.objects.filter(code = set_code).update(**UPDATE_SET)
+                ProductD3.objects.filter(code = d3_code).update(**UPDATE_SET)
                 return JsonResponse({'message' : 'Check update'}, status = 200)
         except:
             return JsonResponse({'message' : '예외 사항 발생'}, status = 403)
