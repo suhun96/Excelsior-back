@@ -457,21 +457,23 @@ class ProductD2InfoView(View):
                     if key in check_list:
                         UPDATE_SET.update({key : value})
                     
-                    if key == 'components':
+                    elif key == 'components':
                         for com_code in modify_data['components'].keys():
                             if ProductD1.objects.filter(code = com_code).exists():
                                 pass
                             else:
                                 return JsonResponse({'message' : f'{ com_code }존재하지 않는다 !'}, status = 403)
-                        
+                        # 구성품 다시 등록이 가능할 때? : 기존 수량을 체크했을 때 0이면 (이미 적재된 구성품에 값을 침범하지 않으니깐?)
+                        # 재고 전부소진 or 0 처리후 다시 등록
+
                         ProductD2Composition.objects.filter(d2_code = d2_code).delete()
                         
                         for com_code, quantity in modify_data['components'].items():
                             ProductD2Composition.objects.create(d2_code = d2_code, com_code = com_code, com_quan = quantity)
                     
                     else:
-                        pass
-
+                        JsonResponse({'message' : f'{key}는 존재하지 않는 키값입니다.'}, status = 403)
+ 
                 ProductD2.objects.filter(code = d2_code).update(**UPDATE_SET)
                 return JsonResponse({'message' : 'Check update'}, status = 200)
         except:
