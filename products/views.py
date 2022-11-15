@@ -174,10 +174,22 @@ class CompanyEtcTitleView(View):
         input_data = request.POST
         
         # 나중에 권한 적용
-        CompanyEtcTitle.objects.create(
-            title = input_data['title']
-        )
-        return JsonResponse({'message' : '제목 생성 완료!'}, status = 200)
+
+        try:
+            with transaction.atomic():
+                UPDATE_SET = {}
+                update_options = ['company_etc_title', 'company_etc_status']
+
+                for key, value in input_data.items():
+                    if key == 'company_etc_title':
+                        UPDATE_SET.update({'title' : value})
+                    if key == 'company_etc_status':
+                        UPDATE_SET.update({'status': value})
+
+                CompanyEtcTitle.objects.filter(id = input_data['company_etc_id']).update(**UPDATE_SET)
+                return JsonResponse({'message' : 'updated'}, status = 200)
+        except:
+            return JsonResponse({'message' : '예외 사항 발생'}, status = 403)
 
     def get(self, request):
 
@@ -185,25 +197,24 @@ class CompanyEtcTitleView(View):
 
         return JsonResponse({'message' : title_list}, status = 200)   
 
-    def put(self, request):
-        title_id = request.GET.get('id')
-        comp_code = request.GET.get('comp_code')
-        modify_data = json.loads(request.body)
+    # def put(self, request):
+    #     title_id = request.GET.get('company_etc_id')
+    #     modify_data = json.loads(request.body)
 
-        try:
-            with transaction.atomic():
-                UPDATE_SET = {}
-                update_options = ['contents']
+    #     try:
+    #         with transaction.atomic():
+    #             UPDATE_SET = {}
+    #             update_options = ['company_etc_title', 'company_etc_status']
 
-                for key, value in modify_data.items():
-                    if not key in update_options:
-                        return JsonResponse({'message' : '없는 키값'}, status = 403) 
-                    UPDATE_SET.update({key : value})
+    #             for key, value in modify_data.items():
+    #                 if not key in update_options:
+    #                     return JsonResponse({'message' : '없는 키값'}, status = 403) 
+    #                 UPDATE_SET.update({key : value})
                 
-                CompanyEtcDesc.objects.filter(comp_code = comp_code, company_etc_title_id = title_id).update(**UPDATE_SET)
-                return JsonResponse({'message' : 'updated'}, status = 200)
-        except:
-            return JsonResponse({'message' : '예외 사항 발생'}, status = 403)
+    #             CompanyEtcTitle.objects.filter(id = title_id).update(**UPDATE_SET)
+    #             return JsonResponse({'message' : 'updated'}, status = 200)
+    #     except:
+    #         return JsonResponse({'message' : '예외 사항 발생'}, status = 403)
 
 class CompanyEtcDescView(View):
     def post(self, request):
