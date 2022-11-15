@@ -187,19 +187,20 @@ class CompanyEtcTitleView(View):
 
     def put(self, request):
         title_id = request.GET.get('id')
+        comp_code = request.GET.get('comp_code')
         modify_data = json.loads(request.body)
 
         try:
             with transaction.atomic():
                 UPDATE_SET = {}
-                update_options = ['title', 'status']
+                update_options = ['contents']
 
                 for key, value in modify_data.items():
                     if not key in update_options:
                         return JsonResponse({'message' : '없는 키값'}, status = 403) 
                     UPDATE_SET.update({key : value})
                 
-                CompanyEtcTitle.objects.filter(id = title_id).update(**UPDATE_SET)
+                CompanyEtcDesc.objects.filter(comp_code = comp_code, company_etc_title_id = title_id).update(**UPDATE_SET)
                 return JsonResponse({'message' : 'updated'}, status = 200)
         except:
             return JsonResponse({'message' : '예외 사항 발생'}, status = 403)
@@ -220,8 +221,12 @@ class CompanyEtcDescView(View):
             'contents'
         ))
         return JsonResponse({'message' : desc_list}, status = 200)
-        
-        
+
+    def put(self, request):
+        comp_code = request.GET.get('comp_code')
+        modify_data = json.loads(request.body)
+
+
 class CompanyPhonebookView(View):
     def get(self, request):
         company_code = request.GET.get('code')
