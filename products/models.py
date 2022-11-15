@@ -29,7 +29,7 @@ class Company(models.Model): # managers 확인 하세요!
 
 class CompanyEtcDesc(models.Model):
     comp_code = models.CharField(max_length = 10, blank = False)
-    title     = models.ForeignKey('CompanyEtcTitle', on_delete= models.CASCADE)
+    company_etc_title = models.ForeignKey('CompanyEtcTitle', on_delete= models.CASCADE)
     contents  = models.CharField(max_length = 700) 
     
     class Meta:
