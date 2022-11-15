@@ -194,51 +194,54 @@ class CompanyEtcTitleView(View):
         
 
     def get(self, request):
-
+        # 권한 설정
         title_list = list(CompanyEtcTitle.objects.all().values('id','title','status')) 
 
         return JsonResponse({'message' : title_list}, status = 200)   
 
-    # def put(self, request):
-    #     title_id = request.GET.get('company_etc_id')
-    #     modify_data = json.loads(request.body)
-
-    #     try:
-    #         with transaction.atomic():
-    #             UPDATE_SET = {}
-    #             update_options = ['company_etc_title', 'company_etc_status']
-
-    #             for key, value in modify_data.items():
-    #                 if not key in update_options:
-    #                     return JsonResponse({'message' : '없는 키값'}, status = 403) 
-    #                 UPDATE_SET.update({key : value})
-                
-    #             CompanyEtcTitle.objects.filter(id = title_id).update(**UPDATE_SET)
-    #             return JsonResponse({'message' : 'updated'}, status = 200)
-    #     except:
-    #         return JsonResponse({'message' : '예외 사항 발생'}, status = 403)
-
 class CompanyEtcDescView(View):
     def post(self, request):
         input_data = request.POST
-
+        
+        # 회사 코드 확인
+        if not Company.objects.filter(code = input_data['comp_code']).exists():
+            return JsonResponse({'message' : '존재하지 않는 회사 코드입니다.'}, status = 403)
+        
         CompanyEtcDesc.objects.create(comp_code = input_data['comp_code'], company_etc_title_id = input_data['title_id'], contents = input_data['contents'])
 
         return JsonResponse({'message' : 'ok'}, status = 200)
 
     def get(self, request):
-        comp_code = request.GET.get('comp_code')
 
-        desc_list = list(CompanyEtcDesc.objects.filter(comp_code = comp_code).values(
-            'company_etc_title',
-            'contents'
-        ))
-        return JsonResponse({'message' : desc_list}, status = 200)
+        filter_options = {
+            'comp_code' : 'comp_code__icontains'
+        }        
+
+        filter_set = { filter_options.get(key) : value for (key, value) in request.GET.items() if filter_options.get(key) }
+        
+        result = list(CompanyEtcDesc.objects.filter(**filter_set).values())
+        
+        return JsonResponse({'message' : result}, status = 200)
 
     def put(self, request):
         comp_code = request.GET.get('comp_code')
+        company_etc_title_id = request.GET.get('company_etc_id')
         modify_data = json.loads(request.body)
+        
+        if not 'comp_code' in request.GET:
+            return JsonResponse({'message' : '수정할 회사 코드가 입력되지 않았습니다'}, status = 403)
 
+        if not 'company_etc_id' in request.GET:
+            return JsonResponse({'message' : '수정할 제목이 선택되지 않았습니다.'}, status = 403)
+
+        try:
+            with transaction.atomic():
+                CompanyEtcDesc.objects.filter(comp_code = comp_code, company_etc_title_id = company_etc_title_id).update(
+                    contents = modify_data['contents']
+                )
+            return JsonResponse({'message' : '수정 완료'}, status = 200)
+        except:
+            return JsonResponse({'message' : '예외 사항 발생'}, status = 403)
 
 class CompanyPhonebookView(View):
     def get(self, request):
