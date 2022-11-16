@@ -43,32 +43,32 @@ class ProductGroupView(View):
     def post(self, request):
         input_data = request.POST
 
-        try:
-            if not "name" in input_data or not "code" in input_data:
-                return JsonResponse({'message' : 'Please enter the correct value.'}, status = 403)
+        # try:
+        if not "name" in input_data or not "code" in input_data:
+            return JsonResponse({'message' : 'Please enter the correct value.'}, status = 403)
 
-            new_PG , is_created = ProductGroup.objects.filter(
-                Q(name = input_data['name']) | Q(code = input_data['code'])
-            ).get_or_create(
-                defaults= {
-                    'name' : input_data['name'],
-                    'code' : input_data['code'],
-                    'etc'  : input_data['etc']
-                })
+        new_PG , is_created = ProductGroup.objects.filter(
+            Q(name = input_data['name']) | Q(code = input_data['code'])
+        ).get_or_create(
+            defaults= {
+                'name' : input_data['name'],
+                'code' : input_data['code'],
+                'etc'  : input_data['etc']
+            })
 
-            if is_created == False:
-                return JsonResponse({'messaga' : 'The product code(name) is already registered.'}, status = 403)      
+        if is_created == False:
+            return JsonResponse({'messaga' : 'The product code(name) is already registered.'}, status = 403)      
 
-            check_PG = list(ProductGroup.objects.filter(id = new_PG.id).values(
-                'id',
-                'name',
-                'code',
-                'etc'
-            ))
+        check_PG = list(ProductGroup.objects.filter(id = new_PG.id).values(
+            'id',
+            'name',
+            'code',
+            'etc'
+        ))
 
-            return JsonResponse({'message' : check_PG}, status = 200)
-        except KeyError:
-            return JsonResponse({'message' : 'KEY ERROR'}, status = 403)
+        return JsonResponse({'message' : check_PG}, status = 200)
+        # except KeyError:
+        #     return JsonResponse({'message' : 'KEY ERROR'}, status = 403)
 
 class CompanyView(View):
     def get(self, request):
