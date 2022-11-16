@@ -16,25 +16,18 @@ from products.utils     import *
 
 class ProductGroupView(View):
     def get(self, request):
-        name = request.GET.get('name', None)
-        code = request.GET.get('code', None)
-        sort = request.GET.get('sort', None)
+        name = request.GET.get('name')
+        code = request.GET.get('code')
+        sort = request.GET.get('sort')
+
         try:
             q = Q()
             if name:
                 q &= Q(name__icontains = name)
             if code:
                 q &= Q(code__icontains = code)
-
-            order_condition = {
-                'up' : 'name',
-                'down' : '-name'
-            }
-            if sort in order_condition:
-                sort = (order_condition[sort])
-
             
-            result = list(ProductGroup.objects.filter(q).order_by(sort).values())
+            result = list(ProductGroup.objects.filter(q).values())
         
             return JsonResponse({'message' : result}, status = 200)
         except:
@@ -43,38 +36,36 @@ class ProductGroupView(View):
     def post(self, request):
         input_data = request.POST
 
-        # try:
+        
         if not "name" in input_data:
             return JsonResponse({'message' : 'Please enter the correct value.'}, status = 403)
 
-            if ProductGroup.objects.filter(name = input_data['name']).exists():
-                return JsonResponse({'messaga' : 'The product name is already registered.'}, status = 403)
+        if ProductGroup.objects.filter(name = input_data['name']).exists():
+            return JsonResponse({'messaga' : 'The product name is already registered.'}, status = 403)
 
-            if ProductGroup.objects.filter(code = input_data['code']).exists():
-                return JsonResponse({'messaga' : 'The product code is already registered.'}, status = 403)     
+        if ProductGroup.objects.filter(code = input_data['code']).exists():
+            return JsonResponse({'messaga' : 'The product code is already registered.'}, status = 403)     
             
-            CREATE_SET = {}
-            CREATE_OPT = ['name', 'code', 'etc']
-            # create_options 로 request.POST 의 키값이 정확한지 확인.
-            for key in dict(request.POST).keys():
-                if key in CREATE_OPT:
-                    CREATE_SET.update({ key : request.POST[key] })
-                else:
-                    return JsonResponse({'message' : '잘못된 키값이 들어오고 있습니다.'}, status = 403)
+        CREATE_SET = {}
+        CREATE_OPT = ['name', 'code', 'etc']
+        # create_options 로 request.POST 의 키값이 정확한지 확인.
+        for key in dict(request.POST).keys():
+            if key in CREATE_OPT:
+                CREATE_SET.update({ key : request.POST[key] })
+            else:
+                return JsonResponse({'message' : '잘못된 키값이 들어오고 있습니다.'}, status = 403)
 
-            new_product_group = ProductGroup.objects.create(**CREATE_SET)
+        new_product_group = ProductGroup.objects.create(**CREATE_SET)
 
-            check_PG = list(ProductGroup.objects.filter(id = new_product_group.id).values(
-                'id',
-                'name',
-                'code',
-                'etc',
-                'status'
-            ))
+        check_PG = list(ProductGroup.objects.filter(id = new_product_group.id).values(
+            'id',
+            'name',
+            'code',
+            'etc',
+            'status'
+        ))
 
-            return JsonResponse({'message' : check_PG}, status = 200)
-        except KeyError:
-            return JsonResponse({'message' : 'KEY ERROR'}, status = 403)
+        return JsonResponse({'message' : check_PG}, status = 200)
     
     def put(self, request):
         input_data = json.loads(request.body)
@@ -127,66 +118,54 @@ class CompanyView(View):
     def post(self, request):
         input_data = request.POST
         
-        try:
-            with transaction.atomic():
-                # 필수값 (이름, 코드, 번호)이 있는지 확인 없으면 에러 발생.
-                if not "name" in input_data:
-                    return JsonResponse({'message' : 'Please enter the correct value.'}, status = 403)
-            
-                create_options = [
-                    'name',
-                    'keyword',
-                    'code',
-                    'represent',
-                    'biz_no',
-                    'biz_type',
-                    'biz_item',
-                    'phone',
-                    'fax',
-                    'email',
-                    'address_main',
-                    'address_desc',
-                    'zip_code'
-                    ]
-
-                CREATE_SET = {}
-
-                # create_options 로 request.POST 의 키값이 정확한지 확인.
-                for key in dict(request.POST).keys():
-                    if key in create_options:
-                        CREATE_SET.update({ key : request.POST[key] })
-                    else:
-                        return JsonResponse({'message' : '잘못된 키값이 들어오고 있습니다.'}, status = 403)
+        # try:
+        with transaction.atomic():
+            # 필수값 (이름, 코드, 번호)이 있는지 확인 없으면 에러 발생.
+            if not "name" in input_data:
+                return JsonResponse({'message' : 'Please enter the correct value.'}, status = 403)
         
-                # 중복 생성 방지.
-                new_company , is_created = Company.objects.filter(
-                    Q(name = input_data['name']) | Q(code = input_data['code'])
-                ).get_or_create(
-                    defaults = {**CREATE_SET} )
-                
-                if is_created == False:
-                    return JsonResponse({'messaga' : 'The company code(name) is already registered.'}, status = 403)      
+            create_options = [
+                'name',
+                'keyword',
+                'code',
+                'represent',
+                'biz_no',
+                'biz_type',
+                'biz_item',
+                'phone',
+                'fax',
+                'email',
+                'address_main',
+                'address_desc',
+                'zip_code'
+                ]
 
-                check_created = list(Company.objects.filter(id = new_company.id).values(
-                    'name',     
-                    'keyword',  
-                    'code',     
-                    'represent',    
-                    'biz_no',   
-                    'biz_type', 
-                    'biz_item', 
-                    'phone',    
-                    'fax',         
-                    'email',    
-                    'address_main', 
-                    'address_desc', 
-                    'zip_code',
-                    'status'  
-                ))
+            CREATE_SET = {}
 
-            return JsonResponse({'message' : check_created}, status = 200)
-        except KeyError:
-            return JsonResponse({'message' : 'KEY ERROR'}, status = 403)
+            # create_options 로 request.POST 의 키값이 정확한지 확인.
+            for key in dict(request.POST).keys():
+                if key in create_options:
+                    CREATE_SET.update({ key : request.POST[key] })
+                else:
+                    return JsonResponse({'message' : '잘못된 키값이 들어오고 있습니다.'}, status = 403)
+    
+            # 중복 생성 방지.
+            # if Company.objects.filter(name = input_data['name']).exists():
+            #     return JsonResponse({'message' : '이름 중복'}, status = 403)
+            
+            if 'code' in input_data:
+                if input_data['code'] == '':
+                    return JsonResponse({'message' : "'code' 가 빈값으로 들어왔습니다"}, status = 403)
+                elif Company.objects.filter(code = input_data['code']).exists():
+                    return JsonResponse({'message' : '코드 중복'}, status = 403)
+
+            new_company = Company.objects.create(**CREATE_SET)
+
+            check_created = list(Company.objects.filter(id = new_company.id).values())
+
+        return JsonResponse({'message' : check_created}, status = 200)
+        # except KeyError:
+        #     return JsonResponse({'message' : 'KEY ERROR'}, status = 403)
 
     def put(self, request):
         modify_data = json.loads(request.body)
