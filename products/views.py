@@ -18,8 +18,7 @@ class ProductGroupView(View):
     def get(self, request):
         name = request.GET.get('name')
         code = request.GET.get('code')
-        sort = request.GET.get('sort')
-
+        
         try:
             q = Q()
             if name:
