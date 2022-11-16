@@ -38,6 +38,7 @@ class SignUpView(View):
                 if not re.fullmatch(REGEX_PW, password):
                     return JsonResponse({'message' : '비밀번호 정규표현식, 8자 이상 16자 이하, 소문자, 숫자 최소 하나 사용 '}, status = 403)
 
+            
                 new_user , is_created = User.objects.get_or_create(
                     phone = data['phone'],
                     defaults = {
@@ -49,22 +50,12 @@ class SignUpView(View):
                     'position'    : data['position'],
                     'status'      : False 
                     # admin  False / status 기본적으로 True (True = 활성화 , False = 비활성화)  
-                    }
-                    )
+                    })
 
                 if not is_created:
                     return JsonResponse({'message' : 'The phone number is already registered.'}, status = 403)
                 
-                check_user_info = list(User.objects.filter(id = new_user.id).values(
-                    "phone",
-                    "name",
-                    'email',
-                    'team', 
-                    "password",
-                    "position",
-                    "admin",
-                    "status"
-                )) 
+                check_user_info = list(User.objects.filter(id = new_user.id).values()) 
                 
             return JsonResponse({'message' : check_user_info }, status = 200)
         except Exception:
