@@ -47,19 +47,24 @@ class ProductGroupView(View):
             if not "name" in input_data or not "code" in input_data:
                 return JsonResponse({'message' : 'Please enter the correct value.'}, status = 403)
 
-            new_PG , is_created = ProductGroup.objects.filter(
-                Q(name = input_data['name']) | Q(code = input_data['code'])
-            ).get_or_create(
-                defaults= {
-                    'name' : input_data['name'],
-                    'code' : input_data['code'],
-                    'etc'  : input_data['etc']
-                })
+            if ProductGroup.objects.filter(name = input_data['name']).exists():
+                return JsonResponse({'messaga' : 'The product name is already registered.'}, status = 403)
 
-            if is_created == False:
-                return JsonResponse({'messaga' : 'The product code(name) is already registered.'}, status = 403)      
+            if ProductGroup.objects.filter(code = input_data['code']).exists():
+                return JsonResponse({'messaga' : 'The product code is already registered.'}, status = 403)     
+            
+            CREATE_SET = {}
+            CREATE_OPT = ['name', 'code', 'etc']
+            # create_options 로 request.POST 의 키값이 정확한지 확인.
+            for key in dict(request.POST).keys():
+                if key in CREATE_OPT:
+                    CREATE_SET.update({ key : request.POST[key] })
+                else:
+                    return JsonResponse({'message' : '잘못된 키값이 들어오고 있습니다.'}, status = 403)
 
-            check_PG = list(ProductGroup.objects.filter(id = new_PG.id).values(
+            new_product_group = ProductGroup.objects.create(**CREATE_SET)
+
+            check_PG = list(ProductGroup.objects.filter(id = new_product_group.id).values(
                 'id',
                 'name',
                 'code',
@@ -70,6 +75,29 @@ class ProductGroupView(View):
             return JsonResponse({'message' : check_PG}, status = 200)
         except KeyError:
             return JsonResponse({'message' : 'KEY ERROR'}, status = 403)
+    
+    def put(self, request):
+        input_data = json.loads(request.body)
+        group_id = request.GET.get('group_id')
+
+        if not ProductGroup.objects.filter(id = group_id).exists():
+            return JsonResponse({'message' : '존재하지 않는 제품그룹입니다.'}, status = 403)
+
+        try:
+            with transaction.atomic():
+                UPDATE_SET = {}
+
+                update_options = ['name', 'etc']
+
+                for key, value in input_data.items():
+                    if not key in update_options:
+                        return JsonResponse({'message' : f'{key} 존재하지 않는 키값입니다.'}, status = 403)
+                    UPDATE_SET.update({ key : value })
+                    
+                ProductGroup.objects.filter(id = group_id).update(**UPDATE_SET)
+                return JsonResponse({'message' : '업데이트 내역을 확인해 주세요~!!'}, status = 200)
+        except:
+            return JsonResponse({'message' : "예외 사항이 발생했습니다."}, status = 403)
 
 class CompanyView(View):
     def get(self, request):
