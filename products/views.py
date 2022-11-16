@@ -77,7 +77,7 @@ class CompanyView(View):
             'name'     : 'name__icontains',
             'keyword'  : 'keyword__icontains',
             'code'     : 'code__icontains',
-            'owner'    : 'ownet__icontains',
+            'represent': 'represent__icontains',
             'biz_no'   : 'biz_no__icontains',
             'biz_type' : 'biz_type__icontains',
             'biz_item' : 'biz_item__icontains',
@@ -158,7 +158,7 @@ class CompanyView(View):
             with transaction.atomic():
                 UPDATE_SET = {}
 
-                update_options = ['name','keyword','owner','biz_no','biz_type','biz_item','phone','fax','email','address_main','address_desc','zip_code']
+                update_options = ['name','keyword','represent','biz_no','biz_type','biz_item','phone','fax','email','address_main','address_desc','zip_code']
 
                 for key, value in modify_data.items():
                     if not key in update_options:
