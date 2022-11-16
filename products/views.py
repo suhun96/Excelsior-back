@@ -153,6 +153,7 @@ class CompanyView(View):
         if company.exists() == False:
             return JsonResponse({'message' : "존재하지 않는 회사입니다."}, status = 403)
         
+        
         try:
             with transaction.atomic():
                 UPDATE_SET = {}
