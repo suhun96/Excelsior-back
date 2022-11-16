@@ -44,7 +44,7 @@ class ProductGroupView(View):
         input_data = request.POST
 
         # try:
-        if not "name" in input_data or not "code" in input_data:
+        if not "name" in input_data:
             return JsonResponse({'message' : 'Please enter the correct value.'}, status = 403)
 
         new_PG , is_created = ProductGroup.objects.filter(
@@ -83,7 +83,6 @@ class CompanyView(View):
             'biz_item' : 'biz_item__icontains',
             'phone'    : 'phone__icontains',
             'fax'      : 'fax__icontains',
-            'mobile'   : 'mobile__icontains',
             'email'    : 'email__icontains',
             'address_main' : 'address_main__icontains',
             'address_desc' : 'address_desc__icontains',
@@ -105,7 +104,21 @@ class CompanyView(View):
                 if not "name" in input_data:
                     return JsonResponse({'message' : 'Please enter the correct value.'}, status = 403)
             
-                create_options = ['name','keyword','code','present','biz_no','biz_type','biz_item','phone','fax','email','address_main','address_desc','zip_code']
+                create_options = [
+                    'name',
+                    'keyword',
+                    'code',
+                    'represent',
+                    'biz_no',
+                    'biz_type',
+                    'biz_item',
+                    'phone',
+                    'fax',
+                    'email',
+                    'address_main',
+                    'address_desc',
+                    'zip_code'
+                    ]
 
                 CREATE_SET = {}
 
