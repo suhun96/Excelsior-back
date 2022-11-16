@@ -129,7 +129,7 @@ class CompanyView(View):
                     'name',     
                     'keyword',  
                     'code',     
-                    'owner',    
+                    'represent',    
                     'biz_no',   
                     'biz_type', 
                     'biz_item', 
