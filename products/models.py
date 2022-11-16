@@ -5,6 +5,7 @@ class ProductGroup(models.Model):
     name        = models.CharField(max_length = 60, blank = False)
     code        = models.CharField(max_length = 10, blank = False)
     etc         = models.CharField(max_length = 3000)
+    status      = models.BooleanField(default = True)
 
     class Meta:
         db_table = 'product_groups'
@@ -13,7 +14,7 @@ class Company(models.Model): # managers 확인 하세요!
     name         = models.CharField(max_length = 60, blank = False)
     keyword      = models.CharField(max_length = 150)
     code         = models.CharField(max_length = 10, blank = False)
-    owner        = models.CharField(max_length = 30)
+    represent    = models.CharField(max_length = 30)
     biz_no       = models.CharField(max_length = 30)
     biz_type     = models.CharField(max_length = 100)
     biz_item     = models.CharField(max_length = 100)
@@ -23,6 +24,7 @@ class Company(models.Model): # managers 확인 하세요!
     address_main = models.CharField(max_length = 120)
     address_desc = models.CharField(max_length = 120)
     zip_code     = models.CharField(max_length = 100)
+    status       = models.BooleanField(default = True)
 
     class Meta:
         db_table = 'companies'
