@@ -63,7 +63,8 @@ class ProductGroupView(View):
                 'id',
                 'name',
                 'code',
-                'etc'
+                'etc',
+                'status'
             ))
 
             return JsonResponse({'message' : check_PG}, status = 200)
