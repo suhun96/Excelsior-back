@@ -47,30 +47,6 @@ class ProductGroupView(View):
         if not "name" in input_data:
             return JsonResponse({'message' : 'Please enter the correct value.'}, status = 403)
 
-<<<<<<< HEAD
-        new_PG , is_created = ProductGroup.objects.filter(
-            Q(name = input_data['name']) | Q(code = input_data['code'])
-        ).get_or_create(
-            defaults= {
-                'name' : input_data['name'],
-                'code' : input_data['code'],
-                'etc'  : input_data['etc']
-            })
-
-        if is_created == False:
-            return JsonResponse({'messaga' : 'The product code(name) is already registered.'}, status = 403)      
-
-        check_PG = list(ProductGroup.objects.filter(id = new_PG.id).values(
-            'id',
-            'name',
-            'code',
-            'etc'
-        ))
-
-        return JsonResponse({'message' : check_PG}, status = 200)
-        # except KeyError:
-        #     return JsonResponse({'message' : 'KEY ERROR'}, status = 403)
-=======
             if ProductGroup.objects.filter(name = input_data['name']).exists():
                 return JsonResponse({'messaga' : 'The product name is already registered.'}, status = 403)
 
@@ -122,7 +98,6 @@ class ProductGroupView(View):
                 return JsonResponse({'message' : '업데이트 내역을 확인해 주세요~!!'}, status = 200)
         except:
             return JsonResponse({'message' : "예외 사항이 발생했습니다."}, status = 403)
->>>>>>> origin
 
 class CompanyView(View):
     def get(self, request):
