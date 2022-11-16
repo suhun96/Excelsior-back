@@ -112,7 +112,6 @@ class CompanyView(View):
             'biz_item' : 'biz_item__icontains',
             'phone'    : 'phone__icontains',
             'fax'      : 'fax__icontains',
-            'mobile'   : 'mobile__icontains',
             'email'    : 'email__icontains',
             'address_main' : 'address_main__icontains',
             'address_desc' : 'address_desc__icontains',
@@ -146,30 +145,15 @@ class CompanyView(View):
                         return JsonResponse({'message' : '잘못된 키값이 들어오고 있습니다.'}, status = 403)
         
                 # 중복 생성 방지.
-                new_company , is_created = Company.objects.filter(
-                    Q(name = input_data['name']) | Q(code = input_data['code'])
-                ).get_or_create(
-                    defaults = {**CREATE_SET} )
-                
-                if is_created == False:
-                    return JsonResponse({'messaga' : 'The company code(name) is already registered.'}, status = 403)      
+                if 'code' in input_data:
+                    if input_data['code'] == '':
+                        return JsonResponse({'message' : "'code' 가 빈값으로 들어왔습니다"}, status = 403)
+                    elif Company.objects.filter(code = input_data['code']).exists():
+                        return JsonResponse({'message' : '코드 중복'}, status = 403)
 
-                check_created = list(Company.objects.filter(id = new_company.id).values(
-                    'name',     
-                    'keyword',  
-                    'code',     
-                    'represent',    
-                    'biz_no',   
-                    'biz_type', 
-                    'biz_item', 
-                    'phone',    
-                    'fax',         
-                    'email',    
-                    'address_main', 
-                    'address_desc', 
-                    'zip_code',
-                    'status'  
-                ))
+                new_company = Company.objects.create(**CREATE_SET)
+
+                check_created = list(Company.objects.filter(id = new_company.id).values())
 
             return JsonResponse({'message' : check_created}, status = 200)
         except KeyError:
