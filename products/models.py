@@ -13,7 +13,7 @@ class ProductGroup(models.Model):
 class Company(models.Model): # managers 확인 하세요!
     name         = models.CharField(max_length = 60, blank = False)
     keyword      = models.CharField(max_length = 150)
-    code         = models.CharField(max_length = 10, blank = False)
+    code         = models.CharField(max_length = 10)
     represent    = models.CharField(max_length = 30)
     biz_no       = models.CharField(max_length = 30)
     biz_type     = models.CharField(max_length = 100)

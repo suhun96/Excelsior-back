@@ -102,7 +102,7 @@ class CompanyView(View):
         try:
             with transaction.atomic():
                 # 필수값 (이름, 코드, 번호)이 있는지 확인 없으면 에러 발생.
-                if not "name" in input_data or not "code" in input_data or not "phone" in input_data:
+                if not "name" in input_data:
                     return JsonResponse({'message' : 'Please enter the correct value.'}, status = 403)
             
                 create_options = ['name','keyword','code','present','biz_no','biz_type','biz_item','phone','fax','email','address_main','address_desc','zip_code']
@@ -138,7 +138,8 @@ class CompanyView(View):
                     'email',    
                     'address_main', 
                     'address_desc', 
-                    'zip_code',  
+                    'zip_code',
+                    'status'  
                 ))
 
             return JsonResponse({'message' : check_created}, status = 200)
@@ -147,8 +148,8 @@ class CompanyView(View):
 
     def put(self, request):
         modify_data = json.loads(request.body)
-        company_code = request.GET.get('code')
-        company = Company.objects.filter(code = company_code)
+        company_id = request.GET.get('company_id')
+        company = Company.objects.filter(id = company_id)
 
         if company.exists() == False:
             return JsonResponse({'message' : "존재하지 않는 회사입니다."}, status = 403)
@@ -165,7 +166,7 @@ class CompanyView(View):
                         return JsonResponse({'message' : f'{key} 존재하지 않는 키값입니다.'}, status = 403)
                     UPDATE_SET.update({ key : value })
                     
-                Company.objects.filter(code = company_code).update(**UPDATE_SET)
+                Company.objects.filter(id = company_id).update(**UPDATE_SET)
                 return JsonResponse({'message' : '업데이트 내역을 확인해 주세요~!!'}, status = 200)
         except:
             return JsonResponse({'message' : "예외 사항이 발생했습니다."}, status = 403)
@@ -596,7 +597,6 @@ class ProductD3InfoView(View):
                 return JsonResponse({'message' : 'Check update'}, status = 200)
         except:
             return JsonResponse({'message' : '예외 사항 발생'}, status = 403)
-
 
 
 
