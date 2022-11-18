@@ -175,7 +175,7 @@ class CompanyEtcDescView(View):
         return JsonResponse({'message' : result}, status = 200)
 
     def put(self, request):
-        comp_code = request.GET.get('comp_code')
+        company_id = request.GET.get('company_id')
         company_etc_title_id = request.GET.get('company_etc_id')
         modify_data = json.loads(request.body)
         
@@ -187,7 +187,7 @@ class CompanyEtcDescView(View):
 
         try:
             with transaction.atomic():
-                CompanyEtcDesc.objects.filter(comp_code = comp_code, company_etc_title_id = company_etc_title_id).update(
+                CompanyEtcDesc.objects.filter(company_id = company_id, company_etc_title_id = company_etc_title_id).update(
                     contents = modify_data['contents']
                 )
             return JsonResponse({'message' : '수정 완료'}, status = 200)
