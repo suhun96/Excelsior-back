@@ -4,7 +4,7 @@ from django.views       import View
 from django.http        import JsonResponse
 from django.db          import transaction, connection
 from django.db.models   import Q
-
+from django.utils       import timezone  
 
 # Model
 from users.models       import *
@@ -78,22 +78,7 @@ class CompanyView(View):
                 
                 new_company = Company.objects.create(**CREATE_SET)
 
-                check_created = list(Company.objects.filter(id = new_company.id).values(
-                    'name',     
-                    'keyword',  
-                    'code',     
-                    'represent',    
-                    'biz_no',   
-                    'biz_type', 
-                    'biz_item', 
-                    'phone',    
-                    'fax',         
-                    'email',    
-                    'address_main', 
-                    'address_desc', 
-                    'zip_code',
-                    'status'  
-                ))
+                check_created = list(Company.objects.filter(id = new_company.id).values())
 
             return JsonResponse({'message' : check_created}, status = 200)
         except KeyError:
@@ -109,7 +94,7 @@ class CompanyView(View):
         
         try:
             with transaction.atomic():
-                UPDATE_SET = {}
+                UPDATE_SET = {'updated_at' : datetime.today()}
 
                 update_options = ['name','keyword','represent','biz_no','biz_type','biz_item','phone','fax','email','address_main','address_desc','zip_code']
 

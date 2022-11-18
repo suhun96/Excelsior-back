@@ -243,15 +243,7 @@ class UserListView(View):
                 return JsonResponse({'message' : "존재하지 않는 유저로부터 요청이 왔습니다."}, status = 403)
 
             else:
-                user_list = list(User.objects.all().values(
-                    'phone',
-                    'name',
-                    'email',
-                    'team',
-                    'position',
-                    'admin',
-                    'status'
-                ))
+                user_list = list(User.objects.all().values())
             return JsonResponse({'user_list' : user_list} , status = 200)
         except:  
             return JsonResponse({'message' : '예외 사항 발생'} , status = 403)
