@@ -25,7 +25,7 @@ class CompanyEtcTitle(models.Model):
 
     class Meta:
         db_table = 'company_etc_title'
-         
+
 class CompanyEtcDesc(models.Model):
     company = models.ForeignKey('Company', on_delete= models.CASCADE)
     company_etc_title = models.ForeignKey('CompanyEtcTitle', on_delete= models.CASCADE)
