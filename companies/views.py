@@ -65,7 +65,7 @@ class CompanyView(View):
                     
                     if key == 'code':
                         if Company.objects.filter(code = input_data['code']).exists():
-                            return JsonResponse({'message' : '회사 코드가 이미 존재합니다.'})
+                            return JsonResponse({'message' : '회사 코드가 이미 존재합니다.'}, status = 403)
                         
                         CREATE_SET.update({ key : request.POST[key] }) 
 
