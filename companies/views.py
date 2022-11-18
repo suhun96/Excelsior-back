@@ -76,7 +76,8 @@ class CompanyView(View):
                         return JsonResponse({'message' : '잘못된 키값이 들어오고 있습니다.'}, status = 403)
         
                 
-
+                new_company = Company.objects.create(**CREATE_SET)
+                
                 check_created = list(Company.objects.filter(id = new_company.id).values(
                     'name',     
                     'keyword',  
