@@ -50,26 +50,35 @@ class CompanyView(View):
                 # 필수값 (이름, 코드, 번호)이 있는지 확인 없으면 에러 발생.
                 if not "name" in input_data:
                     return JsonResponse({'message' : 'Please enter the correct value.'}, status = 403)
-            
+
+                if "code" in input_data:
+                    if Company.objects.filter(code = input_data['code']).exists():
+                        return JsonResponse({'message' : '회사 코드가 이미 존재합니다.'})
+                
                 create_options = ['name','keyword','code','represent','biz_no','biz_type','biz_item','phone','fax','email','address_main','address_desc','zip_code']
 
                 CREATE_SET = {}
 
                 # create_options 로 request.POST 의 키값이 정확한지 확인.
                 for key in dict(request.POST).keys():
-                    if key in create_options:
+                    if key == 'name':
+                        if Company.objects.filter(name = request.POST[key]) == False:
+                            return JsonResponse({'message' : '회사 이름이 존재합니다.'}, status = 403)
+                        CREATE_SET.update({ key : request.POST[key] }) 
+
+                    elif key in create_options:
                         CREATE_SET.update({ key : request.POST[key] })
                     else:
                         return JsonResponse({'message' : '잘못된 키값이 들어오고 있습니다.'}, status = 403)
         
                 # 중복 생성 방지.
-                new_company , is_created = Company.objects.filter(
-                    Q(name = input_data['name']) | Q(code = input_data['code'])
-                ).get_or_create(
-                    defaults = {**CREATE_SET} )
+                # new_company , is_created = Company.objects.filter(
+                #     Q(name = input_data['name']) | Q(code = input_data['code'])
+                # ).get_or_create(
+                #     defaults = {**CREATE_SET} )
                 
-                if is_created == False:
-                    return JsonResponse({'messaga' : 'The company code(name) is already registered.'}, status = 403)      
+                # if is_created == False:
+                #     return JsonResponse({'messaga' : 'The company code(name) is already registered.'}, status = 403)
 
                 check_created = list(Company.objects.filter(id = new_company.id).values(
                     'name',     
