@@ -55,16 +55,7 @@ class SignUpView(View):
                 if not is_created:
                     return JsonResponse({'message' : 'The phone number is already registered.'}, status = 403)
                 
-                check_user_info = list(User.objects.filter(id = new_user.id).values(
-                    "phone",
-                    "name",
-                    'email',
-                    'team', 
-                    "password",
-                    "position",
-                    "admin",
-                    "status"
-                )) 
+                check_user_info = list(User.objects.filter(id = new_user.id).values()) 
                 
             return JsonResponse({'message' : check_user_info }, status = 200)
         except Exception:
@@ -171,69 +162,53 @@ class AdminModifyView(View):
         except:
             return JsonResponse({'message' : '예외 사항이 발생했습니다.'}, status = 400)
 
-class ModifyView(View):
+class UserModifyView(View):
     @jwt_decoder
     def post(self, request):
         modify_data = request.POST
         user= request.user 
-        UOF = User.objects.filter(id = user.id)
-        password = modify_data['password']
-        
-        # 정규식 : 비밀번호
+                
+        # 정규식
+        REGEX_PHONE = '(010)\d{4}\d{4}' 
         REGEX_PW    = '^(?=.{8,16}$)(?=.*[a-z])(?=.*[0-9]).*$'   # 비밀번호 정규표현식, 8자 이상 16자 이하, 소문자, 숫자 최소 하나 사용 
         
-        # bcrypt
-        new_salt = bcrypt.gensalt()
-        bytes_password = password.encode('utf-8')
-        hashed_password = bcrypt.hashpw(bytes_password, new_salt)
-        
+        UPDATE_OPT = ['phone', 'name', 'email', 'password', 'position']
+        UPDATE_SET = {}
+
         try:
+            if 'phone' in modify_data:
+                if re.fullmatch(REGEX_PHONE, modify_data['phone']) == False:
+                    return JsonResponse({'message' : '핸드폰 번호 형식을 지켜주세요'}, status = 403)
+            
+            # bcrypt
+            if 'password' in modify_data:
+                new_salt = bcrypt.gensalt()
+                bytes_password = modify_data['password'].encode('utf-8')
+                hashed_password = bcrypt.hashpw(bytes_password, new_salt)
+                
+                if re.fullmatch(REGEX_PW, modify_data['password']) == False:
+                    return JsonResponse({'message' : '비밀 번호 형식을 지켜주세요'}, status = 403)
+
             with transaction.atomic():
-                if len(modify_data) == 0:
-                    return JsonResponse({'message' : 'No data contents to be modified.'}, status = 403)
+                for key, value in modify_data.items():
+                    if key in UPDATE_OPT:
+                        if key == 'password':
+                            UPDATE_SET.update({key : hashed_password.decode('utf-8') })
+                        else:
+                            UPDATE_SET.update({key : value})
 
-                if "name" in modify_data:
-                    UOF.update(name = modify_data['name'])
+                    else:
+                        return JsonResponse({'message' : f'{key} 수정할 수 없는 키값이 들어왔습니다'})
 
-                if "email" in modify_data:
-                    UOF.update(email = modify_data['email'])
-
-                if "team" in modify_data:
-                    UOF.update(team = modify_data['team'])
-
-                if "password" in modify_data:
-                    if not re.fullmatch(REGEX_PW, password):
-                        return JsonResponse({'message' : '비밀번호 정규표현식, 8자 이상 16자 이하, 소문자, 숫자 최소 하나 사용 '}, status = 403)
-                    UOF.update(password = hashed_password.decode('utf-8'))
-
-                if "position" in modify_data:
-                    UOF.update(position = modify_data['position'])
-
-
-            return JsonResponse({'message' : 'Check update'}, status = 204)
+                User.objects.filter(id =user.id).update(**UPDATE_SET)
+                after = list(User.objects.filter(id = user.id).values('phone', 'name', 'email', 'team', 'position'))
+            
+            return JsonResponse({'message' : after}, status = 204)
 
         except KeyError:
             return JsonResponse({'message' : 'KEY_ERROR'} , status = 400)
 
-class ChangeStatusView(View):
-    @jwt_decoder
-    def post(self, request):
-        user = request.user
-        data = request.POST
-        change_id = data['id']
-        
-        try:
-            if not user.admin == True:
-                return JsonResponse({'message' :'You are an unauthorized user.'}, status = 403)
-            
-            User.objects.filter(id = change_id).update(status = 0)
-            
-            return JsonResponse({'message' : 'The user account has been stopped.'}, status = 204)
-            
-        except KeyError:
-            return JsonResponse({'message' : 'KEY_ERROR'} , status = 400)
-
-class UserListView(View):
+class TotalUserListView(View):
     @jwt_decoder 
     def get(self, request):
         user = request.user
@@ -252,20 +227,13 @@ class UserMyInfoView(View):
     @jwt_decoder
     def get(self, request):
         user = request.user
-        user_info = User.objects.get(id = user.id)
+        
         try:
             if User.objects.filter(id = user.id, status = True ).exists() == False:
                 return JsonResponse({'message' : "존재하지 않는 유저로부터 요청이 왔습니다."}, status = 403)
-            
-            user_info = {
-                    'phone' : user_info.phone,
-                    'name'  : user_info.name,
-                    'email' : user_info.email,
-                    'team'  : user_info.team,
-                    'position' : user_info.position,
-                    'admin' : user_info.admin
-                }
 
+            user_info = list(User.objects.filter(id = user.id).values())
+            
             return JsonResponse({'user_info' : user_info}, status = 200)
         except:
             return JsonResponse({'message' : "예외 사항 발생"}, status = 403)
