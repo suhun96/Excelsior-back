@@ -150,17 +150,22 @@ class CompanyEtcDescView(View):
         input_data = request.POST
         
         # 회사 코드 확인
-        if not Company.objects.filter(code = input_data['comp_code']).exists():
+        if not Company.objects.filter(id = input_data['company_id']).exists():
             return JsonResponse({'message' : '존재하지 않는 회사 코드입니다.'}, status = 403)
+
+        # 이미 등록된 정보가 있는지 확인
+        if CompanyEtcDesc.objects.filter(id = input_data['company_id'], company_etc_title_id = input_data['title_id']).exists():
+            return JsonResponse({'message' : '등록된 정보가 있습니다. 수정하시겠습니까?'}, status = 403)
         
-        CompanyEtcDesc.objects.create(comp_code = input_data['comp_code'], company_etc_title_id = input_data['title_id'], contents = input_data['contents'])
+        CompanyEtcDesc.objects.create(id = input_data['company_id'], company_etc_title_id = input_data['title_id'], contents = input_data['contents'])
 
         return JsonResponse({'message' : 'ok'}, status = 200)
 
     def get(self, request):
 
         filter_options = {
-            'comp_code' : 'comp_code__icontains'
+            'company_id' : 'id__excact',
+            'company_code' : 'comp_code__icontains'
         }        
 
         filter_set = { filter_options.get(key) : value for (key, value) in request.GET.items() if filter_options.get(key) }

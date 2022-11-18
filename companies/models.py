@@ -20,9 +20,9 @@ class Company(models.Model): # managers 확인 하세요!
         db_table = 'companies'
 
 class CompanyEtcDesc(models.Model):
-    comp_code = models.CharField(max_length = 10, blank = False)
+    company = models.ForeignKey('Company', on_delete= models.CASCADE)
     company_etc_title = models.ForeignKey('CompanyEtcTitle', on_delete= models.CASCADE)
-    contents  = models.CharField(max_length = 700) 
+    contents = models.CharField(max_length = 700) 
     
     class Meta:
         db_table = 'company_etc_desc'
@@ -36,7 +36,7 @@ class CompanyEtcTitle(models.Model):
 
 
 class CompanyPhonebook(models.Model):
-    comp_code = models.CharField(max_length = 10, blank = False)
+    company = models.ForeignKey('Company', on_delete= models.CASCADE)
     name    = models.CharField(max_length = 20, blank = True)
     mobile  = models.CharField(max_length = 20, blank = True)
     email   = models.CharField(max_length = 100, blank= True)
