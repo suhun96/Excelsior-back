@@ -21,5 +21,6 @@ urlpatterns = [
     path('health', HealthCheckView.health),
     path('user/', include('users.urls')),
     path('product/', include('products.urls')),  
-    path('warehouse/', include('locations.urls'))
+    path('warehouse/', include('locations.urls')),
+    path('company/', include('companies.urls'))
 ]

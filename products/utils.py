@@ -1,5 +1,6 @@
 from django.http        import JsonResponse
 from products.models    import *
+from companies.models   import *
 from datetime           import datetime
 from django.db          import transaction
 from django.db.models   import Q
