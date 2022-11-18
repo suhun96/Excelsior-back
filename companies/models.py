@@ -35,7 +35,6 @@ class CompanyEtcDesc(models.Model):
         db_table = 'company_etc_desc'
 
 
-
 class CompanyPhonebook(models.Model):
     company = models.ForeignKey('Company', on_delete= models.CASCADE)
     name    = models.CharField(max_length = 20, blank = True)
