@@ -15,6 +15,8 @@ class Company(models.Model): # managers 확인 하세요!
     address_desc = models.CharField(max_length = 120)
     zip_code     = models.CharField(max_length = 100)
     status       = models.BooleanField(default = True)
+    created_at   = models.DateTimeField(auto_now_add = True)
+    updated_at   = models.DateField(auto_now = True)
 
     class Meta:
         db_table = 'companies'
