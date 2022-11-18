@@ -19,6 +19,13 @@ class Company(models.Model): # managers 확인 하세요!
     class Meta:
         db_table = 'companies'
 
+class CompanyEtcTitle(models.Model):
+    title  = models.CharField(max_length=100, blank = False)
+    status = models.BooleanField(default = False)
+
+    class Meta:
+        db_table = 'company_etc_title'
+         
 class CompanyEtcDesc(models.Model):
     company = models.ForeignKey('Company', on_delete= models.CASCADE)
     company_etc_title = models.ForeignKey('CompanyEtcTitle', on_delete= models.CASCADE)
@@ -27,12 +34,6 @@ class CompanyEtcDesc(models.Model):
     class Meta:
         db_table = 'company_etc_desc'
 
-class CompanyEtcTitle(models.Model):
-    title  = models.CharField(max_length=100, blank = False)
-    status = models.BooleanField(default = False)
-
-    class Meta:
-        db_table = 'company_etc_title' 
 
 
 class CompanyPhonebook(models.Model):
