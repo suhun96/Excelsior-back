@@ -58,7 +58,7 @@ class CompanyView(View):
                 # create_options 로 request.POST 의 키값이 정확한지 확인.
                 for key in dict(request.POST).keys():
                     if key == 'name':
-                        if Company.objects.filter(name = request.POST[key]) == False:
+                        if Company.objects.filter(name = request.POST[key]) == True:
                             return JsonResponse({'message' : '회사 이름이 존재합니다.'}, status = 403)
                         
                         CREATE_SET.update({ key : request.POST[key] }) 
@@ -77,7 +77,7 @@ class CompanyView(View):
         
                 
                 new_company = Company.objects.create(**CREATE_SET)
-                
+
                 check_created = list(Company.objects.filter(id = new_company.id).values(
                     'name',     
                     'keyword',  
