@@ -150,17 +150,22 @@ class CompanyEtcDescView(View):
         input_data = request.POST
         
         # 회사 코드 확인
-        if not Company.objects.filter(code = input_data['comp_code']).exists():
-            return JsonResponse({'message' : '존재하지 않는 회사 코드입니다.'}, status = 403)
+        if not Company.objects.filter(id = input_data['company_id']).exists():
+            return JsonResponse({'message' : '존재하지 않는 회사입니다.'}, status = 403)
+
+        # 이미 등록된 정보가 있는지 확인
+        if CompanyEtcDesc.objects.filter(company_id = input_data['company_id'], company_etc_title_id = input_data['title_id']).exists():
+            return JsonResponse({'message' : '등록된 정보가 있습니다. 수정하시겠습니까?'}, status = 403)
         
-        CompanyEtcDesc.objects.create(comp_code = input_data['comp_code'], company_etc_title_id = input_data['title_id'], contents = input_data['contents'])
+        CompanyEtcDesc.objects.create(company_id = input_data['company_id'], company_etc_title_id = input_data['title_id'], contents = input_data['contents'])
 
         return JsonResponse({'message' : 'ok'}, status = 200)
 
     def get(self, request):
 
         filter_options = {
-            'comp_code' : 'comp_code__icontains'
+            'company_id' : 'id__excact',
+            'company_code' : 'comp_code__icontains'
         }        
 
         filter_set = { filter_options.get(key) : value for (key, value) in request.GET.items() if filter_options.get(key) }
@@ -170,19 +175,19 @@ class CompanyEtcDescView(View):
         return JsonResponse({'message' : result}, status = 200)
 
     def put(self, request):
-        comp_code = request.GET.get('comp_code')
+        company_id = request.GET.get('company_id')
         company_etc_title_id = request.GET.get('company_etc_id')
         modify_data = json.loads(request.body)
         
-        if not 'comp_code' in request.GET:
-            return JsonResponse({'message' : '수정할 회사 코드가 입력되지 않았습니다'}, status = 403)
+        if not 'company_id' in request.GET:
+            return JsonResponse({'message' : '수정할 회사가 입력되지 않았습니다'}, status = 403)
 
         if not 'company_etc_id' in request.GET:
             return JsonResponse({'message' : '수정할 제목이 선택되지 않았습니다.'}, status = 403)
 
         try:
             with transaction.atomic():
-                CompanyEtcDesc.objects.filter(comp_code = comp_code, company_etc_title_id = company_etc_title_id).update(
+                CompanyEtcDesc.objects.filter(company_id = company_id, company_etc_title_id = company_etc_title_id).update(
                     contents = modify_data['contents']
                 )
             return JsonResponse({'message' : '수정 완료'}, status = 200)
@@ -191,9 +196,9 @@ class CompanyEtcDescView(View):
 
 class CompanyPhonebookView(View):
     def get(self, request):
-        company_code = request.GET.get('code')
+        company_id = request.GET.get('company_id')
 
-        check = list(CompanyPhonebook.objects.filter(comp_code = company_code).values(
+        check = list(CompanyPhonebook.objects.filter(company_id = company_id).values(
             'id',
             'name',
             'mobile',
@@ -205,14 +210,14 @@ class CompanyPhonebookView(View):
     def post(self, request):
         input_data = request.POST
 
-        if Company.objects.filter(code = input_data['code']).exists() == False:
-            return JsonResponse({'message' : '존재하지 않는 회사 코드입니다. 코드를 확인해주세요'}, status = 403)
+        if Company.objects.filter(id = input_data['company_id']).exists() == False:
+            return JsonResponse({'message' : '존재하지 않는 회사입니다. 확인해주세요'}, status = 403)
         
-        if CompanyPhonebook.objects.filter(comp_code = input_data['code']).count() == 5:
+        if CompanyPhonebook.objects.filter(company_id = input_data['company_id']).count() == 5:
             return JsonResponse({'message' : '등록 가능한 추가 전화번호부를 전부 사용중 입니다.'}, status = 403)
 
         CompanyPhonebook.objects.create(
-            comp_code = input_data['code'],
+            company_id = input_data['company_id'],
             name = input_data['name'],
             mobile = input_data['mobile'],
             email = input_data['email']
@@ -221,14 +226,14 @@ class CompanyPhonebookView(View):
         return JsonResponse({'test' : 'check'}, status = 200)
     
     def put(self, request):
-        company_code = request.GET.get('code')
-        company_phonebook_id = request.GET.get('id')
+        company_id = request.GET.get('company_id')
+        company_phonebook_id = request.GET.get('company_phonebook_id')
         modify_data = json.loads(request.body)
 
-        if Company.objects.filter(code = company_code).exists() == False:
+        if Company.objects.filter(id = company_id).exists() == False:
             return JsonResponse({'message' : '존재하지 않는 회사 코드입니다. 코드를 확인해주세요.'}, status = 403)
         
-        if CompanyPhonebook.objects.filter(id = company_phonebook_id, comp_code = company_code).exists() == False:
+        if CompanyPhonebook.objects.filter(id = company_phonebook_id, company_id = company_id).exists() == False:
             return JsonResponse({'message' : '존재하지 않는 정보를 수정할 수 없습니다.'}, status = 403)
         
         try:
@@ -242,7 +247,7 @@ class CompanyPhonebookView(View):
                         return JsonResponse({'message' : f'{key} 존재하지 않는 키 값입니다.'}, status = 403)
                     UPDATE_SET.update({ key : value})
 
-                CompanyPhonebook.objects.filter(id = company_phonebook_id, comp_code = company_code).update(**UPDATE_SET)
+                CompanyPhonebook.objects.filter(id = company_phonebook_id, company_id = company_id).update(**UPDATE_SET)
                 return JsonResponse({'message' : '업데이트 내역을 확인해 주세요~!!'}, status = 200)    
         except:   
             return JsonResponse({'message' : '예외 사항이 발생, 로직을 정지합니다. 삐빅'}, status = 403)
