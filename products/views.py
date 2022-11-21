@@ -16,25 +16,17 @@ from products.utils     import *
 
 class ProductGroupView(View):
     def get(self, request):
-        name = request.GET.get('name', None)
-        code = request.GET.get('code', None)
-        sort = request.GET.get('sort', None)
+        name = request.GET.get('name')
+        code = request.GET.get('code')
+        
         try:
             q = Q()
             if name:
                 q &= Q(name__icontains = name)
             if code:
                 q &= Q(code__icontains = code)
-
-            order_condition = {
-                'up' : 'name',
-                'down' : '-name'
-            }
-            if sort in order_condition:
-                sort = (order_condition[sort])
-
             
-            result = list(ProductGroup.objects.filter(q).order_by(sort).values())
+            result = list(ProductGroup.objects.filter(q).values())
         
             return JsonResponse({'message' : result}, status = 200)
         except:
@@ -99,6 +91,7 @@ class ProductGroupView(View):
         except:
             return JsonResponse({'message' : "예외 사항이 발생했습니다."}, status = 403)
 
+<<<<<<< HEAD
 class CompanyView(View):
     def get(self, request):
         
@@ -313,6 +306,8 @@ class CompanyPhonebookView(View):
                 return JsonResponse({'message' : '업데이트 내역을 확인해 주세요~!!'}, status = 200)    
         except:   
             return JsonResponse({'message' : '예외 사항이 발생, 로직을 정지합니다. 삐빅'}, status = 403)
+=======
+>>>>>>> main
     
 class ProductD1InfoView(View):
     def get(self, request):
