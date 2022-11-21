@@ -40,10 +40,10 @@ class ProductGroupView(View):
             return JsonResponse({'message' : 'Please enter the correct value.'}, status = 403)
 
         if ProductGroup.objects.filter(name = input_data['name']).exists():
-            return JsonResponse({'messaga' : 'The product name is already registered.'}, status = 403)
+            return JsonResponse({'message' : 'The product name is already registered.'}, status = 403)
 
         if ProductGroup.objects.filter(code = input_data['code']).exists():
-            return JsonResponse({'messaga' : 'The product code is already registered.'}, status = 403)     
+            return JsonResponse({'message' : 'The product code is already registered.'}, status = 403)     
             
         CREATE_SET = {}
         CREATE_OPT = ['name', 'code', 'etc']
