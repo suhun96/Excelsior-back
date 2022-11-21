@@ -227,9 +227,11 @@ class ProductD1InfoView(View):
         try:
             with transaction.atomic():
                 UPDATE_SET = {}
-                
+                UPDATE_OPT = ['quantity', 'safe_quantity', 'search_word', 'name']
+
                 for key, value in body_data.items():
-                    UPDATE_SET.update({key : value})
+                    if key in UPDATE_OPT:
+                        UPDATE_SET.update({key : value})
                 
                 ProductD1.objects.filter(code = comp_code).update(**UPDATE_SET)
 
