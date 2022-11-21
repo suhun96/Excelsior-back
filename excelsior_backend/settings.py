@@ -28,7 +28,7 @@ SECRET_KEY = SECRET_KEY
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['3.39.18.177', 'yamuzin.net', '.yamuzin.net', '172.31.33.146']
+ALLOWED_HOSTS = ['3.39.18.177', 'yamuzin.net', '.yamuzin.net', '172.31.33.146', '13.125.84.124', '3.34.111.252']
 
 # timeout error
 SESSION_COOKIE_AGE = 1200
