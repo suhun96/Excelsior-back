@@ -136,7 +136,7 @@ class ProductEtcDescView(View):
         if ProductEtcDesc.objects.filter(product_code = input_data['product_code'], product_etc_title_id = input_data['title_id']).exists():
             return JsonResponse({'message' : '등록된 정보가 있습니다. 수정기능을 이용해주세요. '}, status = 403)
 
-        ProductEtcDesc.objects.create(product_code = input_data['product_code'], product_etc_title_id = input_data['title_id'])
+        ProductEtcDesc.objects.create(product_code = input_data['product_code'], product_etc_title_id = input_data['title_id'], contents = input_data['contents'])
 
         return JsonResponse({'message' : 'ok'}, status = 200)
     
