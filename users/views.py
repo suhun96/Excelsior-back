@@ -16,7 +16,6 @@ from users.decorator    import jwt_decoder
 class SignUpView(View):
     def post(self, request):
         data = request.POST
-        password = data['password']
 
         # 정규식 : 전화번호, 비밀번호
         REGEX_PHONE = '(010)\d{4}\d{4}'                          # 010 휴대전화 정규표현식
@@ -24,7 +23,7 @@ class SignUpView(View):
         
         # bcrypt
         new_salt = bcrypt.gensalt()
-        bytes_password = password.encode('utf-8')
+        bytes_password = data['password'].encode('utf-8')
         hashed_password = bcrypt.hashpw(bytes_password, new_salt)
 
         try:
@@ -32,25 +31,31 @@ class SignUpView(View):
 
                 # 전화번호 형식 확인
                 if not re.fullmatch(REGEX_PHONE, data['phone']):
-                    return JsonResponse({'message' : '010XXXXXXXX 형식을 따라주세요.'}, status = 403)
+                    return JsonResponse({'message' : '010-XXXX-XXXX 형식을 따라주세요.'}, status = 403)
                 
                 # 패스워드 형식 확인
-                if not re.fullmatch(REGEX_PW, password):
+                if not re.fullmatch(REGEX_PW, data['password']):
                     return JsonResponse({'message' : '비밀번호 정규표현식, 8자 이상 16자 이하, 소문자, 숫자 최소 하나 사용 '}, status = 403)
+
+                CREATE_SET = {}
+
+                for key, value in data.items():
+                    if key in ['phone', 'name', 'email', 'team', 'position', 'status']:
+                        CREATE_SET.update({key : value})
+                    
+                    elif key == 'status':
+                        CREATE_SET.update({key : False})
+                    
+                    elif key == 'password':
+                        CREATE_SET.update({key : hashed_password.decode('utf-8')})
+                    
+                    else:
+                        raise KeyError
 
                 new_user , is_created = User.objects.get_or_create(
                     phone = data['phone'],
-                    defaults = {
-                    'phone'       : data['phone'],
-                    'name'        : data['name'],
-                    'email'       : data['email'],
-                    'team'        : data['team'],
-                    'password'    : hashed_password.decode('utf-8'),    # 기본 비밀번호
-                    'position'    : data['position'],
-                    'status'      : False 
-                    # admin  False / status 기본적으로 True (True = 활성화 , False = 비활성화)  
-                    }
-                    )
+                    defaults = {**CREATE_SET})
+                    # admin  False / status 기본적으로 True (True = 활성화 , False = 비활성화) 
 
                 if not is_created:
                     return JsonResponse({'message' : 'The phone number is already registered.'}, status = 403)
@@ -94,7 +99,7 @@ class SignInView(View):
         input_pw = signin_data['password']
         user = User.objects.filter(phone = signin_data['phone'])
         try:
-            if not user.exists() == True:
+            if user.exists() == False:
                 return JsonResponse({'Message' : 'The mobile phone number you entered does not exist.'}, status = 402)
             
             try_user = User.objects.get(phone = signin_data['phone'])
@@ -130,31 +135,40 @@ class AdminModifyView(View):
         new_salt = bcrypt.gensalt()
         # 정규식
         REGEX_PW    = '^(?=.{8,16}$)(?=.*[a-z])(?=.*[0-9]).*$'   # 비밀번호 정규표현식, 8자 이상 16자 이하, 소문자, 숫자 최소 하나 사용 
+        
+        if User.objects.get(id = user.id).admin == False:
+            return JsonResponse({'message' : '권한이 없는 요청입니다.'}, status = 400)
 
         if not User.objects.filter(phone = modify_user).exists():
             return JsonResponse({'message' : '유저가 존재하지 않는 요청입니다.'}, status = 400)
 
-        if User.objects.get(id = user.id).admin == False:
-            return JsonResponse({'message' : '권한이 없는 요청입니다.'}, status = 400)
         try:
             with transaction.atomic():
                 UPDATE_SET = {}
+                key_check_list = ['phone', 'name', 'email', 'team', 'position']
+
+                
 
                 for key, value in modify_data.items():
                     # key 값이 'password'일 경우, 정규식과 입력된 비밀번호 비교
-                    if key == 'password':
+                    if key == 'phone':
+                        if User.objects.filter(phone = value).exists():
+                            return JsonResponse({'message' : '이미 존재하는 휴대폰 번호 입니다.'}, status = 403)
+                        else:
+                            UPDATE_SET.update({key : value})
+
+                    elif key == 'password':
                         if not re.fullmatch(REGEX_PW, value):
                             return JsonResponse({'message' : '비밀번호 정규표현식, 8자 이상 16자 이하, 소문자, 숫자 최소 하나 사용 '}, status = 403)
                         # 비밀번호 decode 후 저장.
                         hashed_password = bcrypt.hashpw(value.encode('utf-8'), new_salt)
                         UPDATE_SET.update({key : hashed_password.decode('utf-8')})
 
+                    elif key in key_check_list:
+                        UPDATE_SET.update({key : value})
+                    
                     else:
-                        key_check_list = ['phone', 'name', 'email', 'team', 'position']
-                        if key in key_check_list:
-                            UPDATE_SET.update({key : value})
-                        else:
-                            pass
+                        JsonResponse({'message' : '존재하지 않는 키값입니다.'}, status = 403)                        
                 # 변경 사항 업데이트
                 User.objects.filter(phone = modify_user).update(**UPDATE_SET)
             
