@@ -145,7 +145,7 @@ class ProductEtcDescView(View):
         
         filter_set = { filter_options.get(key) : value for (key, value) in request.GET.items() if filter_options.get(key) }
 
-        product_etc_list = list(ProductEtcDesc.objects.filter(**filter_options).values())
+        product_etc_list = list(ProductEtcDesc.objects.filter(**filter_set).values())
 
         return JsonResponse({'message': product_etc_list}, status = 200)
 
@@ -156,6 +156,10 @@ class ProductEtcDescView(View):
             modify_data = json.loads(request.body)
 
             with transaction.atomic():
+                
+                if not ProductEtcDesc.objects.filter(product_code = product_code, product_etc_title_id = product_etc_title_id).exists():
+                    return JsonResponse({'message' : "'product_code'와 'etc_title_id' 를 확인해주세요."}, status = 403)
+
                 ProductEtcDesc.objects.filter(product_code = product_code, product_etc_title_id = product_etc_title_id).update(
                     contents = modify_data['contents']
                 )
@@ -166,9 +170,9 @@ class ProductEtcDescView(View):
 
 class ProductD1InfoView(View):
     def get(self, request):
-        code = request.GET.get('code')
-        search_word = request.GET.get('search_word')
-        name = request.GET.get('name')
+        code = request.GET.get('code', None)
+        search_word = request.GET.get('search_word', None)
+        name = request.GET.get('name', None)
 
         try:
             q = Q()
@@ -221,9 +225,11 @@ class ProductD1InfoView(View):
         try:
             with transaction.atomic():
                 UPDATE_SET = {}
-                
+                UPDATE_OPT = ['quantity', 'safe_quantity', 'search_word', 'name']
+
                 for key, value in body_data.items():
-                    UPDATE_SET.update({key : value})
+                    if key in UPDATE_OPT:
+                        UPDATE_SET.update({key : value})
                 
                 ProductD1.objects.filter(code = comp_code).update(**UPDATE_SET)
 

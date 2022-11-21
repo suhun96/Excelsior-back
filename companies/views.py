@@ -86,7 +86,7 @@ class CompanyView(View):
 
     def put(self, request):
         modify_data = json.loads(request.body)
-        company_id = request.GET.get('company_id')
+        company_id = request.GET.get('id')
         company = Company.objects.filter(id = company_id)
 
         if company.exists() == False:
@@ -170,7 +170,7 @@ class CompanyEtcDescView(View):
 
     def put(self, request):
         company_id = request.GET.get('company_id')
-        company_etc_title_id = request.GET.get('company_etc_id')
+        company_etc_title_id = request.GET.get('title_id')
         modify_data = json.loads(request.body)
         
         if not 'company_id' in request.GET:
@@ -221,7 +221,7 @@ class CompanyPhonebookView(View):
     
     def put(self, request):
         company_id = request.GET.get('company_id')
-        company_phonebook_id = request.GET.get('company_phonebook_id')
+        company_phonebook_id = request.GET.get('id')
         modify_data = json.loads(request.body)
 
         if Company.objects.filter(id = company_id).exists() == False:
