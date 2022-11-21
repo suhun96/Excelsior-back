@@ -162,14 +162,10 @@ class AdminModifyView(View):
                         # 비밀번호 decode 후 저장.
                         hashed_password = bcrypt.hashpw(value.encode('utf-8'), new_salt)
                         UPDATE_SET.update({key : hashed_password.decode('utf-8')})
-<<<<<<< HEAD
-                        
-=======
 
                     elif key in key_check_list:
                         UPDATE_SET.update({key : value})
                     
->>>>>>> 90e3bb60191cbf68d068911937e636dfd497fc46
                     else:
                         JsonResponse({'message' : '존재하지 않는 키값입니다.'}, status = 403)                        
                 # 변경 사항 업데이트
@@ -216,29 +212,10 @@ class UserModifyView(View):
                     else:
                         return JsonResponse({'message' : f'{key} 수정할 수 없는 키값이 들어왔습니다'})
 
-<<<<<<< HEAD
-                if "email" in modify_data:
-                    UOF.update(email = modify_data['email'])
-
-                if "team" in modify_data:
-                    UOF.update(team = modify_data['team'])
-
-                if "password" in modify_data:
-                    if not re.fullmatch(REGEX_PW, password):
-                        return JsonResponse({'message' : '비밀번호 정규표현식, 8자 이상 16자 이하, 소문자, 숫자 최소 하나 사용 '}, status = 403)
-                    UOF.update(password = hashed_password.decode('utf-8'))
-
-                if "position" in modify_data:
-                    UOF.update(position = modify_data['position'])
-
-
-            return JsonResponse({'message' : 'Check update'}, status = 200)
-=======
                 User.objects.filter(id =user.id).update(**UPDATE_SET)
                 after = list(User.objects.filter(id = user.id).values('phone', 'name', 'email', 'team', 'position'))
             
             return JsonResponse({'message' : after}, status = 204)
->>>>>>> 90e3bb60191cbf68d068911937e636dfd497fc46
 
         except KeyError:
             return JsonResponse({'message' : 'KEY_ERROR'} , status = 400)
