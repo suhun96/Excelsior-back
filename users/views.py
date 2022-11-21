@@ -37,14 +37,12 @@ class SignUpView(View):
                 if not re.fullmatch(REGEX_PW, data['password']):
                     return JsonResponse({'message' : '비밀번호 정규표현식, 8자 이상 16자 이하, 소문자, 숫자 최소 하나 사용 '}, status = 403)
 
-                CREATE_SET = {}
+                CREATE_SET = {'admin' : False, 'status' : False}
 
                 for key, value in data.items():
-                    if key in ['phone', 'name', 'email', 'team', 'position', 'status']:
+                    if key in ['phone', 'name', 'email', 'team', 'position']:
                         CREATE_SET.update({key : value})
                     
-                    elif key == 'status':
-                        CREATE_SET.update({key : False})
                     
                     elif key == 'password':
                         CREATE_SET.update({key : hashed_password.decode('utf-8')})
