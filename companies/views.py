@@ -237,7 +237,9 @@ class CompanyPhonebookView(View):
                 update_options = ['name', 'mobile', 'email']
 
                 for key, value in modify_data.items():
-                    if not key in update_options:
+                    if key == 'id':
+                        pass
+                    elif not key in update_options:
                         return JsonResponse({'message' : f'{key} 존재하지 않는 키 값입니다.'}, status = 403)
                     UPDATE_SET.update({ key : value})
 
