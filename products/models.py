@@ -71,7 +71,7 @@ class ProductEtcTitle(models.Model):
     class Meta:
         db_table = 'product_etc_title'
 
-class ProductEtcDesc(models.Mode):
+class ProductEtcDesc(models.Model):
     product_code = models.CharField(max_length = 10, blank = False)
     product_etc_title = models.ForeignKey('ProductEtcTitle', on_delete = models.CASCADE)
     contents = models.CharField(max_length = 700)
