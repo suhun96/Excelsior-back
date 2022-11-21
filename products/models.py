@@ -64,16 +64,21 @@ class ProductD3Composition(models.Model):
     class Meta:
         db_table = 'productD3_composition'
 
-class ProductEtc(models.Model):
-    product_code = models.CharField(max_length = 10, blank = False)
-    no           = models.IntegerField()
-    title        = models.CharField(max_length = 120, blank = False)
-    contents     = models.CharField(max_length = 3000)
+class ProductEtcTitle(models.Model):
+    title  = models.CharField(max_length = 300, blank = False)
+    status = models.BooleanField(default = False)
 
     class Meta:
-        db_table = 'product_etc'
+        db_table = 'product_etc_title'
 
+class ProductEtcDesc(models.Mode):
+    product_code = models.CharField(max_length = 10, blank = False)
+    product_etc_title = models.ForeignKey('ProductEtcTitle', on_delete = models.CASCADE)
+    contents = models.CharField(max_length = 700)
 
+    class Meta:
+        db_table = 'product_etc_desc'
+    
 # barcode history
 class ProductHis(models.Model):
     code         = models.CharField(max_length = 10, blank = False)
