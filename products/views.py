@@ -91,7 +91,81 @@ class ProductGroupView(View):
         except:
             return JsonResponse({'message' : "예외 사항이 발생했습니다."}, status = 403)
 
+class ProductEtcTitleView(View):
+    def get(self, request):
+        etc_title_list = list(ProductEtcTitle.objects.all().values())
+
+        return JsonResponse({'message' : etc_title_list}, status = 200)
+
+    def post(self, request):
+        input_data = request.POST
+        try:
+            with transaction.atomic():
+                UPDATE_SET = {}
+
+                for key, value in input_data.items():
+                    if key == 'product_etc_title':
+                        UPDATE_SET.update({'title' : value})
+                    if key == 'product_etc_status':
+                        if value == 'false':
+                            UPDATE_SET.update({'status': False})
+                        elif value == 'true':
+                            UPDATE_SET.update({'status': True})
+
+                ProductEtcTitle.objects.filter(id = input_data['product_etc_id']).update(**UPDATE_SET)
+            return JsonResponse({'message' : 'update'}, status = 200) 
+        except Exception as e:
+            return JsonResponse({'message' : e} , status = 403)
     
+
+class ProductEtcDescView(View):
+    def post(self, request):
+        input_data = request.POST
+
+        # 제품 코드 확인
+        if ProductD1.objects.filter(code = input_data['product_code']).exists():
+            pass
+        elif ProductD2.objects.filter(code = input_data['product_code']).exists():
+            pass
+        elif ProductD3.objects.filter(code = input_data['product_code']).exists():
+            pass
+        else:
+            return JsonResponse({'message' : '존재하지 않는 제품코드입니다.'}, status = 403)
+
+        # 이미 등록된 정보가 있는지 확인
+        if ProductEtcDesc.objects.filter(product_code = input_data['product_code'], product_etc_title_id = input_data['title_id']).exists():
+            return JsonResponse({'message' : '등록된 정보가 있습니다. 수정기능을 이용해주세요. '}, status = 403)
+
+        ProductEtcDesc.objects.create(product_code = input_data['product_code'], product_etc_title_id = input_data['title_id'], contents = input_data['contents'])
+
+        return JsonResponse({'message' : 'ok'}, status = 200)
+    
+    def get(self, request):
+        filter_options = {
+            'product_code' : 'product_code__icontains'
+        }
+        
+        filter_set = { filter_options.get(key) : value for (key, value) in request.GET.items() if filter_options.get(key) }
+
+        product_etc_list = list(ProductEtcDesc.objects.filter(**filter_options).values())
+
+        return JsonResponse({'message': product_etc_list}, status = 200)
+
+    def put(self, request):
+        try:
+            product_code = request.GET.get('product_code')
+            product_etc_title_id = request.GET.get('etc_title_id')
+            modify_data = json.loads(request.body)
+
+            with transaction.atomic():
+                ProductEtcDesc.objects.filter(product_code = product_code, product_etc_title_id = product_etc_title_id).update(
+                    contents = modify_data['contents']
+                )
+            return JsonResponse({'message' : '수정 완료'}, status = 200)
+        except Exception as e:
+            return JsonResponse({'message' : e}, status = 403)
+
+
 class ProductD1InfoView(View):
     def get(self, request):
         code = request.GET.get('code')
