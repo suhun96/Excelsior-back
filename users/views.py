@@ -145,22 +145,30 @@ class AdminModifyView(View):
         try:
             with transaction.atomic():
                 UPDATE_SET = {}
+                key_check_list = ['phone', 'name', 'email', 'team', 'position']
+
+                
 
                 for key, value in modify_data.items():
                     # key 값이 'password'일 경우, 정규식과 입력된 비밀번호 비교
-                    if key == 'password':
+                    if key == 'phone':
+                        if User.objects.filter(phone = value).exists():
+                            return JsonResponse({'message' : '이미 존재하는 휴대폰 번호 입니다.'}, status = 403)
+                        else:
+                            UPDATE_SET.update({key : value})
+
+                    elif key == 'password':
                         if not re.fullmatch(REGEX_PW, value):
                             return JsonResponse({'message' : '비밀번호 정규표현식, 8자 이상 16자 이하, 소문자, 숫자 최소 하나 사용 '}, status = 403)
                         # 비밀번호 decode 후 저장.
                         hashed_password = bcrypt.hashpw(value.encode('utf-8'), new_salt)
                         UPDATE_SET.update({key : hashed_password.decode('utf-8')})
 
+                    elif key in key_check_list:
+                        UPDATE_SET.update({key : value})
+                    
                     else:
-                        key_check_list = ['phone', 'name', 'email', 'team', 'position']
-                        if key in key_check_list:
-                            UPDATE_SET.update({key : value})
-                        else:
-                            pass
+                        JsonResponse({'message' : '존재하지 않는 키값입니다.'}, status = 403)                        
                 # 변경 사항 업데이트
                 User.objects.filter(phone = modify_user).update(**UPDATE_SET)
             
