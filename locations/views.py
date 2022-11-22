@@ -43,15 +43,15 @@ class WarehouseInfoView(View):
         if not 'code' in input_data:
             return JsonResponse({'message' : '창고 코드를 입력해주세요.'}, status = 403)
 
+        SET = {}
+        for key, value in input_data.items():
+            if key in ['name', 'code', 'type', 'way', 'etc']:
+                SET.update({key : value})
 
         obj, created = Warehouse.objects.update_or_create(
             name = input_data['name'],
             code = input_data['code'],
-            defaults={
-                'type' : input_data['type'],
-                'way'  : input_data['way'],
-                'etc' : input_data['etc']
-            })
+            defaults={**SET})
         
         if created == False:
             return JsonResponse({'message' : '기존의 창고정보를 수정했습니다.'}, status = 200)
