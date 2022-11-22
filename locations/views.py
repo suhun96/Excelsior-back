@@ -53,12 +53,12 @@ class WarehouseInfoView(View):
             if key in CREATE_OPT:
                 CREATE_SET.update({key : value})
             else:
-                return JsonResponse({'message' : '존재하지 않는 키값입니다.'}, status = 403)
-        
+                # return JsonResponse({'message' : '존재하지 않는 키값입니다.'}, status = 403)
+                pass
         new_warehouse = Warehouse.objects.create(**CREATE_SET)
-        check_warehouse = list(Warehouse.objects.filter(id = new_warehouse.id).values())
         
-        return JsonResponse({'message' : '창고 생성', '생성 내용': check_warehouse}, status = 200)
+        
+        return JsonResponse({'message' : '창고 생성'}, status = 200)
 
     def get(self, request):
         warehouse_list = list(Warehouse.objects.all().values())

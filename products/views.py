@@ -35,38 +35,36 @@ class ProductGroupView(View):
     def post(self, request):
         input_data = request.POST
 
-        try:
-            if not "name" in input_data or not "code" in input_data:
-                return JsonResponse({'message' : 'Please enter the correct value.'}, status = 403)
+        
+        if not "name" in input_data:
+            return JsonResponse({'message' : 'Please enter the correct value.'}, status = 403)
 
-            if ProductGroup.objects.filter(name = input_data['name']).exists():
+        if ProductGroup.objects.filter(name = input_data['name']).exists():
                 return JsonResponse({'message' : 'The product name is already registered.'}, status = 403)
 
-            if ProductGroup.objects.filter(code = input_data['code']).exists():
+        if ProductGroup.objects.filter(code = input_data['code']).exists():
                 return JsonResponse({'message' : 'The product code is already registered.'}, status = 403)     
             
-            CREATE_SET = {}
-            CREATE_OPT = ['name', 'code', 'etc']
-            # create_options 로 request.POST 의 키값이 정확한지 확인.
-            for key in dict(request.POST).keys():
-                if key in CREATE_OPT:
-                    CREATE_SET.update({ key : request.POST[key] })
-                else:
-                    return JsonResponse({'message' : '잘못된 키값이 들어오고 있습니다.'}, status = 403)
+        CREATE_SET = {}
+        CREATE_OPT = ['name', 'code', 'etc']
+        # create_options 로 request.POST 의 키값이 정확한지 확인.
+        for key in dict(request.POST).keys():
+            if key in CREATE_OPT:
+                CREATE_SET.update({ key : request.POST[key] })
+            else:
+                return JsonResponse({'message' : '잘못된 키값이 들어오고 있습니다.'}, status = 403)
 
-            new_product_group = ProductGroup.objects.create(**CREATE_SET)
+        new_product_group = ProductGroup.objects.create(**CREATE_SET)
 
-            check_PG = list(ProductGroup.objects.filter(id = new_product_group.id).values(
-                'id',
-                'name',
-                'code',
-                'etc',
-                'status'
-            ))
+        check_PG = list(ProductGroup.objects.filter(id = new_product_group.id).values(
+            'id',
+            'name',
+            'code',
+            'etc',
+            'status'
+        ))
 
-            return JsonResponse({'message' : check_PG}, status = 200)
-        except KeyError:
-            return JsonResponse({'message' : 'KEY ERROR'}, status = 403)
+        return JsonResponse({'message' : check_PG}, status = 200)
     
     def put(self, request):
         input_data = json.loads(request.body)
@@ -329,23 +327,21 @@ class ProductD2InfoView(View):
                     if key in check_list:
                         UPDATE_SET.update({key : value})
                     
-                    elif key == 'components':
+                    if key == 'components':
                         for com_code in modify_data['components'].keys():
                             if ProductD1.objects.filter(code = com_code).exists():
                                 pass
                             else:
                                 return JsonResponse({'message' : f'{ com_code }존재하지 않는다 !'}, status = 403)
-                        # 구성품 다시 등록이 가능할 때? : 기존 수량을 체크했을 때 0이면 (이미 적재된 구성품에 값을 침범하지 않으니깐?)
-                        # 재고 전부소진 or 0 처리후 다시 등록
-
+                        
                         ProductD2Composition.objects.filter(d2_code = d2_code).delete()
                         
                         for com_code, quantity in modify_data['components'].items():
                             ProductD2Composition.objects.create(d2_code = d2_code, com_code = com_code, com_quan = quantity)
                     
                     else:
-                        JsonResponse({'message' : f'{key}는 존재하지 않는 키값입니다.'}, status = 403)
- 
+                        pass
+
                 ProductD2.objects.filter(code = d2_code).update(**UPDATE_SET)
                 return JsonResponse({'message' : 'Check update'}, status = 200)
         except:

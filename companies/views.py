@@ -96,7 +96,7 @@ class CompanyView(View):
             with transaction.atomic():
                 UPDATE_SET = {'updated_at' : datetime.today()}
 
-                update_options = ['name','keyword','represent','biz_no','biz_type','biz_item','phone','fax','email','address_main','address_desc','zip_code']
+                update_options = ['name','keyword','represent','biz_no','biz_type','biz_item','phone','fax','email','address_main','address_desc','zip_code','code']
 
                 for key, value in modify_data.items():
                     if key == 'id':
