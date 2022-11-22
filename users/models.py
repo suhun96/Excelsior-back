@@ -11,7 +11,7 @@ class User(models.Model):
     admin       = models.BooleanField(default = False)
     status      = models.BooleanField(default = True)
     created_at  = models.DateTimeField(auto_now_add = True)
-    updated_at  = models.DateField()
+    updated_at  = models.DateField(auto_now = True)
 
     class Meta:
         db_table = 'users'
