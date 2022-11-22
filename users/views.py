@@ -215,7 +215,7 @@ class UserModifyView(View):
                 User.objects.filter(id =user.id).update(**UPDATE_SET)
                 after = list(User.objects.filter(id = user.id).values('phone', 'name', 'email', 'team', 'position'))
             
-            return JsonResponse({'message' : after}, status = 204)
+            return JsonResponse({'message' : after}, status = 200)
 
         except KeyError:
             return JsonResponse({'message' : 'KEY_ERROR'} , status = 400)
