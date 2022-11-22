@@ -64,6 +64,9 @@ class ProductD3Composition(models.Model):
     class Meta:
         db_table = 'productD3_composition'
 
+#-----------------------------------------------------
+#-----------------------------------------
+
 class ProductEtcTitle(models.Model):
     title  = models.CharField(max_length = 300, blank = False)
     status = models.BooleanField(default = False)
@@ -78,7 +81,10 @@ class ProductEtcDesc(models.Model):
 
     class Meta:
         db_table = 'product_etc_desc'
-    
+
+############################################
+
+
 # barcode history
 class ProductHis(models.Model):
     code         = models.CharField(max_length = 10, blank = False)
