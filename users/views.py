@@ -47,8 +47,8 @@ class SignUpView(View):
                     elif key == 'password':
                         CREATE_SET.update({key : hashed_password.decode('utf-8')})
                     
-                    else:
-                        raise KeyError
+                    # else:
+                    #     raise KeyError
 
                 new_user , is_created = User.objects.get_or_create(
                     phone = data['phone'],
@@ -62,7 +62,7 @@ class SignUpView(View):
                 
             return JsonResponse({'message' : check_user_info }, status = 200)
         except Exception:
-            return JsonResponse({'message' : 'qwdf 예외 사항이 발생해서 트랜잭션을 중지했습니다.'})
+            return JsonResponse({'message' : '예외 사항이 발생해서 트랜잭션을 중지했습니다.'})
 
 class PermissionSignUpView(View):
     @jwt_decoder
@@ -144,19 +144,20 @@ class AdminModifyView(View):
         try:
             with transaction.atomic():
                 UPDATE_SET = {}
-                key_check_list = ['phone', 'name', 'email', 'team', 'position']
+                # key_check_list = ['phone', 'name', 'email', 'team', 'position'] 
+                key_check_list = ['name', 'email', 'team', 'position'] 
 
                 
 
                 for key, value in modify_data.items():
                     # key 값이 'password'일 경우, 정규식과 입력된 비밀번호 비교
-                    if key == 'phone':
-                        if User.objects.filter(phone = value).exists():
-                            return JsonResponse({'message' : '이미 존재하는 휴대폰 번호 입니다.'}, status = 403)
-                        else:
-                            UPDATE_SET.update({key : value})
+                    # if key == 'phone':
+                    #     if User.objects.filter(phone = value).exists():
+                    #         return JsonResponse({'message' : '이미 존재하는 휴대폰 번호 입니다.'}, status = 403)
+                    #     else:
+                    #         UPDATE_SET.update({key : value})
 
-                    elif key == 'password':
+                    if key == 'password':
                         if not re.fullmatch(REGEX_PW, value):
                             return JsonResponse({'message' : '비밀번호 정규표현식, 8자 이상 16자 이하, 소문자, 숫자 최소 하나 사용 '}, status = 403)
                         # 비밀번호 decode 후 저장.
@@ -166,8 +167,8 @@ class AdminModifyView(View):
                     elif key in key_check_list:
                         UPDATE_SET.update({key : value})
                     
-                    else:
-                        JsonResponse({'message' : '존재하지 않는 키값입니다.'}, status = 403)                        
+                    # else:
+                    #     JsonResponse({'message' : '존재하지 않는 키값입니다.'}, status = 403)                        
                 # 변경 사항 업데이트
                 User.objects.filter(phone = modify_user).update(**UPDATE_SET)
                 return JsonResponse({'message' : 'check update'}, status = 200)
@@ -209,13 +210,13 @@ class UserModifyView(View):
                         else:
                             UPDATE_SET.update({key : value})
 
-                    else:
-                        return JsonResponse({'message' : f'{key} 수정할 수 없는 키값이 들어왔습니다'})
+                    # else:
+                    #     return JsonResponse({'message' : f'{key} 수정할 수 없는 키값이 들어왔습니다'})
 
                 User.objects.filter(id =user.id).update(**UPDATE_SET)
                 after = list(User.objects.filter(id = user.id).values('phone', 'name', 'email', 'team', 'position'))
             
-            return JsonResponse({'message' : after}, status = 204)
+            return JsonResponse({'message' : after}, status = 200)
 
         except KeyError:
             return JsonResponse({'message' : 'KEY_ERROR'} , status = 400)
@@ -233,7 +234,7 @@ class TotalUserListView(View):
                 user_list = list(User.objects.all().values(
                     'phone',     
                     'name',     
-                    'email'     
+                    'email',  
                     'team',      
                     'position',  
                     'admin',     
