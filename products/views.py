@@ -65,9 +65,10 @@ class ProductGroupView(View):
         ))
 
         return JsonResponse({'message' : check_PG}, status = 200)
-    
-    def put(self, request):
-        input_data = json.loads(request.body)
+
+class ModifyProductGroupView(View):
+    def post(self, request):
+        input_data = request.POST
         group_id = request.GET.get('group_id')
 
         if not ProductGroup.objects.filter(id = group_id).exists():
@@ -80,9 +81,8 @@ class ProductGroupView(View):
                 update_options = ['name', 'etc']
 
                 for key, value in input_data.items():
-                    if not key in update_options:
-                        return JsonResponse({'message' : f'{key} 존재하지 않는 키값입니다.'}, status = 403)
-                    UPDATE_SET.update({ key : value })
+                    if key in update_options:
+                        UPDATE_SET.update({ key : value })
                     
                 ProductGroup.objects.filter(id = group_id).update(**UPDATE_SET)
                 return JsonResponse({'message' : '업데이트 내역을 확인해 주세요~!!'}, status = 200)
@@ -130,13 +130,21 @@ class ProductEtcDescView(View):
         else:
             return JsonResponse({'message' : '존재하지 않는 제품코드입니다.'}, status = 403)
 
-        # 이미 등록된 정보가 있는지 확인
-        if ProductEtcDesc.objects.filter(product_code = input_data['product_code'], product_etc_title_id = input_data['title_id']).exists():
-            return JsonResponse({'message' : '등록된 정보가 있습니다. 수정기능을 이용해주세요. '}, status = 403)
+        obj , created = ProductEtcDesc.objects.update_or_create(
+            product_code = input_data['product_code'],
+            product_etc_title_id = input_data['title_id'],
+            defaults={
+                'product_code' : input_data['product_code'],
+                'product_etc_title_id' : input_data['title_id'],
+                'contents' : input_data['contents']
+            })
 
-        ProductEtcDesc.objects.create(product_code = input_data['product_code'], product_etc_title_id = input_data['title_id'], contents = input_data['contents'])
+        if created == False:
+            return JsonResponse({'message' : '기존의 제품 비고란 내용을 수정 했습니다.'}, status = 200)
+        else:
+            return JsonResponse({'message' : '새로운 제품 비고란 내용을 생성 했습니다.'}, status = 200) 
+        
 
-        return JsonResponse({'message' : 'ok'}, status = 200)
     
     def get(self, request):
         filter_options = {
@@ -149,23 +157,23 @@ class ProductEtcDescView(View):
 
         return JsonResponse({'message': product_etc_list}, status = 200)
 
-    def put(self, request):
-        try:
-            product_code = request.GET.get('product_code')
-            product_etc_title_id = request.GET.get('etc_title_id')
-            modify_data = json.loads(request.body)
+    # def put(self, request):
+    #     try:
+    #         product_code = request.GET.get('product_code')
+    #         product_etc_title_id = request.GET.get('etc_title_id')
+    #         modify_data = json.loads(request.body)
 
-            with transaction.atomic():
+    #         with transaction.atomic():
                 
-                if not ProductEtcDesc.objects.filter(product_code = product_code, product_etc_title_id = product_etc_title_id).exists():
-                    return JsonResponse({'message' : "'product_code'와 'etc_title_id' 를 확인해주세요."}, status = 403)
+    #             if not ProductEtcDesc.objects.filter(product_code = product_code, product_etc_title_id = product_etc_title_id).exists():
+    #                 return JsonResponse({'message' : "'product_code'와 'etc_title_id' 를 확인해주세요."}, status = 403)
 
-                ProductEtcDesc.objects.filter(product_code = product_code, product_etc_title_id = product_etc_title_id).update(
-                    contents = modify_data['contents']
-                )
-            return JsonResponse({'message' : '수정 완료'}, status = 200)
-        except Exception as e:
-            return JsonResponse({'message' : e}, status = 403)
+    #             ProductEtcDesc.objects.filter(product_code = product_code, product_etc_title_id = product_etc_title_id).update(
+    #                 contents = modify_data['contents']
+    #             )
+    #         return JsonResponse({'message' : '수정 완료'}, status = 200)
+    #     except Exception as e:
+    #         return JsonResponse({'message' : e}, status = 403)
 
 
 class ProductD1InfoView(View):
