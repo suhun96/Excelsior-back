@@ -13,7 +13,7 @@ https://docs.djangoproject.com/en/4.0/ref/settings/
 from pathlib import Path
 
 import pymysql
-from my_settings import DATABASES,SECRET_KEY,ALGORITHM
+from my_settings import DATABASES,SECRET_KEY,ALGORITHM, ALLOWED_HOSTS
 pymysql.install_as_MySQLdb()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -28,7 +28,7 @@ SECRET_KEY = SECRET_KEY
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['3.39.18.177', 'yamuzin.net', '.yamuzin.net', '172.31.33.146', '13.125.84.124', '3.34.111.252']
+ALLOWED_HOSTS = ALLOWED_HOSTS
 
 # timeout error
 SESSION_COOKIE_AGE = 1200
