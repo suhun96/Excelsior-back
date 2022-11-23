@@ -51,7 +51,7 @@ class CompanyView(View):
                 if not "name" in input_data:
                     return JsonResponse({'message' : 'Please enter the correct value.'}, status = 403)
                 
-                create_options = ['keyword','represent','biz_no','biz_type','biz_item','phone','fax','email','address_main','address_desc','zip_code']
+                create_options = ['name','code','keyword','represent','biz_no','biz_type','biz_item','phone','fax','email','address_main','address_desc','zip_code']
 
                 CREATE_SET = {}
 

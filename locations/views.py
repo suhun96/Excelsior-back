@@ -51,7 +51,6 @@ class WarehouseInfoView(View):
             
             Warehouse.objects.filter(id = input_data['id']).update(**SET)
             return JsonResponse({'message' : '수정'}, status = 200)
-
         
         else:
             if Warehouse.objects.filter(code = input_data['code']).exists():
