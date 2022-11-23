@@ -48,24 +48,21 @@ class ProductD3EtcDesc(models.Model):
 
 # Depth 1
 class ProductD1(models.Model):
+    company_code = models.CharField(max_length = 10) 
     productgroup_code = models.CharField(max_length = 10, blank = False)
-    productgroup_num  = models.CharField(max_length = 10, blank = False)
-    quantity      = models.IntegerField()
-    safe_quantity = models.IntegerField()
-    keyword       = models.CharField(max_length = 150, blank = False)
+    product_num  = models.CharField(max_length = 10, blank = False)
+    quantity      = models.IntegerField(default = 0)
+    safe_quantity = models.IntegerField(default = 0)
+    keyword       = models.CharField(max_length = 150)
     name          = models.CharField(max_length = 100, blank = False)
+    warehouse_code = models.CharField(max_length = 10)
+    location = models.CharField(max_length = 100)
+    status        = models.BooleanField(default= True)
     created_at    = models.DateTimeField(auto_now_add = True)
     
     class Meta:
         db_table = 'productD1'
 
-# D1 - company 코드 
-class ProductD1Company(models.Model):
-    productD1 = models.ForeignKey('ProductD1', on_delete = models.CASCADE)
-    company_code = models.CharField(max_length = 10)
-
-    class Meta:
-        db_table = 'productD1_company'
 
 # Depth 2
 class ProductD2(models.Model):

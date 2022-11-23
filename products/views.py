@@ -10,6 +10,7 @@ from django.db.models   import Q
 from users.models       import *
 from products.models    import *
 from companies.models   import *
+from locations.models   import *
 
 # decorator & utills 
 from users.decorator    import jwt_decoder, check_status
@@ -117,32 +118,68 @@ class ProductD1InfoView(View):
     def post(self, request):
         input_data = request.POST
 
+        if not 'name' in input_data:
+            return JsonResponse({'message' : '제품명을 입력해주세요'}, status = 403)
+
+        if not 'productgroup_code' in input_data:
+            return JsonResponse({'message' : '제품 코드를 입력해주세요'}, status = 403)
+
         if not ProductGroup.objects.filter(code = input_data['productgroup_code']).exists():
             return JsonResponse({'message' : '존재하지 않는 제품그룹 코드입니다.'}, status = 403)
         
-        try:
-            with transaction.atomic():
+        if 'warehouse_code' in input_data:
+            if not Warehouse.objects.filter(code = input_data['warehouse_code']).exists():
+                return JsonResponse({'message' : '존재하지 않는 창고 코드입니다.'}, status = 403)
+        
+        with transaction.atomic():
+            if 'company_code' in input_data:
+                
+                if not Company.objects.filter(code = input_data['company_code']).exists():
+                    return JsonResponse({'message' : '존재하지 않는 회사 코드입니다.'})
+                
                 product_d1 = ProductD1.objects.filter(productgroup_code = input_data['productgroup_code']) 
 
                 if product_d1.exists():
-                    productgroup_num = product_d1.latest('created_at').productgroup_num
+                    productgroup_num = product_d1.latest('created_at').product_num
                     change_int_num = int(productgroup_num) + 1
                     input_num = str(change_int_num).zfill(3)           
                 else:
                     input_num = '001'
+                
+                CREATE_SET = {
+                    'productgroup_code' : input_data['productgroup_code'],
+                    'product_num' : input_num,
+                    'company_code' : input_data['company_code']
+                }
+                for key, value in input_data.items():
+                    if key in ['safe_quantity', 'keyword', 'warehouse_code', 'location']:
+                        CREATE_SET.update({key : value})
+                
+                ProductD1.objects.create(**CREATE_SET)
+                return JsonResponse({'message' : '새로운 제품 등록'}, status = 200)
+            
+            else:
+                product_d1 = ProductD1.objects.filter(productgroup_code = input_data['productgroup_code']) 
 
-                # 제품 정보
-                ProductD1.objects.create(
-                    productgroup_code = input_data['productgroup_code'],
-                    productgroup_num = input_num,
-                    quantity = 0,
-                    safe_quantity = input_data['safe_quantity'],
-                    keyword = input_data['keyword'],
-                    name = input_data['name']
-                )
-                return JsonResponse({f'message' : 'Product information has been registered.'}, status = 200)
-        except KeyError:
-            return JsonResponse({'message' : 'Key error'}, status = 403)
+                if product_d1.exists():
+                    productgroup_num = product_d1.latest('created_at').product_num
+                    change_int_num = int(productgroup_num) + 1
+                    input_num = str(change_int_num).zfill(3)           
+                else:
+                    input_num = '001'
+                
+                CREATE_SET = {
+                    'productgroup_code' : input_data['productgroup_code'],
+                    'name' : input_data['name'],
+                    'product_num' : input_num
+                }
+                for key, value in input_data.items():
+                    if key in ['safe_quantity', 'keyword', 'warehouse_code', 'location']:
+                        CREATE_SET.update({key : value})
+                
+                ProductD1.objects.create(**CREATE_SET)
+                return JsonResponse({'message' : '새로운 제품 등록'}, status = 200)
+        
 
 class ProductD1CompanyView(View):
     def get(self, request):
