@@ -188,12 +188,16 @@ class ModifyProductD1InfoView(View):
             return JsonResponse({'message' : "존재하지 않는 제품입니다."}, status = 403)
         
         UPDATE_SET = {}
-        UPDATE_OPT = ['quantity', 'safe_quantity', 'keyword', 'name']
+        UPDATE_OPT = ['safe_quantity', 'keyword', 'name', 'location']
 
         try:
             with transaction.atomic():
 
                 for key, value in modify_data.items():
+                    if key == 'warehouse_code':
+                        if not Warehouse.objects.filter(code = value).exists():
+                            return JsonResponse({'message' : '존재하지 않는 창고 코드입니다.'}, status = 403)
+
                     if key in UPDATE_OPT:
                         UPDATE_SET.update({key : value})
                 
