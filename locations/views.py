@@ -43,16 +43,20 @@ class WarehouseInfoView(View):
         if not 'code' in input_data:
             return JsonResponse({'message' : '창고 코드를 입력해주세요.'}, status = 403)
 
-        if Warehouse.objects.filter(code = input_data['code']).exists():
+        if 'id' in input_data:
             SET = {}
             for key, value in input_data.items():
                 if key in ['name', 'code', 'type', 'way', 'etc']:
                     SET.update({key : value})
-
-            Warehouse.objects.filter(code = input_data['code']).update(**SET)
+            
+            Warehouse.objects.filter(id = input_data['id']).update(**SET)
             return JsonResponse({'message' : '수정'}, status = 200)
+
         
-        if not Warehouse.objects.filter(code = input_data['code']).exists():
+        else:
+            if Warehouse.objects.filter(code = input_data['code']).exists():
+                return JsonResponse({'message' : '코드 중복'}, status = 403)
+            
             SET = {}
             for key, value in input_data.items():
                 if key in ['name', 'code', 'type', 'way', 'etc']:
