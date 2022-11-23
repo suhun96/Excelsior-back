@@ -203,6 +203,9 @@ class ProductD1InfoView(View):
     
     def post(self, request):
         input_data = request.POST
+
+        if not ProductGroup.objects.filter(code = input_data['productgroup_code']).exists():
+            return JsonResponse({'message' : '존재하지 않는 제품그룹 코드입니다.'}, status = 403)
         
         try:
             with transaction.atomic():
@@ -227,6 +230,12 @@ class ProductD1InfoView(View):
                 return JsonResponse({f'message' : 'Product information has been registered.'}, status = 200)
         except KeyError:
             return JsonResponse({'message' : 'Key error'}, status = 403)
+
+class CreateProductD1CompanyView(View):
+    def post(self, request):
+        input_data = request.POST
+
+        
 
 class ModifyProductD1InfoView(View):
     def post(self, request):
