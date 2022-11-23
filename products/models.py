@@ -13,6 +13,39 @@ class ProductGroup(models.Model):
 
 # -----------------------------------------------------------------
 
+class ProductEtcTitle(models.Model):
+    title  = models.CharField(max_length=100, blank = False)
+    status = models.BooleanField(default = False)
+
+    class Meta:
+        db_table = 'product_etc_title'
+
+class ProductD1EtcDesc(models.Model):
+    productD1 = models.ForeignKey('ProductD1', on_delete= models.CASCADE)
+    product_etc_title = models.ForeignKey('ProductEtcTitle', on_delete= models.CASCADE)
+    contents = models.CharField(max_length = 700) 
+    
+    class Meta:
+        db_table = 'productD1_etc_desc'
+
+class ProductD2EtcDesc(models.Model):
+    productD2 = models.ForeignKey('ProductD2', on_delete= models.CASCADE)
+    product_etc_title = models.ForeignKey('ProductEtcTitle', on_delete= models.CASCADE)
+    contents = models.CharField(max_length = 700) 
+    
+    class Meta:
+        db_table = 'productD2_etc_desc'
+
+class ProductD3EtcDesc(models.Model):
+    productD3 = models.ForeignKey('ProductD3', on_delete= models.CASCADE)
+    product_etc_title = models.ForeignKey('ProductEtcTitle', on_delete= models.CASCADE)
+    contents = models.CharField(max_length = 700) 
+    
+    class Meta:
+        db_table = 'productD3_etc_desc'
+
+# -------------------------------------------------------------------------- #
+
 # Depth 1
 class ProductD1(models.Model):
     productgroup_code = models.CharField(max_length = 10, blank = False)
@@ -89,76 +122,3 @@ class ProductD3Composition2(models.Model):
     class Meta:
         db_table = 'productD3_composition_D2'
 
-
-#-----------------------------------------------------
-#-----------------------------------------
-
-class ProductEtcTitle(models.Model):
-    title  = models.CharField(max_length = 300, blank = False)
-    status = models.BooleanField(default = False)
-
-    class Meta:
-        db_table = 'product_etc_title'
-
-class ProductEtcDesc(models.Model):
-    product_code = models.CharField(max_length = 10, blank = False)
-    product_etc_title = models.ForeignKey('ProductEtcTitle', on_delete = models.CASCADE)
-    contents = models.CharField(max_length = 700)
-
-    class Meta:
-        db_table = 'product_etc_desc'
-
-############################################
-
-
-# barcode history
-class ProductHis(models.Model):
-    code         = models.CharField(max_length = 10, blank = False)
-    barcode      = models.CharField(max_length = 20, blank = False)
-    status       = models.IntegerField(blank = False)
-    price        = models.BigIntegerField()
-    created_at   = models.DateTimeField(auto_now_add = True)
-    updated_at   = models.DateTimeField(auto_now = True)
-
-    class Meta:
-        db_table = 'product_his'
-
-# 입고 (Inbound)
-class InboundOrder(models.Model):
-    user            = models.ForeignKey(User, on_delete = models.CASCADE)
-    company_code    = models.CharField(max_length = 5, blank = False)
-    etc             = models.CharField(max_length = 3000, blank = True)
-    created_at      = models.DateTimeField(auto_now_add = True)
-    
-    class Meta:
-        db_table = 'inbound_order'
-
-class InboundQuantity(models.Model):
-    inbound_order    = models.ForeignKey(InboundOrder, on_delete = models.CASCADE)
-    product_code     = models.CharField(max_length = 10, blank = False)
-    inbound_price    = models.BigIntegerField()
-    inbound_quantity = models.IntegerField()
-    created_at       = models.DateTimeField(auto_now_add = True)
-    
-    class Meta:
-        db_table = 'inbound_quantity'
-
-# 출고(Outbound)
-class OutboundOrder(models.Model):
-    user            = models.ForeignKey(User, on_delete = models.CASCADE)
-    company_code    = models.CharField(max_length = 5, blank = False)
-    etc             = models.CharField(max_length = 3000, blank = True)
-    created_at      = models.DateTimeField(auto_now_add = True)
-    
-    class Meta:
-        db_table = 'outbound_order'
-
-class OutboundQuantity(models.Model):
-    outbound_order  = models.ForeignKey(OutboundOrder, on_delete = models.CASCADE)
-    product_code    = models.CharField(max_length = 40, blank = False)
-    outbound_price  = models.BigIntegerField()
-    outbound_quantity = models.IntegerField()
-    created_at      = models.DateTimeField(auto_now_add = True)
-    
-    class Meta:
-        db_table = 'outbound_quantity'
