@@ -178,27 +178,23 @@ class ProductEtcDescView(View):
 
 class ProductD1InfoView(View):
     def get(self, request):
-        code = request.GET.get('code', None)
-        search_word = request.GET.get('search_word', None)
+        company_code = request.GET.get('company_code', None)
+        keyword = request.GET.get('keyword', None)
         name = request.GET.get('name', None)
+        productgroup_code = request.GET.get('productgroup_code', None)
 
         try:
             q = Q()
             if name:
                 q &= Q(name__icontains = name)
-            if code:
-                q &= Q(code__icontains = code)
-            if search_word:
-                q &= Q(search_word__icontains = search_word)
+            if company_code:
+                q &= Q(company_code__icontains = company_code)
+            if keyword:
+                q &= Q(search_word__icontains = keyword)
+            if productgroup_code:
+                q &= Q(productgroup_code__icontains = productgroup_code)
             
-            result = list(ProductD1.objects.filter(q).values(
-                'id',
-                'code',
-                'quantity',
-                'safe_quantity',
-                'search_word',
-                'name'
-            ))
+            result = list(ProductD1.objects.filter(q).values())
         
             return JsonResponse({'message' : result}, status = 200)
         except:
@@ -209,14 +205,22 @@ class ProductD1InfoView(View):
         
         try:
             with transaction.atomic():
-                product_D1_code = code_generator_d1(input_data['pg_code'], input_data['cp_code'])
+                
+                if ProductD1.objects.filter(productgroup_code = input_data['productgroup_code']).exists():
+                    productgroup_num = ProductD1.objects.filter(productgroup_code = input_data['productgroup_code']).latest('created_at').productgroup_num
+                    change_int_num = int(productgroup_num) + 1
+                    input_num = str(change_int_num).zfill(3)           
+                else:
+                    input_num = '001'
 
                 # 제품 정보
                 ProductD1.objects.create(
-                    code = product_D1_code,
+                    company_code = input_data['company_code'],
+                    productgroup_code = input_data['productgroup_code'],
+                    productgroup_num = input_data,
                     quantity = 0,
                     safe_quantity = input_data['safe_quantity'],
-                    search_word = input_data['search_word'],
+                    keyword = input_data['keyword'],
                     name = input_data['name']
                 )
                 return JsonResponse({f'{product_D1_code}' : 'Product information has been registered.'}, status = 200)
