@@ -175,7 +175,7 @@ class CompanyEtcDescView(View):
     def get(self, request):
 
         filter_options = {
-            'company_id' : 'id__excact',
+            'company_id' : 'company_id__exact',
             'company_code' : 'comp_code__icontains'
         }        
 
