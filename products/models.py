@@ -33,7 +33,6 @@ class ProductD1Company(models.Model):
 
 # Depth 2
 class ProductD2(models.Model):
-    company_code = models.CharField(max_length = 10)
     productgroup_code = models.CharField(max_length = 10, blank = False)
     productgroup_num  = models.CharField(max_length = 10, blank = False)
     quantity      = models.IntegerField()
@@ -45,6 +44,9 @@ class ProductD2(models.Model):
     class Meta:
         db_table = 'productD2'
 
+class ProductD2Company(models.Model):
+    productD2 = models.ForeignKey('ProductD2', on_delete = models.CASCADE)
+    company_code = models.CharField(max_length = 10)
 
 class ProductD2Composition(models.Model):
     productD2 = models.ForeignKey('ProductD2', on_delete = models.CASCADE)
@@ -56,7 +58,6 @@ class ProductD2Composition(models.Model):
 
 # Depth 3
 class ProductD3(models.Model):
-    company_code = models.CharField(max_length = 10)
     productgroup_code = models.CharField(max_length = 10, blank = False)
     productgroup_num  = models.CharField(max_length = 10, blank = False)
     quantity      = models.IntegerField()
@@ -68,14 +69,26 @@ class ProductD3(models.Model):
     class Meta:
         db_table = 'productD3'
 
-class ProductD3Composition(models.Model):
+class ProductD3Company(models.Model):
     productD3 = models.ForeignKey('ProductD3', on_delete = models.CASCADE)
-    productD2 = models.ForeignKey('ProductD2', on_delete = models.CASCADE)
+    company_code = models.CharField(max_length = 10)
+
+class ProductD3Composition1(models.Model):
+    productD3 = models.ForeignKey('ProductD3', on_delete = models.CASCADE)
     productD1 = models.ForeignKey('ProductD1', on_delete = models.CASCADE)
     com_quan = models.IntegerField()
 
     class Meta:
-        db_table = 'productD3_composition'
+        db_table = 'productD3_composition_D1'
+
+class ProductD3Composition2(models.Model):
+    productD3 = models.ForeignKey('ProductD3', on_delete = models.CASCADE)
+    productD2 = models.ForeignKey('ProductD2', on_delete = models.CASCADE)
+    com_quan = models.IntegerField()
+
+    class Meta:
+        db_table = 'productD3_composition_D2'
+
 
 #-----------------------------------------------------
 #-----------------------------------------

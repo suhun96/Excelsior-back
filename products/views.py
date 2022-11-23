@@ -231,9 +231,40 @@ class ProductD1InfoView(View):
         except KeyError:
             return JsonResponse({'message' : 'Key error'}, status = 403)
 
-class CreateProductD1CompanyView(View):
+class ProductD1CompanyView(View):
+    def get(self, request):
+        productD1_id = request.GET.get('productD1_id')
+
+        D1_company_list = list(ProductD1Company.objects.filter(productD1_id = productD1_id).values())    
+    
+        return JsonResponse({'message' : D1_company_list}, status = 200)
+
     def post(self, request):
         input_data = request.POST
+
+        if not ProductD1.objects.filter(id = input_data['productD1_id']).exists():
+            return JsonResponse({'message' : '존재하지 않는 제품(D1) id입니다.'}, statue = 403)
+
+        if not Company.objects.filter(code = input_data['company_code']).exists():
+            return JsonResponse({'message' : '존재하지 않는 회사 코드 입니다.'}, statue = 403)
+        try:
+            with transaction.atomic():
+                ProductD1Company.objects.create(
+                    productD1_id = input_data['productD1_id'], 
+                    company_code = input_data['company_code'])
+            return JsonResponse({'message' : '제품(D1)에 회사가 등록되었습니다.'}, status = 200)
+        except:
+            return JsonResponse({'message' : '예외 사항이 발생했습니다.'}, status = 403)
+
+    def delete(self, request):
+        id = request.GET.get('id')
+        
+        if not ProductD1Company.objects.filter(id = id).exists():
+            return JsonResponse({'message' : '존재하지 않는 id 입니다.'}, statue = 403)
+
+        ProductD1Company.objects.delete(id = id)
+
+        return JsonResponse({'message' : f'id({id})삭제 했습니다.'}, status = 200)
 
         
 
@@ -244,17 +275,14 @@ class ModifyProductD1InfoView(View):
         if ProductD1.objects.filter(id = modify_data['id']).exists() == False:
             return JsonResponse({'message' : "존재하지 않는 제품입니다."}, status = 403)
         
+        UPDATE_SET = {}
+        UPDATE_OPT = ['quantity', 'safe_quantity', 'keyword', 'name']
+
         try:
             with transaction.atomic():
-                UPDATE_SET = {}
-                UPDATE_OPT = ['quantity', 'safe_quantity', 'keyword', 'name']
 
                 for key, value in modify_data.items():
                     if key in UPDATE_OPT:
-                        UPDATE_SET.update({key : value})
-                    elif key == 'company_code':
-                        if not Company.objects.filter(code = value).exists():
-                            return JsonResponse({'message' : '존재하지 않는 거래처 코드입니다.'}, status = 403)
                         UPDATE_SET.update({key : value})
                 
                 ProductD1.objects.filter(id = modify_data['id']).update(**UPDATE_SET)
@@ -264,7 +292,11 @@ class ModifyProductD1InfoView(View):
             return JsonResponse({'message' : 'KeyError'}, status = 403)
         except:
             return JsonResponse({'message' : '예외 사항 발생'}, status = 403)
-          
+
+
+
+###########################################################################################################
+
 class ProductD2InfoView(View):
     def get(self, request):
         code = request.GET.get('code', None)
