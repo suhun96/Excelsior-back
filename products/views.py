@@ -266,8 +266,6 @@ class ProductD1CompanyView(View):
 
         return JsonResponse({'message' : f'id({id})삭제 했습니다.'}, status = 200)
 
-        
-
 class ModifyProductD1InfoView(View):
     def post(self, request):
         modify_data = request.POST
@@ -293,8 +291,77 @@ class ModifyProductD1InfoView(View):
         except:
             return JsonResponse({'message' : '예외 사항 발생'}, status = 403)
 
+class ProductEtcTitleView(View):
+    def post(self, request):
+        input_data = request.POST
+        
+        try:
+            with transaction.atomic():
+                UPDATE_SET = {}
 
+                for key, value in input_data.items():
+                    if key == 'product_etc_title':
+                        UPDATE_SET.update({'title' : value})
+                    if key == 'product_etc_status':
+                        if value == 'false':
+                            UPDATE_SET.update({'status': False})
+                        elif value == 'true':
+                            UPDATE_SET.update({'status': True})
 
+                ProductEtcTitle.objects.filter(id = input_data['product_etc_id']).update(**UPDATE_SET)
+                return JsonResponse({'message' : 'updated'}, status = 200)
+        except:
+            return JsonResponse({'message' : '예외 사항 발생'}, status = 403)
+
+    def get(self, request):
+        # 권한 설정
+        title_list = list(ProductEtcTitle.objects.all().values()) 
+
+        return JsonResponse({'message' : title_list}, status = 200)
+
+class ProductD1EtcDescView(View):
+    def post(self, request):
+        input_data = request.POST
+        
+        # 필수 입력 정보 확인
+        if not 'productD1_id' in input_data:
+            return JsonResponse({'message' : '수정할 제품(D1)가 입력되지 않았습니다'}, status = 403)
+
+        if not 'title_id' in input_data:
+            return JsonResponse({'message' : '수정할 제목이 선택되지 않았습니다.'}, status = 403)
+
+        # 거래처 확인
+        if not ProductD1.objects.filter(id = input_data['productD1_id']).exists():
+            return JsonResponse({'message' : '존재하지 않는 제품(D1)입니다. '}, status = 403)
+
+        try:
+            with transaction.atomic():        
+                # 이미 등록된 정보가 있는지 확인
+                obj , created = ProductD1EtcDesc.objects.update_or_create(productD1_id = input_data['productD1_id'], product_etc_title_id = input_data['title_id'],
+                defaults={
+                    'productD1_id' : input_data['productD1_id'],
+                    'product_etc_title_id' : input_data['title_id'],
+                    'contents' : input_data['contents']
+                })
+                
+            if created == False:
+                return JsonResponse({'message' : '기존의 비고란 내용을 수정 했습니다.'}, status = 200)
+            else:
+                return JsonResponse({'message' : '새로운 비고란 내용을 생성 했습니다.'}, status = 200)
+        except:
+            return JsonResponse({'message' : '예외 사항이 발생했습니다.'}, status = 200)
+    
+    def get(self, request):
+
+        filter_options = {
+            'productD1_id' : 'productD1_id__exact',
+        }        
+
+        filter_set = { filter_options.get(key) : value for (key, value) in request.GET.items() if filter_options.get(key) }
+        
+        result = list(CompanyEtcDesc.objects.filter(**filter_set).values())
+        
+        return JsonResponse({'message' : result}, status = 200)
 ###########################################################################################################
 
 class ProductD2InfoView(View):

@@ -64,6 +64,9 @@ class ProductD1Company(models.Model):
     productD1 = models.ForeignKey('ProductD1', on_delete = models.CASCADE)
     company_code = models.CharField(max_length = 10)
 
+    class Meta:
+        db_table = 'productD1_company'
+
 # Depth 2
 class ProductD2(models.Model):
     productgroup_code = models.CharField(max_length = 10, blank = False)
@@ -80,6 +83,9 @@ class ProductD2(models.Model):
 class ProductD2Company(models.Model):
     productD2 = models.ForeignKey('ProductD2', on_delete = models.CASCADE)
     company_code = models.CharField(max_length = 10)
+
+    class Meta:
+        db_table = 'productD2_company'
 
 class ProductD2Composition(models.Model):
     productD2 = models.ForeignKey('ProductD2', on_delete = models.CASCADE)
@@ -105,6 +111,9 @@ class ProductD3(models.Model):
 class ProductD3Company(models.Model):
     productD3 = models.ForeignKey('ProductD3', on_delete = models.CASCADE)
     company_code = models.CharField(max_length = 10)
+
+    class Meta:
+        db_table = 'productD3_company'
 
 class ProductD3Composition1(models.Model):
     productD3 = models.ForeignKey('ProductD3', on_delete = models.CASCADE)
