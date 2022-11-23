@@ -9,6 +9,7 @@ from django.db.models   import Q
 # Model
 from users.models       import *
 from products.models    import *
+from companies.models   import *
 
 # decorator & utills 
 from users.decorator    import jwt_decoder, check_status
@@ -178,27 +179,23 @@ class ProductEtcDescView(View):
 
 class ProductD1InfoView(View):
     def get(self, request):
-        code = request.GET.get('code', None)
-        search_word = request.GET.get('search_word', None)
+        company_code = request.GET.get('company_code', None)
+        keyword = request.GET.get('keyword', None)
         name = request.GET.get('name', None)
+        productgroup_code = request.GET.get('productgroup_code', None)
 
         try:
             q = Q()
             if name:
                 q &= Q(name__icontains = name)
-            if code:
-                q &= Q(code__icontains = code)
-            if search_word:
-                q &= Q(search_word__icontains = search_word)
+            if company_code:
+                q &= Q(company_code__icontains = company_code)
+            if keyword:
+                q &= Q(search_word__icontains = keyword)
+            if productgroup_code:
+                q &= Q(productgroup_code__icontains = productgroup_code)
             
-            result = list(ProductD1.objects.filter(q).values(
-                'id',
-                'code',
-                'quantity',
-                'safe_quantity',
-                'search_word',
-                'name'
-            ))
+            result = list(ProductD1.objects.filter(q).values())
         
             return JsonResponse({'message' : result}, status = 200)
         except:
@@ -206,47 +203,100 @@ class ProductD1InfoView(View):
     
     def post(self, request):
         input_data = request.POST
+
+        if not ProductGroup.objects.filter(code = input_data['productgroup_code']).exists():
+            return JsonResponse({'message' : '존재하지 않는 제품그룹 코드입니다.'}, status = 403)
         
         try:
             with transaction.atomic():
-                product_D1_code = code_generator_d1(input_data['pg_code'], input_data['cp_code'])
+                product_d1 = ProductD1.objects.filter(productgroup_code = input_data['productgroup_code']) 
+
+                if product_d1.exists():
+                    productgroup_num = product_d1.latest('created_at').productgroup_num
+                    change_int_num = int(productgroup_num) + 1
+                    input_num = str(change_int_num).zfill(3)           
+                else:
+                    input_num = '001'
 
                 # 제품 정보
                 ProductD1.objects.create(
-                    code = product_D1_code,
+                    productgroup_code = input_data['productgroup_code'],
+                    productgroup_num = input_num,
                     quantity = 0,
                     safe_quantity = input_data['safe_quantity'],
-                    search_word = input_data['search_word'],
+                    keyword = input_data['keyword'],
                     name = input_data['name']
                 )
-                return JsonResponse({f'{product_D1_code}' : 'Product information has been registered.'}, status = 200)
+                return JsonResponse({f'message' : 'Product information has been registered.'}, status = 200)
         except KeyError:
             return JsonResponse({'message' : 'Key error'}, status = 403)
 
-    def put(self, request):
-        body_data= json.loads(request.body)
-        comp_code = request.GET.get('code')
-        product_D1 = ProductD1.objects.filter(code = comp_code)
+class ProductD1CompanyView(View):
+    def get(self, request):
+        productD1_id = request.GET.get('productD1_id')
 
-        if product_D1.exists() == False:
-            return JsonResponse({'message' : "존재하지 않는 제품입니다."}, status = 403)
+        D1_company_list = list(ProductD1Company.objects.filter(productD1_id = productD1_id).values())    
+    
+        return JsonResponse({'message' : D1_company_list}, status = 200)
+
+    def post(self, request):
+        input_data = request.POST
+
+        if not ProductD1.objects.filter(id = input_data['productD1_id']).exists():
+            return JsonResponse({'message' : '존재하지 않는 제품(D1) id입니다.'}, statue = 403)
+
+        if not Company.objects.filter(code = input_data['company_code']).exists():
+            return JsonResponse({'message' : '존재하지 않는 회사 코드 입니다.'}, statue = 403)
         try:
             with transaction.atomic():
-                UPDATE_SET = {}
-                UPDATE_OPT = ['quantity', 'safe_quantity', 'search_word', 'name']
+                ProductD1Company.objects.create(
+                    productD1_id = input_data['productD1_id'], 
+                    company_code = input_data['company_code'])
+            return JsonResponse({'message' : '제품(D1)에 회사가 등록되었습니다.'}, status = 200)
+        except:
+            return JsonResponse({'message' : '예외 사항이 발생했습니다.'}, status = 403)
 
-                for key, value in body_data.items():
+    def delete(self, request):
+        id = request.GET.get('id')
+        
+        if not ProductD1Company.objects.filter(id = id).exists():
+            return JsonResponse({'message' : '존재하지 않는 id 입니다.'}, statue = 403)
+
+        ProductD1Company.objects.delete(id = id)
+
+        return JsonResponse({'message' : f'id({id})삭제 했습니다.'}, status = 200)
+
+        
+
+class ModifyProductD1InfoView(View):
+    def post(self, request):
+        modify_data = request.POST
+        
+        if ProductD1.objects.filter(id = modify_data['id']).exists() == False:
+            return JsonResponse({'message' : "존재하지 않는 제품입니다."}, status = 403)
+        
+        UPDATE_SET = {}
+        UPDATE_OPT = ['quantity', 'safe_quantity', 'keyword', 'name']
+
+        try:
+            with transaction.atomic():
+
+                for key, value in modify_data.items():
                     if key in UPDATE_OPT:
                         UPDATE_SET.update({key : value})
                 
-                ProductD1.objects.filter(code = comp_code).update(**UPDATE_SET)
+                ProductD1.objects.filter(id = modify_data['id']).update(**UPDATE_SET)
 
                 return JsonResponse({'message' : 'Check update'}, status = 200)
         except KeyError:
             return JsonResponse({'message' : 'KeyError'}, status = 403)
         except:
             return JsonResponse({'message' : '예외 사항 발생'}, status = 403)
-          
+
+
+
+###########################################################################################################
+
 class ProductD2InfoView(View):
     def get(self, request):
         code = request.GET.get('code', None)

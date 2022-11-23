@@ -1,5 +1,6 @@
 from django.db      import models
 from users.models   import User
+from companies.models import *
 
 class ProductGroup(models.Model):
     name        = models.CharField(max_length = 60, blank = False)
@@ -14,55 +15,80 @@ class ProductGroup(models.Model):
 
 # Depth 1
 class ProductD1(models.Model):
-    code          = models.CharField(max_length = 10, blank = False)
+    productgroup_code = models.CharField(max_length = 10, blank = False)
+    productgroup_num  = models.CharField(max_length = 10, blank = False)
     quantity      = models.IntegerField()
     safe_quantity = models.IntegerField()
-    search_word   = models.CharField(max_length = 150, blank = False)
+    keyword       = models.CharField(max_length = 150, blank = False)
     name          = models.CharField(max_length = 100, blank = False)
     created_at    = models.DateTimeField(auto_now_add = True)
     
     class Meta:
         db_table = 'productD1'
 
+# D1 - company 코드 
+class ProductD1Company(models.Model):
+    productD1 = models.ForeignKey('ProductD1', on_delete = models.CASCADE)
+    company_code = models.CharField(max_length = 10)
+
 # Depth 2
 class ProductD2(models.Model):
-    code          = models.CharField(max_length = 10, blank = False)
+    productgroup_code = models.CharField(max_length = 10, blank = False)
+    productgroup_num  = models.CharField(max_length = 10, blank = False)
     quantity      = models.IntegerField()
     safe_quantity = models.IntegerField()
-    search_word   = models.CharField(max_length = 150, blank = False)
+    keyword       = models.CharField(max_length = 150, blank = False)
     name          = models.CharField(max_length = 100, blank = False)
     created_at    = models.DateTimeField(auto_now_add = True)
 
     class Meta:
         db_table = 'productD2'
 
+class ProductD2Company(models.Model):
+    productD2 = models.ForeignKey('ProductD2', on_delete = models.CASCADE)
+    company_code = models.CharField(max_length = 10)
+
 class ProductD2Composition(models.Model):
-    d2_code = models.CharField(max_length = 10, blank = False)
-    com_code = models.CharField(max_length = 10, blank = False)
-    com_quan = models.IntegerField()
+    productD2 = models.ForeignKey('ProductD2', on_delete = models.CASCADE)
+    productD1 = models.ForeignKey('ProductD1', on_delete = models.CASCADE)
+    quantity  = models.IntegerField()
     
     class Meta:
         db_table = 'productD2_composition'
 
 # Depth 3
 class ProductD3(models.Model):
-    code          = models.CharField(max_length = 10, blank = False)
+    productgroup_code = models.CharField(max_length = 10, blank = False)
+    productgroup_num  = models.CharField(max_length = 10, blank = False)
     quantity      = models.IntegerField()
     safe_quantity = models.IntegerField()
-    search_word   = models.CharField(max_length = 150, blank = False)
+    keyword       = models.CharField(max_length = 150, blank = False)
     name          = models.CharField(max_length = 100, blank = False)
     created_at    = models.DateTimeField(auto_now_add = True)
 
     class Meta:
         db_table = 'productD3'
 
-class ProductD3Composition(models.Model):
-    d3_code = models.CharField(max_length = 10, blank = False)
-    com_code = models.CharField(max_length = 10, blank = False)
+class ProductD3Company(models.Model):
+    productD3 = models.ForeignKey('ProductD3', on_delete = models.CASCADE)
+    company_code = models.CharField(max_length = 10)
+
+class ProductD3Composition1(models.Model):
+    productD3 = models.ForeignKey('ProductD3', on_delete = models.CASCADE)
+    productD1 = models.ForeignKey('ProductD1', on_delete = models.CASCADE)
     com_quan = models.IntegerField()
 
     class Meta:
-        db_table = 'productD3_composition'
+        db_table = 'productD3_composition_D1'
+
+class ProductD3Composition2(models.Model):
+    productD3 = models.ForeignKey('ProductD3', on_delete = models.CASCADE)
+    productD2 = models.ForeignKey('ProductD2', on_delete = models.CASCADE)
+    com_quan = models.IntegerField()
+
+    class Meta:
+        db_table = 'productD3_composition_D2'
+
 
 #-----------------------------------------------------
 #-----------------------------------------
