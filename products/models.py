@@ -48,17 +48,17 @@ class ProductD3EtcDesc(models.Model):
 
 # Depth 1
 class ProductD1(models.Model):
-    company_code = models.CharField(max_length = 10) 
+    company_code      = models.CharField(max_length = 10) 
     productgroup_code = models.CharField(max_length = 10, blank = False)
-    product_num  = models.CharField(max_length = 10, blank = False)
-    quantity      = models.IntegerField(default = 0)
-    safe_quantity = models.IntegerField(default = 0)
-    keyword       = models.CharField(max_length = 150)
-    name          = models.CharField(max_length = 100, blank = False)
-    warehouse_code = models.CharField(max_length = 10)
-    location = models.CharField(max_length = 100)
-    status        = models.BooleanField(default= True)
-    created_at    = models.DateTimeField(auto_now_add = True)
+    product_num       = models.CharField(max_length = 10, blank = False)
+    quantity          = models.IntegerField(default = 0)
+    safe_quantity     = models.IntegerField(default = 0)
+    keyword           = models.CharField(max_length = 150)
+    name              = models.CharField(max_length = 100, blank = False)
+    warehouse_code    = models.CharField(max_length = 10)
+    location          = models.CharField(max_length = 100)
+    status            = models.BooleanField(default= True)
+    created_at        = models.DateTimeField(auto_now_add = True)
     
     class Meta:
         db_table = 'productD1'

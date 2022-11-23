@@ -148,8 +148,9 @@ class ProductD1InfoView(View):
                 
                 CREATE_SET = {
                     'productgroup_code' : input_data['productgroup_code'],
-                    'product_num' : input_num,
-                    'company_code' : input_data['company_code']
+                    'company_code' : input_data['company_code'],
+                    'name' : input_data['name'],
+                    'product_num' : input_num
                 }
                 for key, value in input_data.items():
                     if key in ['safe_quantity', 'keyword', 'warehouse_code', 'location']:
@@ -181,40 +182,6 @@ class ProductD1InfoView(View):
                 return JsonResponse({'message' : '새로운 제품 등록'}, status = 200)
         
 
-class ProductD1CompanyView(View):
-    def get(self, request):
-        productD1_id = request.GET.get('productD1_id')
-
-        D1_company_list = list(ProductD1Company.objects.filter(productD1_id = productD1_id).values())    
-    
-        return JsonResponse({'message' : D1_company_list}, status = 200)
-
-    def post(self, request):
-        input_data = request.POST
-
-        if not ProductD1.objects.filter(id = input_data['productD1_id']).exists():
-            return JsonResponse({'message' : '존재하지 않는 제품(D1) id입니다.'}, statue = 403)
-
-        if not Company.objects.filter(code = input_data['company_code']).exists():
-            return JsonResponse({'message' : '존재하지 않는 회사 코드 입니다.'}, statue = 403)
-        try:
-            with transaction.atomic():
-                ProductD1Company.objects.create(
-                    productD1_id = input_data['productD1_id'], 
-                    company_code = input_data['company_code'])
-            return JsonResponse({'message' : '제품(D1)에 회사가 등록되었습니다.'}, status = 200)
-        except:
-            return JsonResponse({'message' : '예외 사항이 발생했습니다.'}, status = 403)
-
-    def delete(self, request):
-        id = request.GET.get('id')
-        
-        if not ProductD1Company.objects.filter(id = id).exists():
-            return JsonResponse({'message' : '존재하지 않는 id 입니다.'}, statue = 403)
-
-        ProductD1Company.objects.delete(id = id)
-
-        return JsonResponse({'message' : f'id({id})삭제 했습니다.'}, status = 200)
 
 class ModifyProductD1InfoView(View):
     def post(self, request):
