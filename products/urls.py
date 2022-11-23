@@ -9,7 +9,6 @@ urlpatterns = [
     path('etc-title', ProductEtcTitleView.as_view()),
     path('d1', ProductD1InfoView.as_view()),
     path('d1-mod', ModifyProductD1InfoView.as_view()),
-    path('d1-company', ProductD1CompanyView.as_view()),
     path('d1-etc-desc', ProductD1EtcDescView.as_view()),
     path('d2', ProductD2InfoView.as_view()),
     path('d3', ProductD3InfoView.as_view())
