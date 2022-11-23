@@ -44,22 +44,23 @@ class WarehouseInfoView(View):
             return JsonResponse({'message' : '창고 코드를 입력해주세요.'}, status = 403)
 
         if Warehouse.objects.filter(code = input_data['code']).exists():
-            return JsonResponse({'message' : '등록하신 창고 코드가 이미 존재합니다.'}, status = 403)
+            SET = {}
+            for key, value in input_data.items():
+                if key in ['name', 'code', 'type', 'way', 'etc']:
+                    SET.update({key : value})
 
-        SET = {}
-        for key, value in input_data.items():
-            if key in ['name', 'code', 'type', 'way', 'etc']:
-                SET.update({key : value})
-
-        obj, created = Warehouse.objects.update_or_create(
-            name = input_data['name'],
-            code = input_data['code'],
-            defaults={**SET})
+            Warehouse.objects.filter(code = input_data['code']).update(**SET)
+            return JsonResponse({'message' : '수정'}, status = 200)
         
-        if created == False:
-            return JsonResponse({'message' : '기존의 창고정보를 수정했습니다.'}, status = 200)
-        else:
-            return JsonResponse({'message' : '새로운 창고정보를 생성했습니다.'}, status = 200)
+        if not Warehouse.objects.filter(code = input_data['code']).exists():
+            SET = {}
+            for key, value in input_data.items():
+                if key in ['name', 'code', 'type', 'way', 'etc']:
+                    SET.update({key : value})
+
+            Warehouse.objects.filter(code = input_data['code']).update(**SET)
+            return JsonResponse({'message' : '생성'}, status = 200)
+
 
     def get(self, request):
         warehouse_list = list(Warehouse.objects.all().values())
