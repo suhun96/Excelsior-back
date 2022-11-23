@@ -15,7 +15,6 @@ class ProductGroup(models.Model):
 
 # Depth 1
 class ProductD1(models.Model):
-    company_code = models.CharField(max_length = 10)
     productgroup_code = models.CharField(max_length = 10, blank = False)
     productgroup_num  = models.CharField(max_length = 10, blank = False)
     quantity      = models.IntegerField()
@@ -26,6 +25,11 @@ class ProductD1(models.Model):
     
     class Meta:
         db_table = 'productD1'
+
+# D1 - company 코드 
+class ProductD1Company(models.Model):
+    productD1 = models.ForeignKey('ProductD1', on_delete = models.CASCADE)
+    company_code = models.CharField(max_length = 10)
 
 # Depth 2
 class ProductD2(models.Model):
@@ -40,6 +44,7 @@ class ProductD2(models.Model):
 
     class Meta:
         db_table = 'productD2'
+
 
 class ProductD2Composition(models.Model):
     productD2 = models.ForeignKey('ProductD2', on_delete = models.CASCADE)

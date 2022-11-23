@@ -9,6 +9,7 @@ from django.db.models   import Q
 # Model
 from users.models       import *
 from products.models    import *
+from companies.models   import *
 
 # decorator & utills 
 from users.decorator    import jwt_decoder, check_status
@@ -205,9 +206,10 @@ class ProductD1InfoView(View):
         
         try:
             with transaction.atomic():
-                
-                if ProductD1.objects.filter(productgroup_code = input_data['productgroup_code']).exists():
-                    productgroup_num = ProductD1.objects.filter(productgroup_code = input_data['productgroup_code']).latest('created_at').productgroup_num
+                product_d1 = ProductD1.objects.filter(productgroup_code = input_data['productgroup_code']) 
+
+                if product_d1.exists():
+                    productgroup_num = product_d1.latest('created_at').productgroup_num
                     change_int_num = int(productgroup_num) + 1
                     input_num = str(change_int_num).zfill(3)           
                 else:
@@ -215,35 +217,38 @@ class ProductD1InfoView(View):
 
                 # 제품 정보
                 ProductD1.objects.create(
-                    company_code = input_data['company_code'],
                     productgroup_code = input_data['productgroup_code'],
-                    productgroup_num = input_data,
+                    productgroup_num = input_num,
                     quantity = 0,
                     safe_quantity = input_data['safe_quantity'],
                     keyword = input_data['keyword'],
                     name = input_data['name']
                 )
-                return JsonResponse({f'{product_D1_code}' : 'Product information has been registered.'}, status = 200)
+                return JsonResponse({f'message' : 'Product information has been registered.'}, status = 200)
         except KeyError:
             return JsonResponse({'message' : 'Key error'}, status = 403)
 
-    def put(self, request):
-        body_data= json.loads(request.body)
-        comp_code = request.GET.get('code')
-        product_D1 = ProductD1.objects.filter(code = comp_code)
-
-        if product_D1.exists() == False:
+class ModifyProductD1InfoView(View):
+    def post(self, request):
+        modify_data = request.POST
+        
+        if ProductD1.objects.filter(id = modify_data['id']).exists() == False:
             return JsonResponse({'message' : "존재하지 않는 제품입니다."}, status = 403)
+        
         try:
             with transaction.atomic():
                 UPDATE_SET = {}
-                UPDATE_OPT = ['quantity', 'safe_quantity', 'search_word', 'name']
+                UPDATE_OPT = ['quantity', 'safe_quantity', 'keyword', 'name']
 
-                for key, value in body_data.items():
+                for key, value in modify_data.items():
                     if key in UPDATE_OPT:
                         UPDATE_SET.update({key : value})
+                    elif key == 'company_code':
+                        if not Company.objects.filter(code = value).exists():
+                            return JsonResponse({'message' : '존재하지 않는 거래처 코드입니다.'}, status = 403)
+                        UPDATE_SET.update({key : value})
                 
-                ProductD1.objects.filter(code = comp_code).update(**UPDATE_SET)
+                ProductD1.objects.filter(id = modify_data['id']).update(**UPDATE_SET)
 
                 return JsonResponse({'message' : 'Check update'}, status = 200)
         except KeyError:
