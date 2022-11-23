@@ -15,9 +15,9 @@ class CreateWarehousePropertyView(View):
         return JsonResponse({'message' : '적치 속성 생성'}, status = 200)
 
     def get(self, request):
-        list = list(WarehouseProperty.objects.filter().values())
+        property_list = list(WarehouseProperty.objects.all().values())
 
-        return JsonResponse({'message' : list }, status = 200)
+        return JsonResponse({'message' : property_list }, status = 200)
         
 class CreateWarehouseTypeView(View):
     def post(self, request):
@@ -29,9 +29,9 @@ class CreateWarehouseTypeView(View):
         return JsonResponse({'message' : '적치 타입 생성'}, status = 200)
 
     def get(self, request):
-        list = list(WarehouseType.objects.filter().values())
+        type_list = list(WarehouseType.objects.all().values())
 
-        return JsonResponse({'message' : list }, status = 200)
+        return JsonResponse({'message' : type_list }, status = 200)
 
 class WarehouseInfoView(View):
     def post(self, request):
