@@ -92,7 +92,6 @@ class ModifyProductGroupView(View):
 
 class ProductD1InfoView(View):
     def get(self, request):
-        company_code = request.GET.get('company_code', None)
         keyword = request.GET.get('keyword', None)
         name = request.GET.get('name', None)
         productgroup_code = request.GET.get('productgroup_code', None)
@@ -101,8 +100,6 @@ class ProductD1InfoView(View):
             q = Q()
             if name:
                 q &= Q(name__icontains = name)
-            if company_code:
-                q &= Q(company_code__icontains = company_code)
             if keyword:
                 q &= Q(search_word__icontains = keyword)
             if productgroup_code:
