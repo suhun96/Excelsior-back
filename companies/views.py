@@ -51,7 +51,7 @@ class CompanyView(View):
                 if not "name" in input_data:
                     return JsonResponse({'message' : 'Please enter the correct value.'}, status = 403)
                 
-                create_options = ['name','keyword','code','represent','biz_no','biz_type','biz_item','phone','fax','email','address_main','address_desc','zip_code']
+                create_options = ['keyword','represent','biz_no','biz_type','biz_item','phone','fax','email','address_main','address_desc','zip_code']
 
                 CREATE_SET = {}
 
@@ -100,10 +100,14 @@ class CompanyModifyView(View):
             with transaction.atomic():
                 UPDATE_SET = {}
 
-                update_options = ['name','keyword','represent','biz_no','biz_type','biz_item','phone','fax','email','address_main','address_desc','zip_code','code']
+                update_options = ['name','keyword','represent','biz_no','biz_type','biz_item','phone','fax','email','address_main','address_desc','zip_code']
 
                 for key, value in modify_data.items():
                     if key in update_options:
+                        UPDATE_SET.update({ key : value })
+                    if key == 'code':
+                        if Company.objects.filter(code = modify_data['code']).exists():
+                            return JsonResponse({'message' : '회사 코드가 이미 존재합니다.'}, status = 403)
                         UPDATE_SET.update({ key : value })
                     
                 Company.objects.filter(id = company_id).update(**UPDATE_SET)
