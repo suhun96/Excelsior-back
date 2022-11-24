@@ -44,7 +44,7 @@ class CompanyView(View):
 
     def post(self, request):
         input_data = request.POST
-        print(input_data)
+        print1 = input_data
         try:
             with transaction.atomic():
                 # 필수값 (이름, 코드, 번호)이 있는지 확인 없으면 에러 발생.
@@ -88,7 +88,7 @@ class CompanyView(View):
 
                 check_created = list(Company.objects.filter(id = new_company.id).values())
 
-            return JsonResponse({'message' : check_created}, status = 200)
+            return JsonResponse({'message' : check_created, 'take' : print1}, status = 200)
         except KeyError:
             return JsonResponse({'message' : 'KEY ERROR'}, status = 403)
 
@@ -193,7 +193,6 @@ class CompanyEtcDescView(View):
         result = list(CompanyEtcDesc.objects.filter(**filter_set).values())
         
         return JsonResponse({'message' : result}, status = 200)
-
 
 class CompanyPhonebookView(View):
     def get(self, request):
