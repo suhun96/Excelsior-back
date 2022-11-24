@@ -1,4 +1,4 @@
-import json
+import json, re
 
 from django.views       import View
 from django.http        import JsonResponse
@@ -46,13 +46,22 @@ class ProductGroupView(View):
 
         if ProductGroup.objects.filter(code = input_data['code']).exists():
                 return JsonResponse({'message' : 'The product code is already registered.'}, status = 403)     
-            
+        
+        
+
+        REGEX_CODE = '[A-Z]{2}'  
+
         CREATE_SET = {}
         CREATE_OPT = ['name', 'code', 'etc']
         # create_options 로 request.POST 의 키값이 정확한지 확인.
         for key in dict(request.POST).keys():
             if key in CREATE_OPT:
+                if key == 'code':
+                    if not re.fullmatch(REGEX_CODE, input_data['code']):
+                        return JsonResponse({'message' : '제품 그룹 코드의 형식을 확인해주세요. [A-Z] 2자리 '}, status = 403)
+
                 CREATE_SET.update({ key : request.POST[key] })
+            
             else:
                 return JsonResponse({'message' : '잘못된 키값이 들어오고 있습니다.'}, status = 403)
 
