@@ -47,8 +47,8 @@ class Product(models.Model):
         db_table = 'product'
 
 class ProductComposition(models.Model):
-    set_id         = models.ForeignKey('Product', on_delete = models.CASCADE)
-    composition_id = models.ForeignKey('Product', on_delete = models.CASCADE)
+    set_product         = models.ForeignKey('Product', on_delete = models.CASCADE)
+    composition_product = models.ForeignKey('Product', on_delete = models.CASCADE, related_name = 'composition_product')
     quantity       = models.IntegerField()
     
     class Meta:
