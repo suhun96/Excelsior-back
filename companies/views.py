@@ -44,7 +44,7 @@ class CompanyView(View):
 
     def post(self, request):
         input_data = request.POST
-        print(input_data)
+        print1 = input_data
         try:
             with transaction.atomic():
                 # 필수값 (이름, 코드, 번호)이 있는지 확인 없으면 에러 발생.
@@ -88,7 +88,7 @@ class CompanyView(View):
 
                 check_created = list(Company.objects.filter(id = new_company.id).values())
 
-            return JsonResponse({'message' : check_created}, status = 200)
+            return JsonResponse({'message' : check_created, 'take' : print1}, status = 200)
         except KeyError:
             return JsonResponse({'message' : 'KEY ERROR'}, status = 403)
 
@@ -97,6 +97,8 @@ class CompanyModifyView(View):
         modify_data = request.POST
         company_id = request.GET.get('id')
         company = Company.objects.filter(id = company_id)
+
+        REGEX_CODE = '[A-Z]{2}'
 
         if company.exists() == False:
             return JsonResponse({'message' : "존재하지 않는 회사입니다."}, status = 403)
@@ -111,6 +113,9 @@ class CompanyModifyView(View):
                     if key in update_options:
                         UPDATE_SET.update({ key : value })
                     if key == 'code':
+                        if not re.fullmatch(REGEX_CODE, value):
+                            return JsonResponse({'message' : '회사 코드 형식을 확인해주세요. [A-Z] 2자리'}, status = 403)
+
                         if Company.objects.filter(code = modify_data['code']).exists():
                             return JsonResponse({'message' : '회사 코드가 이미 존재합니다.'}, status = 403)
                         UPDATE_SET.update({ key : value })
@@ -193,7 +198,6 @@ class CompanyEtcDescView(View):
         result = list(CompanyEtcDesc.objects.filter(**filter_set).values())
         
         return JsonResponse({'message' : result}, status = 200)
-
 
 class CompanyPhonebookView(View):
     def get(self, request):
