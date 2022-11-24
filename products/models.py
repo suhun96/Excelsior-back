@@ -65,23 +65,19 @@ class ProductD1(models.Model):
 
 # Depth 2
 class ProductD2(models.Model):
+    company_code      = models.CharField(max_length = 10) 
     productgroup_code = models.CharField(max_length = 10, blank = False)
-    productgroup_num  = models.CharField(max_length = 10, blank = False)
-    quantity      = models.IntegerField()
-    safe_quantity = models.IntegerField()
-    keyword       = models.CharField(max_length = 150, blank = False)
-    name          = models.CharField(max_length = 100, blank = False)
-    created_at    = models.DateTimeField(auto_now_add = True)
+    product_num       = models.CharField(max_length = 10, blank = False)
+    safe_quantity     = models.IntegerField(default = 0)
+    keyword           = models.CharField(max_length = 150)
+    name              = models.CharField(max_length = 100, blank = False)
+    warehouse_code    = models.CharField(max_length = 10)
+    location          = models.CharField(max_length = 100)
+    status            = models.BooleanField(default= True)
+    created_at        = models.DateTimeField(auto_now_add = True)
 
     class Meta:
         db_table = 'productD2'
-
-class ProductD2Company(models.Model):
-    productD2 = models.ForeignKey('ProductD2', on_delete = models.CASCADE)
-    company_code = models.CharField(max_length = 10)
-
-    class Meta:
-        db_table = 'productD2_company'
 
 class ProductD2Composition(models.Model):
     productD2 = models.ForeignKey('ProductD2', on_delete = models.CASCADE)
