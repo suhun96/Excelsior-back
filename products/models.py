@@ -31,7 +31,7 @@ class ProductEtcDesc(models.Model):
 
 # Depth 1
 class Product(models.Model):
-    depth             = models.IntegerField(blank = False)
+    is_set = models.BooleanField(default=False)
     company_code      = models.CharField(max_length = 10) 
     productgroup_code = models.CharField(max_length = 10, blank = False)
     product_num       = models.CharField(max_length = 10, blank = False)
