@@ -1,4 +1,4 @@
-import json
+import re
 
 from django.views       import View
 from django.http        import JsonResponse
@@ -44,7 +44,7 @@ class CompanyView(View):
 
     def post(self, request):
         input_data = request.POST
-        
+        print(input_data)
         try:
             with transaction.atomic():
                 # 필수값 (이름, 코드, 번호)이 있는지 확인 없으면 에러 발생.
@@ -52,6 +52,8 @@ class CompanyView(View):
                     return JsonResponse({'message' : 'Please enter the correct value.'}, status = 403)
                 
                 create_options = ['name','code','keyword','represent','biz_no','biz_type','biz_item','phone','fax','email','address_main','address_desc','zip_code']
+
+                REGEX_CODE = '[A-Z]{2}'  
 
                 CREATE_SET = {}
 
@@ -64,6 +66,9 @@ class CompanyView(View):
                         CREATE_SET.update({ key : request.POST[key] }) 
                     
                     if key == 'code':
+                        if not re.fullmatch(REGEX_CODE, input_data['code']):
+                            return JsonResponse({'message' : '회사 코드 형식을 확인해주세요. [A-Z] 2자리 '}, status = 403)
+
                         if Company.objects.filter(code = input_data['code']).exists():
                             return JsonResponse({'message' : '회사 코드가 이미 존재합니다.'}, status = 403)
                         
