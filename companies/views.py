@@ -98,6 +98,8 @@ class CompanyModifyView(View):
         company_id = request.GET.get('id')
         company = Company.objects.filter(id = company_id)
 
+        REGEX_CODE = '[A-Z]{2}'
+
         if company.exists() == False:
             return JsonResponse({'message' : "존재하지 않는 회사입니다."}, status = 403)
         
@@ -111,6 +113,9 @@ class CompanyModifyView(View):
                     if key in update_options:
                         UPDATE_SET.update({ key : value })
                     if key == 'code':
+                        if not re.fullmatch(REGEX_CODE, value):
+                            return JsonResponse({'message' : '회사 코드 형식을 확인해주세요. [A-Z] 2자리'}, status = 403)
+
                         if Company.objects.filter(code = modify_data['code']).exists():
                             return JsonResponse({'message' : '회사 코드가 이미 존재합니다.'}, status = 403)
                         UPDATE_SET.update({ key : value })
