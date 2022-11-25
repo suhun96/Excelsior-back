@@ -300,25 +300,28 @@ class ModifyProductInfoView(View):
 
 class ProductEtcTitleView(View):
     def post(self, request):
-        input_data = request.POST
+        input_data = json.loads(request.body)
+        etc_title_id = input_data.get('etc_title_id', None)
+
+        if not etc_title_id:
+            return JsonResponse({'message': "수정에 필요한 비고란 제목 id값이 들어오지 않았습니다."}, status = 403)
         
-        try:
-            with transaction.atomic():
-                UPDATE_SET = {}
+        with transaction.atomic():
+            UPDATE_SET = {}
 
-                for key, value in input_data.items():
-                    if key == 'product_etc_title':
-                        UPDATE_SET.update({'title' : value})
-                    if key == 'product_etc_status':
-                        if value == 'false':
-                            UPDATE_SET.update({'status': False})
-                        elif value == 'true':
-                            UPDATE_SET.update({'status': True})
+            for key, value in input_data.items():
+                if key == 'modify_title':
+                    UPDATE_SET.update({'title' : value})
+                if key == 'status':
+                    if value == 'false':
+                        UPDATE_SET.update({'status': False})
+                    elif value == 'true':
+                        UPDATE_SET.update({'status': True})
 
-                ProductEtcTitle.objects.filter(id = input_data['product_etc_id']).update(**UPDATE_SET)
-                return JsonResponse({'message' : 'updated'}, status = 200)
-        except:
-            return JsonResponse({'message' : '예외 사항 발생'}, status = 403)
+            ProductEtcTitle.objects.filter(id = etc_title_id).update(**UPDATE_SET)
+            return JsonResponse({'message' : 'updated'}, status = 200)
+        
+            
 
     def get(self, request):
         # 권한 설정
@@ -331,12 +334,16 @@ class ProductEtcDescView(View):
         input_data = json.loads(request.body)
         product_id = input_data.get('product_id', None)
         etc_title_id = input_data.get('etc_title_id', None)
+        contents = input_data.get('contents', None)
         # 필수 입력 정보 확인
         if not product_id:
             return JsonResponse({'message' : '수정할 제품 id가 입력되지 않았습니다'}, status = 403)
 
         if not etc_title_id:
             return JsonResponse({'message' : '비고란 id가 입력되지 않았습니다.'}, status = 403)
+
+        if not contents:
+            return JsonResponse({'message' : '비고에 들어갈 내용이 입력되지 않았습니다.'}, status = 403)
 
         # 제품 확인
         if not Product.objects.filter(id = product_id).exists():
@@ -349,7 +356,7 @@ class ProductEtcDescView(View):
                 defaults={
                     'product_id' : product_id,
                     'etc_title_id' :etc_title_id,
-                    'contents' : input_data['contents']
+                    'contents' : contents
                 })
                 
             if created == False:
