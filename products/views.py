@@ -331,12 +331,16 @@ class ProductEtcDescView(View):
         input_data = json.loads(request.body)
         product_id = input_data.get('product_id', None)
         etc_title_id = input_data.get('etc_title_id', None)
+        contents = input_data.get('contents', None)
         # 필수 입력 정보 확인
         if not product_id:
             return JsonResponse({'message' : '수정할 제품 id가 입력되지 않았습니다'}, status = 403)
 
         if not etc_title_id:
             return JsonResponse({'message' : '비고란 id가 입력되지 않았습니다.'}, status = 403)
+
+        if not contents:
+            return JsonResponse({'message' : '비고에 들어갈 내용이 입력되지 않았습니다.'}, status = 403)
 
         # 제품 확인
         if not Product.objects.filter(id = product_id).exists():
@@ -349,7 +353,7 @@ class ProductEtcDescView(View):
                 defaults={
                     'product_id' : product_id,
                     'etc_title_id' :etc_title_id,
-                    'contents' : input_data['contents']
+                    'contents' : contents
                 })
                 
             if created == False:
