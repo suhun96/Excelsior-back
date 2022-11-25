@@ -326,28 +326,29 @@ class ProductEtcTitleView(View):
 
         return JsonResponse({'message' : title_list}, status = 200)
 
-class ProductD1EtcDescView(View):
+class ProductEtcDescView(View):
     def post(self, request):
-        input_data = request.POST
-        
+        input_data = json.loads(request.body)
+        product_id = input_data.get('product_id', None)
+        etc_title_id = input_data.get('etc_title_id', None)
         # 필수 입력 정보 확인
-        if not 'productD1_id' in input_data:
-            return JsonResponse({'message' : '수정할 제품(D1)가 입력되지 않았습니다'}, status = 403)
+        if not product_id:
+            return JsonResponse({'message' : '수정할 제품 id가 입력되지 않았습니다'}, status = 403)
 
-        if not 'title_id' in input_data:
-            return JsonResponse({'message' : '수정할 제목이 선택되지 않았습니다.'}, status = 403)
+        if not etc_title_id:
+            return JsonResponse({'message' : '비고란 id가 입력되지 않았습니다.'}, status = 403)
 
-        # 거래처 확인
-        if not Product.objects.filter(id = input_data['productD1_id']).exists():
-            return JsonResponse({'message' : '존재하지 않는 제품(D1)입니다. '}, status = 403)
+        # 제품 확인
+        if not Product.objects.filter(id = product_id).exists():
+            return JsonResponse({'message' : '존재하지 않는 제품입니다. '}, status = 403)
 
         try:
             with transaction.atomic():        
                 # 이미 등록된 정보가 있는지 확인
-                obj , created = ProductD1EtcDesc.objects.update_or_create(productD1_id = input_data['productD1_id'], product_etc_title_id = input_data['title_id'],
+                obj , created = ProductEtcDesc.objects.update_or_create(product_id = product_id, etc_title_id = etc_title_id,
                 defaults={
-                    'productD1_id' : input_data['productD1_id'],
-                    'product_etc_title_id' : input_data['title_id'],
+                    'product_id' : product_id,
+                    'etc_title_id' :etc_title_id,
                     'contents' : input_data['contents']
                 })
                 
@@ -361,12 +362,12 @@ class ProductD1EtcDescView(View):
     def get(self, request):
 
         filter_options = {
-            'productD1_id' : 'productD1_id__exact',
+            'product_id' : 'product_id__exact',
         }        
 
         filter_set = { filter_options.get(key) : value for (key, value) in request.GET.items() if filter_options.get(key) }
         
-        result = list(CompanyEtcDesc.objects.filter(**filter_set).values())
+        result = list(ProductEtcDesc.objects.filter(**filter_set).values())
         
         return JsonResponse({'message' : result}, status = 200)
 ###########################################################################################################
