@@ -2,7 +2,7 @@ import json, re
 
 from django.views       import View
 from django.http        import JsonResponse
-from django.db          import transaction, connection
+from django.db          import transaction, connection, IntegrityError
 from django.db.models   import Q
 
 
@@ -104,7 +104,8 @@ class ProductInfoView(View):
     def get(self, request):
         keyword = request.GET.get('keyword', None)
         name = request.GET.get('name', None)
-        productgroup_code = request.GET.get('productgroup_code', None)
+        productgroup_code = request.GET.get('product_group_code', None)
+        warehouse_code = request.GET.get('warehouse_code', None)
 
         try:
             q = Q()
@@ -114,6 +115,8 @@ class ProductInfoView(View):
                 q &= Q(search_word__icontains = keyword)
             if productgroup_code:
                 q &= Q(productgroup_code__icontains = productgroup_code)
+            if warehouse_code:
+                q &= Q(warehouse_icontains = warehouse_code)
             
             result = list(Product.objects.filter(q).values())
         
@@ -130,8 +133,6 @@ class ProductInfoView(View):
         is_set = input_data.get('is_set', None)
         compositions = input_data.get('compositions', None )
         
-        
-
         # 필수값 제품명 확인
         if name == None:
             return JsonResponse({'message' : '제품명을 입력해주세요'}, status = 403)
@@ -145,127 +146,133 @@ class ProductInfoView(View):
         if warehouse_code:
             if not Warehouse.objects.filter(code = input_data['warehouse_code']).exists():
                 return JsonResponse({'message' : '존재하지 않는 창고 코드입니다.'}, status = 403)
-        
-        with transaction.atomic():
-            # 회사코드가 있으면
-            if company_code:
-            # 회사코드 체크
-                if not Company.objects.filter(code = company_code).exists():
-                    return JsonResponse({'message' : f'[{company_code}] 존재하지 않는 회사 코드입니다.'})
-                
-                product = Product.objects.filter(productgroup_code = product_group_code) 
-
-                if product.exists():
-                    productgroup_num = product.latest('created_at').product_num
-                    change_int_num = int(productgroup_num) + 1
-                    product_num = str(change_int_num).zfill(3)           
-                else:
-                    product_num = '001'
-                
-                # 세트 상품이면 
-                if is_set == 1:
-                    CREATE_SET = {
-                        'is_set' : True,  
-                        'productgroup_code' : product_group_code , 
-                        'company_code' : company_code, 
-                        'name' : name,
-                        'product_num' : product_num
-                    }
-                    # 들어온 기타 정보사항 CREATE_SET에 추가
-                    for key, value in input_data.items():
-                        if key in ['safe_quantity', 'keyword', 'warehouse_code', 'location']:
-                            CREATE_SET.update({key : value})
+        try:
+            with transaction.atomic():
+                # 회사코드가 있으면
+                if company_code:
+                # 회사코드 체크
+                    if not Company.objects.filter(code = company_code).exists():
+                        return JsonResponse({'message' : f'[{company_code}] 존재하지 않는 회사 코드입니다.'})
                     
-                    # 새로운  세트 제품 등록
-                    new_product = Product.objects.create(**CREATE_SET)
+                    product = Product.objects.filter(productgroup_code = product_group_code) 
 
-                    # 새로운 세트 제품의 구성품 등록
-                    for id, quantity in compositions.items():
-                        ProductComposition.objects.create(
-                            set_product_id = new_product.id,
-                            composition_product_id = id,
-                            quantity = quantity
-                        )
-                    return JsonResponse({'message' : '새로운 세트 상품 등록'}) 
-                # 일반 상품이면
-                else:
-                    CREATE_SET = {
-                        'is_set' : False,  
-                        'productgroup_code' : product_group_code , 
-                        'company_code' : company_code, 
-                        'name' : name,
-                        'product_num' : product_num
-                    }
-
-                    # 들어온 기타 정보사항 CREATE_SET에 추가
-                    for key, value in input_data.items():
-                        if key in ['safe_quantity', 'keyword', 'warehouse_code', 'location']:
-                            CREATE_SET.update({key : value})
+                    if product.exists():
+                        productgroup_num = product.latest('created_at').product_num
+                        change_int_num = int(productgroup_num) + 1
+                        product_num = str(change_int_num).zfill(3)           
+                    else:
+                        product_num = '001'
                     
-                    # 새로운 제품 등록
+                    # 세트 상품이면 
+                    if is_set == 1:
+                        CREATE_SET = {
+                            'is_set' : True,  
+                            'productgroup_code' : product_group_code , 
+                            'company_code' : company_code, 
+                            'name' : name,
+                            'product_num' : product_num
+                        }
+                        # 들어온 기타 정보사항 CREATE_SET에 추가
+                        for key, value in input_data.items():
+                            if key in ['safe_quantity', 'keyword', 'warehouse_code', 'location']:
+                                CREATE_SET.update({key : value})
+                        
+                        # 새로운  세트 제품 등록
                         new_product = Product.objects.create(**CREATE_SET)
-                    
-                    return JsonResponse({'message' : '새로운 상품 등록'}) 
-                
-            # 회사코드가 없으면 
-            if not company_code:
-                product = Product.objects.filter(productgroup_code = product_group_code) 
 
-                if product.exists():
-                    productgroup_num = product.latest('created_at').product_num
-                    change_int_num = int(productgroup_num) + 1
-                    product_num = str(change_int_num).zfill(3)           
-                else:
-                    product_num = '001'
-                
-                # 세트 상품이면 
-                if is_set == 1:
-                    CREATE_SET = {
-                        'is_set' : True,  
-                        'productgroup_code' : product_group_code ,  
-                        'name' : name,
-                        'product_num' : product_num
-                    }
-                    # 들어온 기타 정보사항 CREATE_SET에 추가
-                    for key, value in input_data.items():
-                        if key in ['safe_quantity', 'keyword', 'warehouse_code', 'location']:
-                            CREATE_SET.update({key : value})
-                    
-                    # 새로운  세트 제품 등록
-                    new_product = Product.objects.create(**CREATE_SET)
+                        # 새로운 세트 제품의 구성품 등록
+                        for id, quantity in compositions.items():
+                            ProductComposition.objects.create(
+                                set_product_id = new_product.id,
+                                composition_product_id = id,
+                                quantity = quantity
+                            )
+                        return JsonResponse({'message' : '[Case 1] 새로운 세트 상품이 등록되었습니다.'}, status = 200) 
+                    # 일반 상품이면
+                    else:
+                        CREATE_SET = {
+                            'is_set' : False,  
+                            'productgroup_code' : product_group_code , 
+                            'company_code' : company_code, 
+                            'name' : name,
+                            'product_num' : product_num
+                        }
 
-                    # 새로운 세트 제품의 구성품 등록
-                    for id, quantity in compositions.items():
-                        ProductComposition.objects.create(
-                            set_product_id = new_product.id,
-                            composition_product_id = id,
-                            quantity = quantity
-                        )
-                    return JsonResponse({'message' : '새로운 세트 상품 등록'}) 
-                # 일반 상품이면
-                else:
-                    CREATE_SET = {
-                        'is_set' : False,  
-                        'productgroup_code' : product_group_code ,  
-                        'name' : name,
-                        'product_num' : product_num
-                    }
-
-                    # 들어온 기타 정보사항 CREATE_SET에 추가
-                    for key, value in input_data.items():
-                        if key in ['safe_quantity', 'keyword', 'warehouse_code', 'location']:
-                            CREATE_SET.update({key : value})
-                    
-                    # 새로운 제품 등록
+                        # 들어온 기타 정보사항 CREATE_SET에 추가
+                        for key, value in input_data.items():
+                            if key in ['safe_quantity', 'keyword', 'warehouse_code', 'location']:
+                                CREATE_SET.update({key : value})
+                        
+                        # 새로운 제품 등록
                         new_product = Product.objects.create(**CREATE_SET)
+                        
+                        return JsonResponse({'message' : '[Case 2] 새로운 일반 상품이 등록되었습니다'}, status = 200) 
                     
-                    return JsonResponse({'message' : '새로운 상품 등록'})
+                # 회사코드가 없으면 
+                if not company_code:
+                    product = Product.objects.filter(productgroup_code = product_group_code) 
+
+                    if product.exists():
+                        productgroup_num = product.latest('created_at').product_num
+                        change_int_num = int(productgroup_num) + 1
+                        product_num = str(change_int_num).zfill(3)           
+                    else:
+                        product_num = '001'
+                    
+                    # 세트 상품이면 
+                    if is_set == 1:
+                        CREATE_SET = {
+                            'is_set' : True,  
+                            'productgroup_code' : product_group_code ,  
+                            'name' : name,
+                            'product_num' : product_num
+                        }
+                        # 들어온 기타 정보사항 CREATE_SET에 추가
+                        for key, value in input_data.items():
+                            if key in ['safe_quantity', 'keyword', 'warehouse_code', 'location']:
+                                CREATE_SET.update({key : value})
+                        
+                        # 새로운  세트 제품 등록
+                        new_product = Product.objects.create(**CREATE_SET)
+
+                        # 새로운 세트 제품의 구성품 등록
+                        for id, quantity in compositions.items():
+                            ProductComposition.objects.create(
+                                set_product_id = new_product.id,
+                                composition_product_id = id,
+                                quantity = quantity
+                            )
+                        return JsonResponse({'message' : '[Case 3] 새로운 세트 상품이 등록되었습니다.'}, status = 200) 
+                    # 일반 상품이면
+                    else:
+                        CREATE_SET = {
+                            'is_set' : False,  
+                            'productgroup_code' : product_group_code ,  
+                            'name' : name,
+                            'product_num' : product_num
+                        }
+
+                        # 들어온 기타 정보사항 CREATE_SET에 추가
+                        for key, value in input_data.items():
+                            if key in ['safe_quantity', 'keyword', 'warehouse_code', 'location']:
+                                CREATE_SET.update({key : value})
+                        
+                        # 새로운 제품 등록
+                        new_product = Product.objects.create(**CREATE_SET)
+                        
+                        return JsonResponse({'message' : '[Case 4] 새로운 세트 상품이 등록되었습니다.'}, status = 200)
         
-class ModifyProductD1InfoView(View):
+        except IntegrityError:
+            return JsonResponse({'message' : 'compositions에 입력된 id 값을 확인해주세요'}, status = 403)
+
+class ModifyProductInfoView(View):
     def post(self, request):
-        modify_data = request.POST
+        input_data = json.loads(request.body)
+        product_id = input_data.get('id', None)
         
-        if ProductD1.objects.filter(id = modify_data['id']).exists() == False:
+        if not product_id:
+            return JsonResponse({'message' : "수정할 Product id가 입력되지 않았습니다."}, status = 403)
+        if Product.objects.filter(id = product_id).exists() == False:
             return JsonResponse({'message' : "존재하지 않는 제품입니다."}, status = 403)
         
         UPDATE_SET = {}
@@ -274,15 +281,16 @@ class ModifyProductD1InfoView(View):
         try:
             with transaction.atomic():
 
-                for key, value in modify_data.items():
+                for key, value in input_data.items():
                     if key == 'warehouse_code':
                         if not Warehouse.objects.filter(code = value).exists():
                             return JsonResponse({'message' : '존재하지 않는 창고 코드입니다.'}, status = 403)
+                        UPDATE_SET.update({key : value})
 
                     if key in UPDATE_OPT:
                         UPDATE_SET.update({key : value})
                 
-                ProductD1.objects.filter(id = modify_data['id']).update(**UPDATE_SET)
+                Product.objects.filter(id = product_id).update(**UPDATE_SET)
 
                 return JsonResponse({'message' : 'Check update'}, status = 200)
         except KeyError:
