@@ -8,3 +8,7 @@ from django.db.models   import Q
 # Models
 from stock.models       import *
 from products.models    import *
+from users.models       import *
+
+
+class ProductInboundView
