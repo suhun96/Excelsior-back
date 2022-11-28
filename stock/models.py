@@ -32,6 +32,7 @@ class ProductInbound(models.Model):
     company_code   = models.CharField(max_length = 20, blank= False)
     warehouse_code = models.CharField(max_length = 20)
     unit_price = models.IntegerField(default=0)
+    quantity = models.IntegerField(default= 0)
     etc = models.CharField(max_length= 300)
     created_at = models.DateTimeField(auto_now_add=True)
 
