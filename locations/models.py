@@ -29,9 +29,8 @@ class WarehouseType(models.Model):
 
 class LocationProduct(models.Model):
     warehouse_code = models.CharField(max_length = 20, blank= False)
-    location_desc  = models.CharField(max_length = 80, blank = False)
     product_code   = models.CharField(max_length = 10, blank = False)
-    quantity       = models.IntegerField(default = 0)
+    location_desc  = models.CharField(max_length = 80, blank = False)
     created_at     = models.DateTimeField(auto_now_add = True)
 
     class Meta:
