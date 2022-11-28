@@ -19,8 +19,8 @@ class ProductPrice(models.Model):
         db_table = 'product_price'
 
 class ProductInbound(models.Model):
-    company = models.ForeignKey('Company', on_delete= models.CASCADE)
     product = models.ForeignKey('Product', on_delete= models.CASCADE)
+    company = models.ForeignKey('Company', on_delete= models.CASCADE)
     unit_price = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
 
