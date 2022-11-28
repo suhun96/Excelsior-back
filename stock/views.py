@@ -12,6 +12,11 @@ from users.models       import *
 from locations.models   import *
 
 class ProductInboundView(View):
+    def get(self, request):
+        product_inbound_list = list(ProductInbound.objects.filter().values())
+
+        return JsonResponse({'message' : product_inbound_list}, status = 403)
+
     def post(self, request):
         input_data = request.POST
         product_id      = input_data.get('product_id', None)
@@ -104,7 +109,18 @@ class ListProductQuantityView(View):
 
         return JsonResponse({'message' : product_quantity_list}, status = 200)
 
-# class 
-        
+class ListProductPriceView(View):
+    def get(self, request):
+        product_price_list = list(ProductPrice.objects.filter().values())
+
+        return JsonResponse({'message' : product_price_list}, status = 200)
+
+class ListProductWarehouseView(View):
+    def get(self, request):
+        product_Warehouse_list = list(ProductWarehouse.objects.filter().values())
+
+        return JsonResponse({'message' : product_Warehouse_list}, status = 200)
+
+
 
 
