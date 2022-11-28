@@ -51,3 +51,12 @@ class ProductOutbound(models.Model):
 
     class Meta:
         db_table = 'product_outbound'
+
+class SetProduction(models.Model):
+    set_product = models.ForeignKey(Product, on_delete= models.CASCADE)
+    quantity = models.IntegerField(default= 0)
+    etc = models.CharField(max_length= 300)
+    created_at = models.DateTimeField(auto_now_add= True)
+
+    class Meta:
+        db_table = 'set_productions'
