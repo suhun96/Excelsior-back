@@ -206,10 +206,11 @@ class ProductOutboundView(View):
                     'product_id' : product_id,
                     'total_quantity' : sum_qauntity
                 })
-            return JsonResponse({'message' : '입고 처리가 완료되었습니다.'}, status = 200)    
+            return JsonResponse({'message' : '출고 처리가 완료되었습니다.'}, status = 200)    
         
         except:
-            return JsonResponse({'message' : '입고 처리중 예외사항이 발생했습니다.'}, status = 403)
+            return JsonResponse({'message' : '출고 처리중 예외사항이 발생했습니다.'}, status = 403)
 
-        
-        
+class SetProductionView(View):
+    def post(self, request):
+        return 
