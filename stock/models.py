@@ -13,6 +13,7 @@ class ProductQuantity(models.Model):
 
 class ProductPrice(models.Model):
     product = models.ForeignKey(Product, on_delete= models.CASCADE)
+    company_code = models.CharField(max_length= 10)
     inbound_price = models.IntegerField(default=0)
     outbound_price = models.IntegerField(default=0)
 

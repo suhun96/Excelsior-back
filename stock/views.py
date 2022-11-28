@@ -12,6 +12,11 @@ from users.models       import *
 from locations.models   import *
 
 class ProductInboundView(View):
+    def get(self, request):
+        product_inbound_list = list(ProductInbound.objects.filter().values())
+
+        return JsonResponse({'message' : product_inbound_list}, status = 403)
+
     def post(self, request):
         input_data = request.POST
         product_id      = input_data.get('product_id', None)
@@ -44,6 +49,7 @@ class ProductInboundView(View):
 
         if not etc:
             etc = ''
+        
         try:
             with transaction.atomic():
                 # step 1 입고
@@ -72,7 +78,7 @@ class ProductInboundView(View):
                     })
 
                 # step 3 최신 입고가 수정
-                ProductPrice.objects.update_or_create( product_id =product_id,
+                ProductPrice.objects.update_or_create( product_id =product_id, company_code = company_code,
                     defaults={
                         'product_id' : product_id,
                         'inbound_price' : unit_price
@@ -97,6 +103,24 @@ class ProductInboundView(View):
         except:
             return JsonResponse({'message' : '입고 처리중 예외사항이 발생했습니다.'}, status = 403)
 
-        
+class ListProductQuantityView(View):
+    def get(self, request):
+        product_quantity_list = list(ProductQuantity.objects.filter().values())
+
+        return JsonResponse({'message' : product_quantity_list}, status = 200)
+
+class ListProductPriceView(View):
+    def get(self, request):
+        product_price_list = list(ProductPrice.objects.filter().values())
+
+        return JsonResponse({'message' : product_price_list}, status = 200)
+
+class ListProductWarehouseView(View):
+    def get(self, request):
+        product_Warehouse_list = list(ProductWarehouse.objects.filter().values())
+
+        return JsonResponse({'message' : product_Warehouse_list}, status = 200)
+
+
 
 
