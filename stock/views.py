@@ -213,4 +213,5 @@ class ProductOutboundView(View):
 
 class SetProductionView(View):
     def post(self, request):
+        input
         return 
