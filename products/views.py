@@ -270,7 +270,7 @@ class ProductInfoView(View):
 
 class ModifyProductInfoView(View):
     def post(self, request):
-        input_data = json.loads(request.body)
+        input_data = request.POST
         product_id = input_data.get('id', None)
         
         if not product_id:
@@ -303,7 +303,7 @@ class ModifyProductInfoView(View):
 
 class ProductEtcTitleView(View):
     def post(self, request):
-        input_data = json.loads(request.body)
+        input_data = request.POST
         etc_title_id = input_data.get('etc_title_id', None)
 
         if not etc_title_id:
@@ -334,7 +334,7 @@ class ProductEtcTitleView(View):
 
 class ProductEtcDescView(View):
     def post(self, request):
-        input_data = json.loads(request.body)
+        input_data = request.POST
         product_id = input_data.get('product_id', None)
         etc_title_id = input_data.get('etc_title_id', None)
         contents = input_data.get('contents', None)
