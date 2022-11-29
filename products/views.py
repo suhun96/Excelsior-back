@@ -1,5 +1,6 @@
 import json, re
 
+
 from django.views       import View
 from django.http        import JsonResponse
 from django.db          import transaction, connection, IntegrityError
@@ -126,6 +127,7 @@ class ProductInfoView(View):
     
     def post(self, request):
         input_data = json.loads(request.body)
+        
         name = input_data.get('name', None)
         product_group_code = input_data.get('product_group_code', None)
         warehouse_code = input_data.get('warehouse_code', None)
@@ -164,7 +166,7 @@ class ProductInfoView(View):
                         product_num = '001'
                     
                     # 세트 상품이면 
-                    if is_set == 1:
+                    if is_set == '1':
                         CREATE_SET = {
                             'is_set' : True,  
                             'productgroup_code' : product_group_code , 
@@ -220,7 +222,7 @@ class ProductInfoView(View):
                         product_num = '001'
                     
                     # 세트 상품이면 
-                    if is_set == 1:
+                    if is_set == '1':
                         CREATE_SET = {
                             'is_set' : True,  
                             'productgroup_code' : product_group_code ,  
@@ -261,13 +263,14 @@ class ProductInfoView(View):
                         new_product = Product.objects.create(**CREATE_SET)
                         
                         return JsonResponse({'message' : '[Case 4] 새로운 세트 상품이 등록되었습니다.'}, status = 200)
-        
+    
         except IntegrityError:
             return JsonResponse({'message' : 'compositions에 입력된 id 값을 확인해주세요'}, status = 403)
+        
 
 class ModifyProductInfoView(View):
     def post(self, request):
-        input_data = json.loads(request.body)
+        input_data = request.POST
         product_id = input_data.get('id', None)
         
         if not product_id:
@@ -300,7 +303,7 @@ class ModifyProductInfoView(View):
 
 class ProductEtcTitleView(View):
     def post(self, request):
-        input_data = json.loads(request.body)
+        input_data = request.POST
         etc_title_id = input_data.get('etc_title_id', None)
 
         if not etc_title_id:
@@ -331,7 +334,7 @@ class ProductEtcTitleView(View):
 
 class ProductEtcDescView(View):
     def post(self, request):
-        input_data = json.loads(request.body)
+        input_data = request.POST
         product_id = input_data.get('product_id', None)
         etc_title_id = input_data.get('etc_title_id', None)
         contents = input_data.get('contents', None)
