@@ -44,6 +44,7 @@ class InventorySheet(models.Model):
         db_table = 'inventory_sheet'
 
 class InventorySheetLog(models.Model):
+    user            = models.ForeignKey(User, on_delete= models.CASCADE)
     process_type    = models.CharField(max_length= 100)
     inventorysheet  = models.ForeignKey(InventorySheet, on_delete= models.CASCADE)
     is_inbound      = models.CharField(max_length= 30)
@@ -51,6 +52,8 @@ class InventorySheetLog(models.Model):
     company_code    = models.CharField(max_length= 20, blank= False)
     warehouse_code  = models.CharField(max_length= 10)
     unit_price      = models.IntegerField(default= 0)
+    before_quantity = models.IntegerField(default= 0)
+    after_quantity  = models.IntegerField(default= 0)
     quantity        = models.IntegerField(default= 0)
     etc             = models.CharField(max_length= 500)
     status          = models.BooleanField(default= False)
