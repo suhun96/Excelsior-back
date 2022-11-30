@@ -109,7 +109,6 @@ class ModifyInventorySheetView(View):
     def post(self, request):
         input_data = request.POST
         inventorysheet_id = input_data.get('inventorysheet_id', None)
-        process_type = input_data.get('process', None)
         quantity_s = input_data.get('quantity', None)
 
 
@@ -120,30 +119,41 @@ class ModifyInventorySheetView(View):
         before_quantity = target_data.before_quantity
         after_quantity = before_quantity + int(quantity_s)
         
+        try: 
+            with transaction.atomic():
+                check1 = list(InventorySheet.objects.select_for_update(nowait= True).filter(product_id = proudct_id, warehouse_code = warehouse_code, id__gt=inventorysheet_id).values('id'))
 
-        check1 = list(InventorySheet.objects.filter(product_id = proudct_id, warehouse_code = warehouse_code, id__gt=inventorysheet_id).values('id'))
+                InventorySheet.objects.filter(id = inventorysheet_id).update(after_quantity = after_quantity, quantity = quantity_s)
 
-        InventorySheet.objects.filter(id = inventorysheet_id).update(after_quantity = after_quantity, quantity = quantity_s)
+                UPDATE_LIST = []
 
-        for obj in check1:
-            update_id = obj.get('id') # 20 / 21 , 22, 23
-            before_id = update_id - 1
+                for obj in check1:
+                    update_id = obj.get('id') # 20 / 21 , 22, 23
+                    UPDATE_LIST.append(update_id)
+                    before_id = update_id - 1
 
-            before_query = InventorySheet.objects.get(id = before_id)
-            target_query = InventorySheet.objects.get(id = update_id)
-            
-            befoer_query_after_quantity = before_query.after_quantity
-            quantity =  target_query.quantity
-            target_query_after_quantity = befoer_query_after_quantity + quantity
+                    before_query = InventorySheet.objects.get(id = before_id)
+                    target_query = InventorySheet.objects.get(id = update_id)
+                    
+                    befoer_query_after_quantity = before_query.after_quantity
+                    quantity =  target_query.quantity
 
-            InventorySheet.objects.filter(id = update_id).update(
-                before_quantity = befoer_query_after_quantity,
-                after_quantity = target_query_after_quantity, 
-                quantity = quantity
-            )
+                    if target_query.is_inbound == 'True': # 입고면 + 출고 =
+                        target_query_after_quantity = befoer_query_after_quantity + quantity
+                    else:
+                        target_query_after_quantity = befoer_query_after_quantity - quantity
+                    
+                    InventorySheet.objects.filter(id = update_id).update(
+                        before_quantity = befoer_query_after_quantity,
+                        after_quantity = target_query_after_quantity, 
+                        quantity = quantity
+                    )
+                
+        except:
+            return JsonResponse({'message' : '예외 사항 발생.'}, status = 403)
+        
+        return JsonResponse({'message' : f"Inventory sheet ID {inventorysheet_id} 을 기준으로 {UPDATE_LIST} 총 {len(UPDATE_LIST)}개의 sheet를 수정했습니다."}, status = 200)
 
-
-        return JsonResponse({'message' : check1})
 class ListProductQuantityView(View):
     def get(self, request):
         product_quantity_list = list(TotalProductQuantity.objects.filter().values())
