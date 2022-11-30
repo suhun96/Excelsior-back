@@ -124,11 +124,30 @@ class ModifyInventorySheetView(View):
                 # step 1 : 기준이 되는 시트(입력받는 id값 수정)
                 InventorySheet.objects.filter(id = inventorysheet_id).update(after_quantity = after_quantity, quantity = quantity_s)
                 
-                # step 2 : index id 기준으로 수정되는 product_id, warehouse_code 수정
+                # step 2 : 로그 작성 
+                InventorySheetLog.objects.create(
+                    user_id = 1,
+                    process_type = 'modify',
+                    inventorysheet_id = inventorysheet_id,
+                    is_inbound = target_data.is_inbound,
+                    product_id = target_data.product_id,
+                    company_code = target_data.company_code,
+                    warehouse_code = target_data.warehouse_code,
+                    unit_price = target_data.unit_price,
+                    before_quantity = target_data.before_quantity,
+                    after_quantity = target_data.after_quantity,
+                    quantity = target_data.quantity,
+                    etc = target_data.etc,
+                    status = target_data.status,
+                    created_at = target_data.created_at,
+                    updated_at = target_data.updated_at
+                )
+                
+                # step 3 : index id 기준으로 수정되는 product_id, warehouse_code 수정
                 UPDATE_LIST = list(InventorySheet.objects.select_for_update(nowait= True).filter(product_id = proudct_id, warehouse_code = warehouse_code, id__gt=inventorysheet_id).values('id'))
 
                 UPDATED_LIST = []
-                # step 3 : 구성된 UPDATE_LIST 차례 대로 수정.
+                # step 4 : 구성된 UPDATE_LIST 차례 대로 수정.
                 for obj in UPDATE_LIST:
                     update_id = obj.get('id') # 20 / 21 , 22, 23
                     UPDATED_LIST.append(update_id)
@@ -150,7 +169,7 @@ class ModifyInventorySheetView(View):
                         after_quantity = target_query_after_quantity, 
                         quantity = quantity
                     )
-        except:
+        except KeyError:
             return JsonResponse({'message' : '예외 사항 발생.'}, status = 403)
         
         return JsonResponse({'message' : f"Inventory sheet ID {inventorysheet_id} 을 기준으로 {UPDATED_LIST} 총 {len(UPDATED_LIST)}개의 sheet를 수정했습니다."}, status = 200)
