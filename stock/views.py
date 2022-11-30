@@ -121,15 +121,17 @@ class ModifyInventorySheetView(View):
         
         try: 
             with transaction.atomic():
-                check1 = list(InventorySheet.objects.select_for_update(nowait= True).filter(product_id = proudct_id, warehouse_code = warehouse_code, id__gt=inventorysheet_id).values('id'))
-
+                # step 1 : 기준이 되는 시트(입력받는 id값 수정)
                 InventorySheet.objects.filter(id = inventorysheet_id).update(after_quantity = after_quantity, quantity = quantity_s)
+                
+                # step 2 : index id 기준으로 수정되는 product_id, warehouse_code 수정
+                UPDATE_LIST = list(InventorySheet.objects.select_for_update(nowait= True).filter(product_id = proudct_id, warehouse_code = warehouse_code, id__gt=inventorysheet_id).values('id'))
 
-                UPDATE_LIST = []
-
-                for obj in check1:
+                UPDATED_LIST = []
+                # step 3 : 구성된 UPDATE_LIST 차례 대로 수정.
+                for obj in UPDATE_LIST:
                     update_id = obj.get('id') # 20 / 21 , 22, 23
-                    UPDATE_LIST.append(update_id)
+                    UPDATED_LIST.append(update_id)
                     before_id = update_id - 1
 
                     before_query = InventorySheet.objects.get(id = before_id)
@@ -151,7 +153,7 @@ class ModifyInventorySheetView(View):
         except:
             return JsonResponse({'message' : '예외 사항 발생.'}, status = 403)
         
-        return JsonResponse({'message' : f"Inventory sheet ID {inventorysheet_id} 을 기준으로 {UPDATE_LIST} 총 {len(UPDATE_LIST)}개의 sheet를 수정했습니다."}, status = 200)
+        return JsonResponse({'message' : f"Inventory sheet ID {inventorysheet_id} 을 기준으로 {UPDATED_LIST} 총 {len(UPDATED_LIST)}개의 sheet를 수정했습니다."}, status = 200)
 
 class ListProductQuantityView(View):
     def get(self, request):
