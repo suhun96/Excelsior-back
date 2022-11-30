@@ -166,7 +166,7 @@ class ProductInfoView(View):
                         product_num = '001'
                     
                     # 세트 상품이면 
-                    if is_set == '1':
+                    if is_set == "True":
                         CREATE_SET = {
                             'is_set' : True,  
                             'productgroup_code' : product_group_code , 
@@ -222,7 +222,7 @@ class ProductInfoView(View):
                         product_num = '001'
                     
                     # 세트 상품이면 
-                    if is_set == '1':
+                    if is_set == "True":
                         CREATE_SET = {
                             'is_set' : True,  
                             'productgroup_code' : product_group_code ,  
