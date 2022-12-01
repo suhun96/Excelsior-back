@@ -1,5 +1,7 @@
 from django.db import models
 
+from datetime  import datetime
+
 from users.models import *
 from products.models import *
 from companies.models import *
@@ -27,6 +29,8 @@ class ProductPrice(models.Model):
 
 class InventorySheet(models.Model):
     user            = models.ForeignKey(User, on_delete= models.CASCADE)
+    date            = models.DateField()
+    doc_no          = models.CharField(max_length = 60, default= 0)
     is_inbound      = models.CharField(max_length= 30)
     product         = models.ForeignKey(Product, on_delete= models.CASCADE)
     company_code    = models.CharField(max_length= 20, blank= False)
@@ -45,6 +49,7 @@ class InventorySheet(models.Model):
 
 class InventorySheetLog(models.Model):
     user            = models.ForeignKey(User, on_delete= models.CASCADE)
+    date            = models.DateField()
     process_type    = models.CharField(max_length= 100)
     inventorysheet  = models.ForeignKey(InventorySheet, on_delete= models.CASCADE)
     is_inbound      = models.CharField(max_length= 30)
