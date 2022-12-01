@@ -27,6 +27,8 @@ class ProductPrice(models.Model):
 
 class InventorySheet(models.Model):
     user            = models.ForeignKey(User, on_delete= models.CASCADE)
+    date            = models.DateField()
+    doc_no          = models.CharField(max_length = 60, default= 0)
     is_inbound      = models.CharField(max_length= 30)
     product         = models.ForeignKey(Product, on_delete= models.CASCADE)
     company_code    = models.CharField(max_length= 20, blank= False)
