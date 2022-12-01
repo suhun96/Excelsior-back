@@ -127,13 +127,13 @@ class ProductInfoView(View):
     
     def post(self, request):
         input_data = json.loads(request.body)
-        
         name = input_data.get('name', None)
         product_group_code = input_data.get('product_group_code', None)
         warehouse_code = input_data.get('warehouse_code', None)
         company_code = input_data.get('company_code', None)
         is_set = input_data.get('is_set', None)
-        compositions = input_data.get('compositions', None )
+        composition = input_data.get('composition', None )
+        
         
         # 필수값 제품명 확인
         if name == None:
@@ -148,6 +148,8 @@ class ProductInfoView(View):
         if warehouse_code:
             if not Warehouse.objects.filter(code = input_data['warehouse_code']).exists():
                 return JsonResponse({'message' : '존재하지 않는 창고 코드입니다.'}, status = 403)
+
+
         try:
             with transaction.atomic():
                 # 회사코드가 있으면
@@ -176,14 +178,21 @@ class ProductInfoView(View):
                         }
                         # 들어온 기타 정보사항 CREATE_SET에 추가
                         for key, value in input_data.items():
-                            if key in ['safe_quantity', 'keyword', 'warehouse_code', 'location']:
+                            if key in ['keyword', 'warehouse_code', 'location']:
                                 CREATE_SET.update({key : value})
+                            
+                            if key == 'safe_quantity':
+                                if value == "":
+                                    CREATE_SET.update({key : 0})
+                                else:
+                                    CREATE_SET.update({key : value}) 
+                                
                         
                         # 새로운  세트 제품 등록
                         new_product = Product.objects.create(**CREATE_SET)
 
                         # 새로운 세트 제품의 구성품 등록
-                        for id, quantity in compositions.items():
+                        for id, quantity in composition.items():
                             ProductComposition.objects.create(
                                 set_product_id = new_product.id,
                                 composition_product_id = id,
@@ -202,8 +211,14 @@ class ProductInfoView(View):
 
                         # 들어온 기타 정보사항 CREATE_SET에 추가
                         for key, value in input_data.items():
-                            if key in ['safe_quantity', 'keyword', 'warehouse_code', 'location']:
+                            if key in ['keyword', 'warehouse_code', 'location']:
                                 CREATE_SET.update({key : value})
+                            
+                            if key == 'safe_quantity':
+                                if value == "":
+                                    CREATE_SET.update({key : 0})
+                                else:
+                                    CREATE_SET.update({key : value})
                         
                         # 새로운 제품 등록
                         new_product = Product.objects.create(**CREATE_SET)
@@ -231,14 +246,20 @@ class ProductInfoView(View):
                         }
                         # 들어온 기타 정보사항 CREATE_SET에 추가
                         for key, value in input_data.items():
-                            if key in ['safe_quantity', 'keyword', 'warehouse_code', 'location']:
+                            if key in ['keyword', 'warehouse_code', 'location']:
                                 CREATE_SET.update({key : value})
+                            
+                            if key == 'safe_quantity':
+                                if value == "":
+                                    CREATE_SET.update({key : 0})
+                                else:
+                                    CREATE_SET.update({key : value})
                         
                         # 새로운  세트 제품 등록
                         new_product = Product.objects.create(**CREATE_SET)
 
                         # 새로운 세트 제품의 구성품 등록
-                        for id, quantity in compositions.items():
+                        for id, quantity in composition.items():
                             ProductComposition.objects.create(
                                 set_product_id = new_product.id,
                                 composition_product_id = id,
@@ -256,17 +277,22 @@ class ProductInfoView(View):
 
                         # 들어온 기타 정보사항 CREATE_SET에 추가
                         for key, value in input_data.items():
-                            if key in ['safe_quantity', 'keyword', 'warehouse_code', 'location']:
+                            if key in ['keyword', 'warehouse_code', 'location']:
                                 CREATE_SET.update({key : value})
+                            
+                            if key == 'safe_quantity':
+                                if value == "":
+                                    CREATE_SET.update({key : 0})
+                                else:
+                                    CREATE_SET.update({key : value})
                         
                         # 새로운 제품 등록
                         new_product = Product.objects.create(**CREATE_SET)
                         
                         return JsonResponse({'message' : '[Case 4] 새로운 세트 상품이 등록되었습니다.'}, status = 200)
-    
+
         except IntegrityError:
-            return JsonResponse({'message' : 'compositions에 입력된 id 값을 확인해주세요'}, status = 403)
-        
+            return JsonResponse({'message' : 'composition에 입력된 id 값을 확인해주세요'}, status = 403)        
 
 class ModifyProductInfoView(View):
     def post(self, request):
