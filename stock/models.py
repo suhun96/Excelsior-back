@@ -61,29 +61,4 @@ class InventorySheetLog(models.Model):
     updated_at      = models.DateField(auto_now= True)
 
     class Meta:
-<<<<<<< HEAD
-        db_table = 'product_inbound'
-
-class ProductOutbound(models.Model):
-    product = models.ForeignKey(Product, on_delete= models.CASCADE)
-    company_code   = models.CharField(max_length = 20, blank= False)
-    warehouse_code = models.CharField(max_length = 20)
-    unit_price = models.IntegerField(default= 0)
-    quantity = models.IntegerField(default= 0)
-    etc = models.CharField(max_length= 300)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        db_table = 'product_outbound'
-
-class SetProduction(models.Model):
-    set_product = models.ForeignKey(Product, on_delete= models.CASCADE)
-    quantity = models.IntegerField(default= 0)
-    etc = models.CharField(max_length= 300)
-    created_at = models.DateTimeField(auto_now_add= True)
-
-    class Meta:
-        db_table = 'set_productions'
-=======
         db_table = 'inventory_sheet_log'    
->>>>>>> 81329038cea85ca24a1715ade0f4246fd9ad7a1e

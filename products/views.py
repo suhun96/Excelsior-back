@@ -127,13 +127,13 @@ class ProductInfoView(View):
     
     def post(self, request):
         input_data = json.loads(request.body)
-        
         name = input_data.get('name', None)
         product_group_code = input_data.get('product_group_code', None)
         warehouse_code = input_data.get('warehouse_code', None)
         company_code = input_data.get('company_code', None)
         is_set = input_data.get('is_set', None)
         compositions = input_data.get('compositions', None )
+        safe_quantity = input_data.get('safe_quantity', None)
         
         # 필수값 제품명 확인
         if name == None:
@@ -148,6 +148,13 @@ class ProductInfoView(View):
         if warehouse_code:
             if not Warehouse.objects.filter(code = input_data['warehouse_code']).exists():
                 return JsonResponse({'message' : '존재하지 않는 창고 코드입니다.'}, status = 403)
+
+        if safe_quantity:
+            if safe_quantity == '':
+                safe_quantity = 0
+            else:
+                pass
+
         try:
             with transaction.atomic():
                 # 회사코드가 있으면
