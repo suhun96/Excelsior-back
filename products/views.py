@@ -133,7 +133,7 @@ class ProductInfoView(View):
         company_code = input_data.get('company_code', None)
         is_set = input_data.get('is_set', None)
         compositions = input_data.get('compositions', None )
-        safe_quantity = input_data.get('safe_quantity', None)
+        
         
         # 필수값 제품명 확인
         if name == None:
@@ -290,7 +290,7 @@ class ProductInfoView(View):
                         new_product = Product.objects.create(**CREATE_SET)
                         
                         return JsonResponse({'message' : '[Case 4] 새로운 세트 상품이 등록되었습니다.'}, status = 200)
-    
+
         except IntegrityError:
             return JsonResponse({'message' : 'compositions에 입력된 id 값을 확인해주세요'}, status = 403)
         
