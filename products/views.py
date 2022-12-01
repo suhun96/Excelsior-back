@@ -132,8 +132,13 @@ class ProductInfoView(View):
         warehouse_code = input_data.get('warehouse_code', None)
         company_code = input_data.get('company_code', None)
         is_set = input_data.get('is_set', None)
+<<<<<<< HEAD
         composition = input_data.get('composition', None )
         
+=======
+        compositions = input_data.get('compositions', None )
+        safe_quantity = input_data.get('safe_quantity', None)
+>>>>>>> d09a543ac9bfc2b621f2f1c609739c679afed6fa
         
         # 필수값 제품명 확인
         if name == None:
