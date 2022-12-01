@@ -149,11 +149,6 @@ class ProductInfoView(View):
             if not Warehouse.objects.filter(code = input_data['warehouse_code']).exists():
                 return JsonResponse({'message' : '존재하지 않는 창고 코드입니다.'}, status = 403)
 
-        if safe_quantity:
-            if safe_quantity == '':
-                safe_quantity = 0
-            else:
-                pass
 
         try:
             with transaction.atomic():
@@ -183,8 +178,15 @@ class ProductInfoView(View):
                         }
                         # 들어온 기타 정보사항 CREATE_SET에 추가
                         for key, value in input_data.items():
-                            if key in ['safe_quantity', 'keyword', 'warehouse_code', 'location']:
+                            if key in ['keyword', 'warehouse_code', 'location']:
                                 CREATE_SET.update({key : value})
+                            
+                            if key == 'safe_quantity':
+                                if value == "":
+                                    CREATE_SET.update({key : 0})
+                                else:
+                                    CREATE_SET.update({key : value}) 
+                                
                         
                         # 새로운  세트 제품 등록
                         new_product = Product.objects.create(**CREATE_SET)
@@ -209,8 +211,14 @@ class ProductInfoView(View):
 
                         # 들어온 기타 정보사항 CREATE_SET에 추가
                         for key, value in input_data.items():
-                            if key in ['safe_quantity', 'keyword', 'warehouse_code', 'location']:
+                            if key in ['keyword', 'warehouse_code', 'location']:
                                 CREATE_SET.update({key : value})
+                            
+                            if key == 'safe_quantity':
+                                if value == "":
+                                    CREATE_SET.update({key : 0})
+                                else:
+                                    CREATE_SET.update({key : value})
                         
                         # 새로운 제품 등록
                         new_product = Product.objects.create(**CREATE_SET)
@@ -238,8 +246,14 @@ class ProductInfoView(View):
                         }
                         # 들어온 기타 정보사항 CREATE_SET에 추가
                         for key, value in input_data.items():
-                            if key in ['safe_quantity', 'keyword', 'warehouse_code', 'location']:
+                            if key in ['keyword', 'warehouse_code', 'location']:
                                 CREATE_SET.update({key : value})
+                            
+                            if key == 'safe_quantity':
+                                if value == "":
+                                    CREATE_SET.update({key : 0})
+                                else:
+                                    CREATE_SET.update({key : value})
                         
                         # 새로운  세트 제품 등록
                         new_product = Product.objects.create(**CREATE_SET)
@@ -263,8 +277,14 @@ class ProductInfoView(View):
 
                         # 들어온 기타 정보사항 CREATE_SET에 추가
                         for key, value in input_data.items():
-                            if key in ['safe_quantity', 'keyword', 'warehouse_code', 'location']:
+                            if key in ['keyword', 'warehouse_code', 'location']:
                                 CREATE_SET.update({key : value})
+                            
+                            if key == 'safe_quantity':
+                                if value == "":
+                                    CREATE_SET.update({key : 0})
+                                else:
+                                    CREATE_SET.update({key : value})
                         
                         # 새로운 제품 등록
                         new_product = Product.objects.create(**CREATE_SET)
