@@ -16,11 +16,11 @@ class ProductPrice(models.Model):
 class Sheet(models.Model):
     user       = models.ForeignKey(User, on_delete= models.CASCADE)
     type       = models.CharField(max_length= 30)
-    doc_no     = models.CharField(max_length = 60, default= 0)
+    company_code = models.CharField(max_length = 20)
     status     = models.BooleanField(default= True)
     etc        = models.CharField(max_length= 500)
-    created_at = models.DateField(auto_now= True)
-    updated_at = models.DateField(auto_now= True)
+    created_at = models.DateTimeField(auto_now_add= True)
+    updated_at = models.DateTimeField(auto_now_add= True)
 
     class Meta:
         db_table = 'sheet'
