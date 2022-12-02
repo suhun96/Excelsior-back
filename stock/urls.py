@@ -9,5 +9,4 @@ urlpatterns = [
     path('list-quantity', ListProductQuantityView.as_view()),
     path('sheet-mod', ModifyInventorySheetView.as_view()),
     path('sheet-del', DeleteInventorySheetView.as_view())
-    
 ]
