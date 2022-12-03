@@ -15,11 +15,10 @@ from locations.models   import *
 # deco
 from users.decorator    import jwt_decoder
 
-class CreateSheetView(View):
+class NomalStockView(View):
     def create_sheet(self, input_data):
         input_data = input_data
 
-        #
         input_user =  1
         input_type = input_data.get('type', None)
         input_etc  = input_data.get('etc', None)
@@ -121,4 +120,85 @@ class CreateSheetView(View):
                 
             return JsonResponse({'message' : '출고 성공'}, status = 200)
 
-        
+        if new_sheet.type == 'generate':
+            compositions_1 = SheetComposition.objects.filter(sheet_id = new_sheet_id).values(
+                    'product',
+                    'unit_price',
+                    'quantity',
+                    'warehouse_code'
+                )
+
+            for composition in compositions_1:
+                product_id     = composition.get('product')
+                warehouse_code = composition.get('warehouse_code')
+                quantity       = composition.get('quantity')
+                # unit_price     = composition.get('unit_price') 
+                
+                stock = StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id)
+                
+                if stock.exists():
+                    before_quantity = stock.last().stock_quantity
+                    stock_quantity  = before_quantity + int(quantity)
+                else:
+                    stock_quantity  = int(quantity)
+
+                StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id).update_or_create(
+                    sheet_id = new_sheet_id,
+                    stock_quantity = stock_quantity,
+                    defaults={
+                        'product_id' : product_id,
+                        'warehouse_code' : warehouse_code
+                    })
+            
+            # 여기서부터 소진 sheet
+
+            Set_compositions = ProductComposition.objects.filter(set_product_id = product_id).values('composition_product', 'quantity')
+
+            used_sheet = Sheet.objects.create(
+                    user_id = 1,
+                    type    = 'used',
+                    company_code = 'EX'
+                )
+
+            for composition_product in Set_compositions:
+                SheetComposition.objects.create(
+                    sheet_id        = used_sheet.id,
+                    product_id      = composition_product['composition_product'],
+                    unit_price      = 0,
+                    quantity        = composition_product['quantity'], 
+                    warehouse_code  = warehouse_code,
+                    location        = 0
+                )
+            
+            compositions_2 = SheetComposition.objects.filter(sheet_id = used_sheet.id).values(
+                    'product',
+                    'unit_price',
+                    'quantity',
+                    'warehouse_code'
+                )
+            
+            for composition in compositions_2:
+                product_id     = composition.get('product')
+                warehouse_code = composition.get('warehouse_code')
+                quantity       = composition.get('quantity')
+                # unit_price     = composition.get('unit_price') 
+                
+                stock = StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id)
+                
+                if stock.exists():
+                    before_quantity = stock.last().stock_quantity
+                    stock_quantity  = before_quantity - int(quantity)
+                else:
+                    stock_quantity  = quantity
+
+                StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id).update_or_create(
+                    sheet_id = used_sheet.id,
+                    stock_quantity = stock_quantity,
+                    defaults={
+                        'product_id' : product_id,
+                        'warehouse_code' : warehouse_code
+                    })
+
+            return JsonResponse({'message' : '생산 성공'}, status = 200)
+
+            
