@@ -47,10 +47,10 @@ class StockByWarehouse(models.Model):
 
 class SerialAction(models.Model):
     serial   = models.CharField(max_length=100)
-    create   = models.ForeignKey(Sheet, related_name = 'create' , on_delete = models.CASCADE)
-    outbound = models.ForeignKey(Sheet, related_name = 'outbound', on_delete = models.CASCADE)
-    transfer = models.ForeignKey(Sheet, related_name = 'transfer', on_delete = models.CASCADE)
-    compose  = models.ForeignKey(Sheet, related_name = 'compose', on_delete = models.CASCADE)
+    create   = models.CharField(max_length= 20)
+    outbound = models.CharField(max_length= 20)
+    transfer = models.CharField(max_length= 20)
+    compose  = models.CharField(max_length= 20)
 
     class Meta:
         db_table = 'serial_action'
@@ -61,3 +61,11 @@ class SerialComposeRecord(models.Model):
 
     class Meta:
         db_table = 'serial_compose_record'
+
+class QuantityByWarehouse(models.Model):
+    warehouse_code = models.CharField(max_length=20)
+    product        = models.ForeignKey(Product, on_delete= models.CASCADE)
+    total_quantity = models.IntegerField(default = 0)
+
+    class Meta:
+        db_table = 'quantity_by_warehouse'
