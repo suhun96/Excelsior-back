@@ -4,6 +4,7 @@ from datetime           import datetime
 from django.views       import View
 from django.http        import JsonResponse
 from django.db          import transaction
+from django.db.models   import Q
 
 # Models
 from stock.models       import *
@@ -66,7 +67,9 @@ class NomalStockView(View):
 
             for composition in compositions:
                 product_id     = composition.get('product')
+                print(product_id)
                 warehouse_code = composition.get('warehouse_code')
+                print(warehouse_code)
                 quantity       = composition.get('quantity')
                 # unit_price     = composition.get('unit_price') 
                 
@@ -78,14 +81,21 @@ class NomalStockView(View):
                 else:
                     stock_quantity  = int(quantity)
 
-                StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id).update_or_create(
+                StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id).create(
                     sheet_id = new_sheet_id,
                     stock_quantity = stock_quantity,
+                    product_id = product_id,
+                    warehouse_code = warehouse_code )
+                
+                
+                QuantityByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id).update_or_create(
+                    product_id = product_id,
+                    warehouse_code = warehouse_code,
                     defaults={
-                        'product_id' : product_id,
-                        'warehouse_code' : warehouse_code
-                    }
-                    )
+                        
+                        'total_quantity' : stock_quantity,
+                    })
+
             return JsonResponse({'message' : '입고 성공'}, status = 200)
 
         if new_sheet.type == 'outbound':
@@ -110,12 +120,18 @@ class NomalStockView(View):
                 else:
                     stock_quantity  = int(quantity)
 
-                StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id).update_or_create(
+                StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id).create(
                     sheet_id = new_sheet_id,
                     stock_quantity = stock_quantity,
+                    product_id = product_id,
+                    warehouse_code = warehouse_code )
+                
+                QuantityByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id).update_or_create(
+                    product_id = product_id,
+                    warehouse_code = warehouse_code,
                     defaults={
-                        'product_id' : product_id,
-                        'warehouse_code' : warehouse_code
+                        
+                        'total_quantity' : stock_quantity,
                     })
                 
             return JsonResponse({'message' : '출고 성공'}, status = 200)
@@ -159,8 +175,11 @@ class NomalStockView(View):
                     type    = 'used',
                     company_code = 'EX'
                 )
+            
+
 
             for composition_product in Set_compositions:
+
                 SheetComposition.objects.create(
                     sheet_id        = used_sheet.id,
                     product_id      = composition_product['composition_product'],
@@ -201,4 +220,22 @@ class NomalStockView(View):
 
             return JsonResponse({'message' : '생산 성공'}, status = 200)
 
+
+class QunatityByWarehouseView(View):
+    def get(self, request):
+        
+        product_id_list = request.GET.getlist('product_id', None)
+        
+        list_A = []
+        for product_id in product_id_list:
+            warehouse_list = QuantityByWarehouse.objects.filter(product_id = product_id).values('warehouse_code', 'total_quantity')
+            dict_product = {}
+            dict_product_id = {product_id : dict_product}
+            for warehouse_code in warehouse_list:
+                code = warehouse_code['warehouse_code']
+                total_quantity = warehouse_code['total_quantity']
+                dict_product[code] = total_quantity   
             
+            list_A.append(dict_product_id)
+
+        return JsonResponse({'message' : list_A})
