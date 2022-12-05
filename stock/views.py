@@ -78,7 +78,7 @@ class NomalStockView(View):
                 last_serial = SerialAction.objects.filter(serial__icontains = serial_code1).latest('id').serial
                 remove_serial = last_serial.strip(serial_code1)
                 print(remove_serial)
-                
+
                 before_route = remove_serial[:2]
                 print(before_route)
                 after_route = str(int(before_route) + 1).zfill(2)
@@ -266,13 +266,15 @@ class NomalStockView(View):
 class QunatityByWarehouseView(View):
     def get(self, request):
         
-        product_id_list = request.GET.getlist('product_id', None)
+        product_code_list = request.GET.getlist('product_code', None)
         
         list_A = []
-        for product_id in product_id_list:
+        for product_code in product_code_list:
+            product = Product.objects.get(product_code = product_code)
+            product_id = product.id
             warehouse_list = QuantityByWarehouse.objects.filter(product_id = product_id).values('warehouse_code', 'total_quantity')
             dict_product = {}
-            dict_product_id = {product_id : dict_product}
+            dict_product_id = {product_code : dict_product}
             for warehouse_code in warehouse_list:
                 code = warehouse_code['warehouse_code']
                 total_quantity = warehouse_code['total_quantity']
