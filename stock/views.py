@@ -50,7 +50,42 @@ class NomalStockView(View):
                 )
         
         return new_sheet
-    
+
+    def create_serial_code(self, composition, new_sheet_id):
+        now = datetime.now()
+        year    = str(now.year)
+        month   = str(now.month).zfill(2)
+        day     = str(now.day).zfill(2)
+        today = year[2:4] + month + day
+
+        product_id = composition.get('product')
+        quantity       = composition.get('quantity')
+
+        product_code = Product.objects.get(id = product_id).product_code
+        
+        serial_code1 = product_code + today
+
+       
+        if not SerialAction.objects.filter(serial__icontains = serial_code1).exists():
+            for i in range(quantity):
+                route = '01'
+                numbering = str(i).zfill(3)
+                serial_code2 = serial_code1 + route + numbering   
+                SerialAction.objects.create(serial = serial_code2, create = new_sheet_id)
+        else:
+            for i in range(quantity):
+                numbering = str(i).zfill(3)
+                last_serial = SerialAction.objects.filter(serial__icontains = serial_code1).latest('id').serial
+                remove_serial = last_serial.strip(serial_code1)
+                print(remove_serial)
+                
+                before_route = remove_serial[:2]
+                print(before_route)
+                after_route = str(int(before_route) + 1).zfill(2)
+                
+                serial_code2 = serial_code1 + str(after_route) + numbering
+                SerialAction.objects.create(serial = serial_code2, create = new_sheet_id)
+
     def post(self, request):
         input_data = json.loads(request.body)
 
@@ -137,18 +172,19 @@ class NomalStockView(View):
             return JsonResponse({'message' : '출고 성공'}, status = 200)
 
         if new_sheet.type == 'generate':
-            compositions_1 = SheetComposition.objects.filter(sheet_id = new_sheet_id).values(
+            generate_compositions = SheetComposition.objects.filter(sheet_id = new_sheet_id).values(
                     'product',
                     'unit_price',
                     'quantity',
                     'warehouse_code'
                 )
 
-            for composition in compositions_1:
+            for composition in generate_compositions:
                 product_id     = composition.get('product')
                 warehouse_code = composition.get('warehouse_code')
                 quantity       = composition.get('quantity')
-                # unit_price     = composition.get('unit_price') 
+                
+                self.create_serial_code(composition, new_sheet_id)
                 
                 stock = StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id)
                 
@@ -175,28 +211,34 @@ class NomalStockView(View):
                     type    = 'used',
                     company_code = 'EX'
                 )
-            
-
 
             for composition_product in Set_compositions:
+                product_code = Product.objects.get(id = composition_product['composition_product']).product_code
+                product_codes = request.GET.getlist(product_code, None)
+                
+                if product_codes: 
+                    print(product_codes)
+                    for obj in product_codes:
+                        print(obj)
+                        warehouse_code, quantity = obj.split('/')    
 
-                SheetComposition.objects.create(
-                    sheet_id        = used_sheet.id,
-                    product_id      = composition_product['composition_product'],
-                    unit_price      = 0,
-                    quantity        = composition_product['quantity'], 
-                    warehouse_code  = warehouse_code,
-                    location        = 0
-                )
+                        SheetComposition.objects.create(
+                            sheet_id        = used_sheet.id,
+                            product_id      = composition_product['composition_product'],
+                            unit_price      = 0,
+                            quantity        = quantity, 
+                            warehouse_code  = warehouse_code,
+                            location        = 0
+                        )
             
-            compositions_2 = SheetComposition.objects.filter(sheet_id = used_sheet.id).values(
+            used_compositions = SheetComposition.objects.filter(sheet_id = used_sheet.id).values(
                     'product',
                     'unit_price',
                     'quantity',
                     'warehouse_code'
                 )
             
-            for composition in compositions_2:
+            for composition in used_compositions:
                 product_id     = composition.get('product')
                 warehouse_code = composition.get('warehouse_code')
                 quantity       = composition.get('quantity')
