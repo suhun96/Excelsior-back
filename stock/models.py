@@ -32,6 +32,7 @@ class SheetComposition(models.Model):
     quantity   = models.IntegerField(default = 0)
     warehouse_code = models.CharField(max_length = 20)
     location   = models.CharField(max_length = 300)
+    etc        = models.CharField(max_length = 300)
 
     class Meta:
         db_table = 'sheet_composition'

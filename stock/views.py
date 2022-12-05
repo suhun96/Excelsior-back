@@ -4,7 +4,7 @@ from datetime           import datetime
 from django.views       import View
 from django.http        import JsonResponse
 from django.db          import transaction
-from django.db.models   import Q
+from django.db.models   import Q , Sum
 
 # Models
 from stock.models       import *
@@ -34,9 +34,9 @@ class NomalStockView(View):
         
         for key, valuse in input_data.items():
             if Product.objects.filter(product_code = key).exists() == True:
-                product_id      = Product.objects.get(product_code = key).id 
                 quantity        = valuse.get('quantity')
                 unit_price      = valuse.get('price')
+                product_id      = Product.objects.get(product_code = key).id 
                 location        = valuse.get('location')
                 warehouse_code  = valuse.get('warehouse_code')
                 
@@ -69,21 +69,20 @@ class NomalStockView(View):
         if not SerialAction.objects.filter(serial__icontains = serial_code1).exists():
             for i in range(quantity):
                 route = '01'
-                numbering = str(i).zfill(3)
+                numbering = str(i + 1).zfill(3)
                 serial_code2 = serial_code1 + route + numbering   
                 SerialAction.objects.create(serial = serial_code2, create = new_sheet_id)
         else:
-            for i in range(quantity):
-                numbering = str(i).zfill(3)
-                last_serial = SerialAction.objects.filter(serial__icontains = serial_code1).latest('id').serial
-                remove_serial = last_serial.strip(serial_code1)
-                print(remove_serial)
-
-                before_route = remove_serial[:2]
-                print(before_route)
-                after_route = str(int(before_route) + 1).zfill(2)
-                
-                serial_code2 = serial_code1 + str(after_route) + numbering
+            last_serial = SerialAction.objects.filter(serial__icontains = serial_code1).latest('id').serial
+            
+            before_route = last_serial.replace(serial_code1, "")
+            before_route = before_route[:2]
+            
+            after_route = int(before_route) + 1
+            
+            for i  in range(quantity):
+                numbering = str(i + 1).zfill(3)
+                serial_code2 = serial_code1 + str(after_route).zfill(2) + numbering
                 SerialAction.objects.create(serial = serial_code2, create = new_sheet_id)
 
     def post(self, request):
@@ -171,97 +170,7 @@ class NomalStockView(View):
                 
             return JsonResponse({'message' : '출고 성공'}, status = 200)
 
-        if new_sheet.type == 'generate':
-            generate_compositions = SheetComposition.objects.filter(sheet_id = new_sheet_id).values(
-                    'product',
-                    'unit_price',
-                    'quantity',
-                    'warehouse_code'
-                )
-
-            for composition in generate_compositions:
-                product_id     = composition.get('product')
-                warehouse_code = composition.get('warehouse_code')
-                quantity       = composition.get('quantity')
-                
-                self.create_serial_code(composition, new_sheet_id)
-                
-                stock = StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id)
-                
-                if stock.exists():
-                    before_quantity = stock.last().stock_quantity
-                    stock_quantity  = before_quantity + int(quantity)
-                else:
-                    stock_quantity  = int(quantity)
-
-                StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id).update_or_create(
-                    sheet_id = new_sheet_id,
-                    stock_quantity = stock_quantity,
-                    defaults={
-                        'product_id' : product_id,
-                        'warehouse_code' : warehouse_code
-                    })
             
-            # 여기서부터 소진 sheet
-
-            Set_compositions = ProductComposition.objects.filter(set_product_id = product_id).values('composition_product', 'quantity')
-
-            used_sheet = Sheet.objects.create(
-                    user_id = 1,
-                    type    = 'used',
-                    company_code = 'EX'
-                )
-
-            for composition_product in Set_compositions:
-                product_code = Product.objects.get(id = composition_product['composition_product']).product_code
-                product_codes = request.GET.getlist(product_code, None)
-                
-                if product_codes: 
-                    print(product_codes)
-                    for obj in product_codes:
-                        print(obj)
-                        warehouse_code, quantity = obj.split('/')    
-
-                        SheetComposition.objects.create(
-                            sheet_id        = used_sheet.id,
-                            product_id      = composition_product['composition_product'],
-                            unit_price      = 0,
-                            quantity        = quantity, 
-                            warehouse_code  = warehouse_code,
-                            location        = 0
-                        )
-            
-            used_compositions = SheetComposition.objects.filter(sheet_id = used_sheet.id).values(
-                    'product',
-                    'unit_price',
-                    'quantity',
-                    'warehouse_code'
-                )
-            
-            for composition in used_compositions:
-                product_id     = composition.get('product')
-                warehouse_code = composition.get('warehouse_code')
-                quantity       = composition.get('quantity')
-                # unit_price     = composition.get('unit_price') 
-                
-                stock = StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id)
-                
-                if stock.exists():
-                    before_quantity = stock.last().stock_quantity
-                    stock_quantity  = before_quantity - int(quantity)
-                else:
-                    stock_quantity  = quantity
-
-                StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id).update_or_create(
-                    sheet_id = used_sheet.id,
-                    stock_quantity = stock_quantity,
-                    defaults={
-                        'product_id' : product_id,
-                        'warehouse_code' : warehouse_code
-                    })
-
-            return JsonResponse({'message' : '생산 성공'}, status = 200)
-
 
 class QunatityByWarehouseView(View):
     def get(self, request):
@@ -283,3 +192,86 @@ class QunatityByWarehouseView(View):
             list_A.append(dict_product_id)
 
         return JsonResponse({'message' : list_A})
+
+
+class SheetListView(View):
+    def get(self, request):
+        type = request.GET.get('type', None)
+
+        q = Q()
+        if type:
+            q &= Q(type__icontains = type)
+
+        
+        sheets = Sheet.objects.filter(q).values(
+            'id',
+            'user',
+            'type',
+            'company_code',
+            'etc',
+            'created_at'
+        ).order_by('created_at')
+
+        for_list = []
+        for sheet in sheets:
+            id           = sheet['id']
+            user_name    = User.objects.get(id = sheet['user']).name
+            type         = sheet['type']
+            # type 체인지
+            if type == 'inbound':
+                type = '입고'
+            elif type == 'outbound':
+                type = '출고'
+            elif type == 'generate':
+                type = '세트 생산'
+            elif type == 'used':
+                type = '소모'
+
+            company_name = Company.objects.get(code = sheet['company_code']).name
+            etc          = sheet['etc']
+            created_at   = sheet['created_at']
+            
+            dict = {
+                'ID'      :  id,       
+                '타입'      : type,
+                '작성자'    : user_name,
+                '회사명'    : company_name,
+                '비고란'    : etc,
+                '작성일'    : created_at
+            }
+            
+            for_list.append(dict)
+
+
+        return JsonResponse({'message' : for_list}, status = 200)
+
+class ClickSheetView(View):
+    def get(self, request):
+        sheet_id = request.GET.get('sheet_id', None)
+
+        if not sheet_id:
+            return JsonResponse({'message' : 'sheet id 가 입력되지 않았습니다.'}, status = 200)
+
+        compositions = SheetComposition.objects.filter(sheet_id = sheet_id).values()
+
+        for_list = []
+        for composition in compositions:
+            product = Product.objects.get(id = composition['product_id'])
+            total = QuantityByWarehouse.objects.filter(product_id = product.id).aggregate(Sum('total_quantity'))
+            dict = {
+                'product_code'          : product.product_code,
+                'product_group_name'    : ProductGroup.objects.get(code = product.productgroup_code).name,
+                'company_name'          : Company.objects.get(code = product.company_code).name,
+                'unit_price'            : composition['unit_price'],
+                'quantity'              : composition['quantity'],
+                'total_quantity'        : total['total_quantity__sum'],
+                'warehouse_name'        : Warehouse.objects.get(code = composition['warehouse_code']).name,
+                'stock_quantity'        : QuantityByWarehouse.objects.get(warehouse_code = composition['warehouse_code'], product_id = product.id).total_quantity,
+                'stock_location'        : composition['location'],
+                'etc'                   : composition['etc']   
+            } 
+            for_list.append(dict)
+
+        return JsonResponse({'message' : for_list}, status = 200)
+    
+ 
