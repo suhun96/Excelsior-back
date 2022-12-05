@@ -61,3 +61,11 @@ class SerialComposeRecord(models.Model):
 
     class Meta:
         db_table = 'serial_compose_record'
+
+class QuantityByWarehouse(models.Model):
+    warehouse_code = models.CharField(max_length=20)
+    product        = models.ForeignKey(Product, on_delete= models.CASCADE)
+    total_quantity = models.IntegerField(default = 0)
+
+    class Meta:
+        db_table = 'quantity_by_warehouse'
