@@ -186,7 +186,7 @@ class ProductInfoView(View):
             return JsonResponse({'message' : '제품명을 입력해주세요'}, status = 403)
 
         if product_group_code == None:
-            return JsonResponse({'message' : '제품 코드를 입력해주세요'}, status = 403)
+            return JsonResponse({'message' : '제품 그룹 코드를 입력해주세요'}, status = 403)
         else:
             if not ProductGroup.objects.filter(code = product_group_code).exists():
                 return JsonResponse({'message' : '존재하지 않는 제품그룹 코드입니다.'}, status = 403)
@@ -346,7 +346,7 @@ class ProductInfoView(View):
                         for key, value in input_data.items():
                             if key in ['keyword', 'location']:
                                 CREATE_SET.update({key : value})
-                                
+
                             if key == 'warehouse_code':
                                 if value == "":
                                     warehouse_code = Warehouse.objects.get(main = True).code
@@ -363,7 +363,7 @@ class ProductInfoView(View):
                         # 새로운 제품 등록
                         new_product = Product.objects.create(**CREATE_SET)
                         
-                        return JsonResponse({'message' : '[Case 4] 새로운 세트 상품이 등록되었습니다.'}, status = 200)
+                        return JsonResponse({'message' : '[Case 4] 새로운 일반 상품이 등록되었습니다.'}, status = 200)
 
         except IntegrityError:
             return JsonResponse({'message' : 'composition에 입력된 id 값을 확인해주세요'}, status = 403)        
