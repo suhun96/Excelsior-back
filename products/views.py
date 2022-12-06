@@ -126,23 +126,43 @@ class ProductInfoView(View):
         products = Product.objects.filter(q).values()
         
         for product in products:
-            dict_t = {
-                'id' : product['id'],
-                'is_set' : product['is_set'],
-                'company_code' : product['company_code'],
-                'company_name' : Company.objects.get(code = product['company_code']).name,
-                'productgroup_code' : product['productgroup_code'],
-                'productgroup_name' : ProductGroup.objects.get(code = product['productgroup_code']).name,
-                'product_num'       : product['product_num'],
-                'product_code'      : product['product_code'],
-                'safe_quantity'     : product['safe_quantity'],
-                'keyword'           : product['keyword'],
-                'name'              : product['name'],
-                'warehouse_code'    : product['warehouse_code'],
-                'locations'         : product['location'],
-                'status'            : product['status'],
-            }
-            result_list.append(dict_t)
+            if product['company_code']=='':
+                dict_t = {
+                    'id' : product['id'],
+                    'is_set' : product['is_set'],
+                    'company_code' : '입력되지 않았습니다,',
+                    'company_name' : '입력되지 않았습니다.',
+                    'productgroup_code' : product['productgroup_code'],
+                    'productgroup_name' : ProductGroup.objects.get(code = product['productgroup_code']).name,
+                    'product_num'       : product['product_num'],
+                    'product_code'      : product['product_code'],
+                    'safe_quantity'     : product['safe_quantity'],
+                    'keyword'           : product['keyword'],
+                    'name'              : product['name'],
+                    'warehouse_code'    : product['warehouse_code'],
+                    'locations'         : product['location'],
+                    'status'            : product['status'],
+                }
+                result_list.append(dict_t)
+                
+            else:
+                dict_t = {
+                    'id' : product['id'],
+                    'is_set' : product['is_set'],
+                    'company_code' : product['company_code'],
+                    'company_name' : Company.objects.get(code = product['company_code']).name,
+                    'productgroup_code' : product['productgroup_code'],
+                    'productgroup_name' : ProductGroup.objects.get(code = product['productgroup_code']).name,
+                    'product_num'       : product['product_num'],
+                    'product_code'      : product['product_code'],
+                    'safe_quantity'     : product['safe_quantity'],
+                    'keyword'           : product['keyword'],
+                    'name'              : product['name'],
+                    'warehouse_code'    : product['warehouse_code'],
+                    'locations'         : product['location'],
+                    'status'            : product['status'],
+                }
+                result_list.append(dict_t)
 
 
         return JsonResponse({'message' : result_list}, status = 200)
