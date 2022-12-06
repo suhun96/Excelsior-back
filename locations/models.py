@@ -8,6 +8,7 @@ class Warehouse(models.Model):
     type   = models.CharField(max_length = 40, blank = True)
     way    = models.CharField(max_length = 100, blank = True )
     etc    = models.CharField(max_length = 1000, blank = True )
+    main   = models.BooleanField(default=0)
     status = models.BooleanField(default= True)
     
     class Meta:

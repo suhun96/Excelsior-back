@@ -224,9 +224,16 @@ class ProductInfoView(View):
                         }
                         # 들어온 기타 정보사항 CREATE_SET에 추가
                         for key, value in input_data.items():
-                            if key in ['keyword', 'warehouse_code', 'location']:
+                            if key in ['keyword', 'location']:
                                 CREATE_SET.update({key : value})
                             
+                            if key == 'warehouse_code':
+                                if value == "":
+                                    warehouse_code = Warehouse.objects.get(main = True).code
+                                    CREATE_SET.update({key : warehouse_code })
+                                else:
+                                    CREATE_SET.update({key : value })
+
                             if key == 'safe_quantity':
                                 if value == "":
                                     CREATE_SET.update({key : 0})
@@ -257,9 +264,16 @@ class ProductInfoView(View):
 
                         # 들어온 기타 정보사항 CREATE_SET에 추가
                         for key, value in input_data.items():
-                            if key in ['keyword', 'warehouse_code', 'location']:
+                            if key in ['keyword', 'location']:
                                 CREATE_SET.update({key : value})
                             
+                            if key == 'warehouse_code':
+                                if value == "":
+                                    warehouse_code = Warehouse.objects.get(main = True).code
+                                    CREATE_SET.update({key : warehouse_code })
+                                else:
+                                    CREATE_SET.update({key : value })
+
                             if key == 'safe_quantity':
                                 if value == "":
                                     CREATE_SET.update({key : 0})
@@ -292,8 +306,15 @@ class ProductInfoView(View):
                         }
                         # 들어온 기타 정보사항 CREATE_SET에 추가
                         for key, value in input_data.items():
-                            if key in ['keyword', 'warehouse_code', 'location']:
+                            if key in ['keyword', 'location']:
                                 CREATE_SET.update({key : value})
+
+                            if key == 'warehouse_code':
+                                if value == "":
+                                    warehouse_code = Warehouse.objects.get(main = True).code
+                                    CREATE_SET.update({key : warehouse_code })
+                                else:
+                                    CREATE_SET.update({key : value })
                             
                             if key == 'safe_quantity':
                                 if value == "":
@@ -323,9 +344,16 @@ class ProductInfoView(View):
 
                         # 들어온 기타 정보사항 CREATE_SET에 추가
                         for key, value in input_data.items():
-                            if key in ['keyword', 'warehouse_code', 'location']:
+                            if key in ['keyword', 'location']:
                                 CREATE_SET.update({key : value})
-                            
+                                
+                            if key == 'warehouse_code':
+                                if value == "":
+                                    warehouse_code = Warehouse.objects.get(main = True).code
+                                    CREATE_SET.update({key : warehouse_code })
+                                else:
+                                    CREATE_SET.update({key : value })
+
                             if key == 'safe_quantity':
                                 if value == "":
                                     CREATE_SET.update({key : 0})
