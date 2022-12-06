@@ -24,6 +24,7 @@ class NomalStockView(View):
         input_type = input_data.get('type', None)
         input_etc  = input_data.get('etc', None)
         input_company = input_data.get('company_code', None)
+        input_products = input_data.get('products', None)
 
         new_sheet = Sheet.objects.create(
             user_id = input_user,
@@ -32,13 +33,13 @@ class NomalStockView(View):
             etc  = input_etc
         )
         
-        for key, value in input_data.items():
-            if Product.objects.filter(product_code = key).exists() == True:
-                quantity        = value.get('quantity')
-                unit_price      = value.get('price')
-                product_id      = Product.objects.get(product_code = key).id 
-                location        = value.get('location')
-                warehouse_code  = value.get('warehouse_code')
+        for product in input_products:
+            if Product.objects.filter(product_code = product['product_code']).exists() == True:
+                quantity        = product['quantity']
+                unit_price      = product['price']
+                location        = product['location']
+                warehouse_code  = product['warehouse_code']
+                product_id      = Product.objects.get(product_code =product['product_code']).id
                 
                 new_sheet_composition = SheetComposition.objects.create(
                     sheet_id        = new_sheet.id,
