@@ -246,8 +246,12 @@ class NomalStockView(View):
                     })
             
             self.create_serial_code(generated_composition, new_sheet_id)
+            serial_codes = SerialAction.objects.filter(create = new_sheet_id).values('serial')
+            serial_code_list = []
+            for serial_code in serial_codes:
+                serial_code_list.append(serial_code['serial'])
 
-        return JsonResponse({'message' : '생산 성공'}, status = 200)
+        return JsonResponse({'message' : '생산 성공', 'serial_list' : serial_code_list}, status = 200)
 
 
 class QunatityByWarehouseView(View):
