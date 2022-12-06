@@ -109,25 +109,45 @@ class ProductInfoView(View):
         warehouse_code      = request.GET.get('warehouse_code', None)
         product_code        = request.GET.get('product_code', None)
 
-        try:
-            q = Q()
-            if name:
-                q &= Q(name__icontains = name)
-            if keyword:
-                q &= Q(search_word__icontains = keyword)
-            if productgroup_code:
-                q &= Q(productgroup_code__icontains = productgroup_code)
-            if warehouse_code:
-                q &= Q(warehouse__icontains = warehouse_code)
-            if product_code:
-                q &= Q(product_code__icontains = product_code)
+        # try:
+        q = Q()
+        if name:
+            q &= Q(name__icontains = name)
+        if keyword:
+            q &= Q(search_word__icontains = keyword)
+        if productgroup_code:
+            q &= Q(productgroup_code__icontains = productgroup_code)
+        if warehouse_code:
+            q &= Q(warehouse__icontains = warehouse_code)
+        if product_code:
+            q &= Q(product_code__icontains = product_code)
 
-            result = list(Product.objects.filter(q).values())
-
+        result_list = []
+        products = Product.objects.filter(q).values()
         
-            return JsonResponse({'message' : result}, status = 200)
-        except:
-            return JsonResponse({'message' : '예외 상황 발생'}, status = 403)
+        for product in products:
+            dict_t = {
+                'id' : product['id'],
+                'is_set' : product['is_set'],
+                'company_code' : product['company_code'],
+                'company_name' : Company.objects.get(code = product['company_code']).name,
+                'productgroup_code' : product['productgroup_code'],
+                'productgroup_name' : ProductGroup.objects.get(code = product['productgroup_code']).name,
+                'product_num'       : product['product_num'],
+                'product_code'      : product['product_code'],
+                'safe_quantity'     : product['safe_quantity'],
+                'keyword'           : product['keyword'],
+                'name'              : product['name'],
+                'warehouse_code'    : product['warehouse_code'],
+                'locations'         : product['location'],
+                'status'            : product['status'],
+            }
+            result_list.append(dict_t)
+
+
+        return JsonResponse({'message' : result_list}, status = 200)
+        # except KeyError:
+        #     return JsonResponse({'message' : 'keyerror'}, status = 403)
     
     def post(self, request):
         input_data = json.loads(request.body)
