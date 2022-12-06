@@ -122,10 +122,30 @@ class ProductInfoView(View):
             if product_code:
                 q &= Q(product_code__icontains = product_code)
 
-            result = list(Product.objects.filter(q).values())
+            result_list = []
+            products = Product.objects.filter(q).values()
+            
+            for product in products:
+                dict_t = {
+                    'id' : product['id'],
+                    'is_set' : product['is_set'],
+                    'company_code' : product['company_code'],
+                    'company_name' : Company.objects.get(code = product['company_code']).name,
+                    'productgroup_code' : product['productgroup_code'],
+                    'productgroup_name' : ProductGroup.objects.get(code = product['productgroup_code']).name,
+                    'product_num'       : product['product_num'],
+                    'product_code'      : product['product_code'],
+                    'safe_quantity'     : product['safe_qauntity'],
+                    'keyword'           : product['keyword'],
+                    'name'              : product['name'],
+                    'warehouse_code'    : product['warehouse_code'],
+                    'locations'         : product['location'],
+                    'status'            : product['status'],
+                }
+                result_list.append(dict_t)
 
-        
-            return JsonResponse({'message' : result}, status = 200)
+
+            return JsonResponse({'message' : result_list}, status = 200)
         except:
             return JsonResponse({'message' : '예외 상황 발생'}, status = 403)
     
