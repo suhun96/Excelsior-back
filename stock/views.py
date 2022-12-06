@@ -58,8 +58,8 @@ class NomalStockView(View):
         day     = str(now.day).zfill(2)
         today = year[2:4] + month + day
 
-        product_id = composition.get('product')
-        quantity       = composition.get('quantity')
+        product_id      = composition.product.id
+        quantity        = composition.quantity
 
         product_code = Product.objects.get(id = product_id).product_code
         
@@ -170,7 +170,87 @@ class NomalStockView(View):
                 
             return JsonResponse({'message' : '출고 성공'}, status = 200)
 
+        if new_sheet.type == 'generate':
+            generated_composition = SheetComposition.objects.get(sheet_id = new_sheet_id)
+
+            product_id     = generated_composition.product.id
+            warehouse_code = generated_composition.warehouse_code
+            quantity       = generated_composition.quantity
+            # unit_price     = composition.get('unit_price') 
+
+
+            # 재고 있는지 확인
+            stock = StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id)
             
+            if stock.exists():
+                before_quantity = stock.last().stock_quantity
+                stock_quantity  = before_quantity + int(quantity)
+            else:
+                stock_quantity  = int(quantity)
+
+            # 창고별 입고, 출고 내역 업데이트 
+            StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id).create(
+                sheet_id = new_sheet_id,
+                stock_quantity = stock_quantity,
+                product_id = product_id,
+                warehouse_code = warehouse_code )
+            
+            # 창고별 제품 총 수량
+            QuantityByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id).update_or_create(
+                product_id = product_id,
+                warehouse_code = warehouse_code,
+                defaults={
+                    
+                    'total_quantity' : stock_quantity,
+                })
+
+            # 소진 
+            used_sheet = Sheet.objects.create(
+                user_id = 1,
+                type = 'used',
+                company_code = 'EX',
+                etc = f'Sheet_ID :{new_sheet_id} 세트 생산으로 인한 재고소진'
+            )
+
+            set_compositions = ProductComposition.objects.filter(set_product_id = product_id).values()
+
+            for composition in set_compositions:
+                SheetComposition.objects.create(
+                    sheet_id        = used_sheet.id,
+                    product_id      = composition['composition_product_id'],
+                    unit_price      = 333330,
+                    quantity        = composition['quantity'],
+                    warehouse_code  = warehouse_code,
+                    location        = Product.objects.get(id = composition['composition_product_id']).location,
+                    etc             = f'Sheet_ID : {new_sheet_id} 생산으로 인한 구성품 소진입니다.'
+                )
+
+                stock = StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = composition['composition_product_id'])
+                
+                if stock.exists():
+                    before_quantity = stock.last().stock_quantity
+                    stock_quantity  = before_quantity - int(composition['quantity'])
+                else:
+                    stock_quantity  = int(composition['quantity'])
+
+                StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = composition['composition_product_id']).create(
+                    sheet_id = used_sheet.id,
+                    stock_quantity = stock_quantity,
+                    product_id = composition['composition_product_id'],
+                    warehouse_code = warehouse_code )
+                
+                QuantityByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = composition['composition_product_id']).update_or_create(
+                    product_id = composition['composition_product_id'],
+                    warehouse_code = warehouse_code,
+                    defaults={
+                        
+                        'total_quantity' : stock_quantity,
+                    })
+            
+            self.create_serial_code(generated_composition, new_sheet_id)
+
+        return JsonResponse({'message' : '생산 성공'}, status = 200)
+
 
 class QunatityByWarehouseView(View):
     def get(self, request):
