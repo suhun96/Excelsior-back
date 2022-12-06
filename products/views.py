@@ -12,6 +12,7 @@ from users.models       import *
 from products.models    import *
 from companies.models   import *
 from locations.models   import *
+from stock.models       import *
 
 # decorator & utills 
 from users.decorator    import jwt_decoder, check_status
@@ -453,4 +454,76 @@ class ProductEtcDescView(View):
         return JsonResponse({'message' : result}, status = 200)
 ###########################################################################################################
 
+class SetInfoView(View):
+    def get(self, request):
+        product_code = request.GET.get('product_code', None)
 
+        if not product_code:
+            return JsonResponse({'message' : 'product_code를 입력해주세요'})
+        
+        product_id = Product.objects.get(product_code = product_code).id
+
+        if Product.objects.get(id = product_id).is_set == 0:
+            return JsonResponse({'message' : '세트 상품이 아닙니다.'})
+
+        composition = ProductComposition.objects.filter(set_product_id = product_id )
+
+        result_list = []
+        
+        for object in composition:
+            composition_product_id = object.composition_product.id
+            composition_product_quantity = object.quantity
+
+            product = Product.objects.get(id = composition_product_id)
+
+            dict_W = {}
+            
+            warehouse_list = QuantityByWarehouse.objects.filter(product_id = composition_product_id).values()
+                       
+            for object in warehouse_list:
+                dict_W[object['warehouse_code']] = object['total_quantity']
+
+            if product.company_code== '':
+                dict_t = {
+                    'id'                : product.id,
+                    'is_set'            : product.is_set,
+                    'company_code'      : '',
+                    'company_name'      : '',
+                    'productgroup_code' : product.product_code,
+                    'productgroup_name' : ProductGroup.objects.get(code = product.productgroup_code).name,
+                    'product_num'       : product.product_num,
+                    'product_code'      : product.product_code,
+                    'safe_quantity'     : product.safe_quantity,
+                    'keyword'           : product.keyword,
+                    'name'              : product.name,
+                    'warehouse_code'    : product.warehouse_code,
+                    'locations'         : product.location,
+                    'status'            : product.status,
+                    'consumption'       : composition_product_quantity,
+                    'stock'             : dict_W
+                    }
+                
+                result_list.append(dict_t)
+            else:
+                dict_t = {
+                    'id'                : product.id,
+                    'is_set'            : product.is_set,
+                    'company_code'      : product.company_code,
+                    'company_name'      : Company.objects.get(code = product.company_code).name ,
+                    'productgroup_code' : product.product_code,
+                    'productgroup_name' : ProductGroup.objects.get(code = product.productgroup_code).name,
+                    'product_num'       : product.product_num,
+                    'product_code'      : product.product_code,
+                    'safe_quantity'     : product.safe_quantity,
+                    'keyword'           : product.keyword,
+                    'name'              : product.name,
+                    'warehouse_code'    : product.warehouse_code,
+                    'locations'         : product.location,
+                    'status'            : product.status,
+                    'consumption'       : composition_product_quantity,
+                    'stock'             : dict_W
+                }
+            
+                result_list.append(dict_t)
+        
+        return JsonResponse({'message' : result_list}, status = 200)

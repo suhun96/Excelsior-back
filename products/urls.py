@@ -9,6 +9,7 @@ urlpatterns = [
     path('etc-title', ProductEtcTitleView.as_view()),
     path('etc-desc', ProductEtcDescView.as_view()),
     path('info',ProductInfoView.as_view()),
-    path('mod', ModifyProductInfoView.as_view())
+    path('mod', ModifyProductInfoView.as_view()),
+    path('set-info', SetInfoView.as_view())
 ]
 
