@@ -103,10 +103,11 @@ class ModifyProductGroupView(View):
 
 class ProductInfoView(View):
     def get(self, request):
-        keyword = request.GET.get('keyword', None)
-        name = request.GET.get('name', None)
-        productgroup_code = request.GET.get('product_group_code', None)
-        warehouse_code = request.GET.get('warehouse_code', None)
+        name                = request.GET.get('name', None)
+        keyword             = request.GET.get('keyword', None)
+        productgroup_code   = request.GET.get('product_group_code', None)
+        warehouse_code      = request.GET.get('warehouse_code', None)
+        product_code        = request.GET.get('product_code', None)
 
         try:
             q = Q()
@@ -117,9 +118,12 @@ class ProductInfoView(View):
             if productgroup_code:
                 q &= Q(productgroup_code__icontains = productgroup_code)
             if warehouse_code:
-                q &= Q(warehouse_icontains = warehouse_code)
-            
+                q &= Q(warehouse__icontains = warehouse_code)
+            if product_code:
+                q &= Q(product_code__icontains = product_code)
+
             result = list(Product.objects.filter(q).values())
+
         
             return JsonResponse({'message' : result}, status = 200)
         except:
@@ -133,6 +137,7 @@ class ProductInfoView(View):
         company_code = input_data.get('company_code', None)
         is_set = input_data.get('is_set', None)
         composition = input_data.get('composition', None )
+        
         
         
         # 필수값 제품명 확인
@@ -407,3 +412,5 @@ class ProductEtcDescView(View):
         
         return JsonResponse({'message' : result}, status = 200)
 ###########################################################################################################
+
+
