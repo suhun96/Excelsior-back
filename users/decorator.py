@@ -13,8 +13,8 @@ def jwt_decoder(func):
             payload     = jwt.decode(jwt_token, SECRET_KEY, ALGORITHM)
             user        = User.objects.get(id = payload['user_id'])
             
-            if user.status == False:
-                return JsonResponse({'message' : f'{user.name}은 허가되지 않은 상태입니다.'}, status = 403)
+            # if user.status == False:
+            #     return JsonResponse({'message' : f'{user.name}은 허가되지 않은 상태입니다.'}, status = 403)
             
             # user_permission = UserPermission.objects.get(user_id = user.id)
 
