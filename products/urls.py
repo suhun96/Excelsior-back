@@ -11,6 +11,7 @@ urlpatterns = [
     path('info',ProductInfoView.as_view()),
     path('mod', ModifyProductInfoView.as_view()),
     path('set-info', SetInfoView.as_view()),
-    path('status', ProductStatusView.as_view())
+    path('status', ProductStatusView.as_view()),
+    path('group-status', ProductGroupStatusView.as_view())
 ]
 
