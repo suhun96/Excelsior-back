@@ -97,3 +97,28 @@ class WarehouseStatusView(View):
 
         except Exception:
             return JsonResponse({'message' : '예외 사항이 발생해서 트랜잭션을 중지했습니다.'}, status = 403)
+
+class SetMainWarehouseView(View):
+    @jwt_decoder
+    def post(self, request):
+        input_data = request.POST
+        user = request.user
+        warehouse_id = input_data.get('warehouse_id', None)
+
+        try:
+            with transaction.atomic():
+
+                if not warehouse_id:
+                   return JsonResponse({'message' : "warehouse_id를 입력해주세요"}, status = 403)
+
+                if user.admin == False:
+                    return JsonResponse({'message' : '당신은 권한이 없습니다. '}, status = 403)
+                
+                Warehouse.objects.filter().update(main = False)
+
+                Warehouse.objects.filter(id = warehouse_id).update(main = True)
+                
+            return JsonResponse({'message' : 'main 창고를 변경했습니다.'}, status = 200)
+
+        except Exception:
+            return JsonResponse({'message' : '예외 사항이 발생해서 트랜잭션을 중지했습니다.'}, status = 403)
