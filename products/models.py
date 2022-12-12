@@ -35,6 +35,7 @@ class Product(models.Model):
     company_code      = models.CharField(max_length = 10) 
     productgroup_code = models.CharField(max_length = 10, blank = False)
     product_num       = models.CharField(max_length = 10, blank = False)
+    product_code      = models.CharField(max_length = 10, blank = False)
     safe_quantity     = models.IntegerField(default = 0)
     keyword           = models.CharField(max_length = 150)
     name              = models.CharField(max_length = 100, blank = False)

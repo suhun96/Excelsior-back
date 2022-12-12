@@ -1,5 +1,6 @@
 import json, re
 
+
 from django.views       import View
 from django.http        import JsonResponse
 from django.db          import transaction, connection, IntegrityError
@@ -11,6 +12,7 @@ from users.models       import *
 from products.models    import *
 from companies.models   import *
 from locations.models   import *
+from stock.models       import *
 
 # decorator & utills 
 from users.decorator    import jwt_decoder, check_status
@@ -102,44 +104,89 @@ class ModifyProductGroupView(View):
 
 class ProductInfoView(View):
     def get(self, request):
-        keyword = request.GET.get('keyword', None)
-        name = request.GET.get('name', None)
-        productgroup_code = request.GET.get('product_group_code', None)
-        warehouse_code = request.GET.get('warehouse_code', None)
+        name                = request.GET.get('name', None)
+        keyword             = request.GET.get('keyword', None)
+        productgroup_code   = request.GET.get('product_group_code', None)
+        warehouse_code      = request.GET.get('warehouse_code', None)
+        product_code        = request.GET.get('product_code', None)
 
-        try:
-            q = Q()
-            if name:
-                q &= Q(name__icontains = name)
-            if keyword:
-                q &= Q(search_word__icontains = keyword)
-            if productgroup_code:
-                q &= Q(productgroup_code__icontains = productgroup_code)
-            if warehouse_code:
-                q &= Q(warehouse_icontains = warehouse_code)
-            
-            result = list(Product.objects.filter(q).values())
+        # try:
+        q = Q()
+        if name:
+            q &= Q(name__icontains = name)
+        if keyword:
+            q &= Q(search_word__icontains = keyword)
+        if productgroup_code:
+            q &= Q(productgroup_code__icontains = productgroup_code)
+        if warehouse_code:
+            q &= Q(warehouse__icontains = warehouse_code)
+        if product_code:
+            q &= Q(product_code__icontains = product_code)
+
+        result_list = []
+        products = Product.objects.filter(q).values()
         
-            return JsonResponse({'message' : result}, status = 200)
-        except:
-            return JsonResponse({'message' : '예외 상황 발생'}, status = 403)
+        for product in products:
+            if product['company_code']== '':
+                dict_t = {
+                    'id' : product['id'],
+                    'is_set' : product['is_set'],
+                    'company_code'      : '',
+                    'company_name'      : '',
+                    'productgroup_code' : product['productgroup_code'],
+                    'productgroup_name' : ProductGroup.objects.get(code = product['productgroup_code']).name,
+                    'product_num'       : product['product_num'],
+                    'product_code'      : product['product_code'],
+                    'safe_quantity'     : product['safe_quantity'],
+                    'keyword'           : product['keyword'],
+                    'name'              : product['name'],
+                    'warehouse_code'    : product['warehouse_code'],
+                    'locations'         : product['location'],
+                    'status'            : product['status'],
+                }
+                result_list.append(dict_t)
+                
+            else:
+                dict_t = {
+                    'id' : product['id'],
+                    'is_set' : product['is_set'],
+                    'company_code'      : product['company_code'],
+                    'company_name'      : Company.objects.get(code = product['company_code']).name,
+                    'productgroup_code' : product['productgroup_code'],
+                    'productgroup_name' : ProductGroup.objects.get(code = product['productgroup_code']).name,
+                    'product_num'       : product['product_num'],
+                    'product_code'      : product['product_code'],
+                    'safe_quantity'     : product['safe_quantity'],
+                    'keyword'           : product['keyword'],
+                    'name'              : product['name'],
+                    'warehouse_code'    : product['warehouse_code'],
+                    'locations'         : product['location'],
+                    'status'            : product['status'],
+                }
+                result_list.append(dict_t)
+
+
+        return JsonResponse({'message' : result_list}, status = 200)
+        # except KeyError:
+        #     return JsonResponse({'message' : 'keyerror'}, status = 403)
     
     def post(self, request):
         input_data = json.loads(request.body)
-        
         name = input_data.get('name', None)
         product_group_code = input_data.get('product_group_code', None)
         warehouse_code = input_data.get('warehouse_code', None)
         company_code = input_data.get('company_code', None)
         is_set = input_data.get('is_set', None)
-        compositions = input_data.get('compositions', None )
+        composition = input_data.get('composition', None )
+        
+        
         
         # 필수값 제품명 확인
         if name == None:
             return JsonResponse({'message' : '제품명을 입력해주세요'}, status = 403)
 
         if product_group_code == None:
-            return JsonResponse({'message' : '제품 코드를 입력해주세요'}, status = 403)
+            return JsonResponse({'message' : '제품 그룹 코드를 입력해주세요'}, status = 403)
         else:
             if not ProductGroup.objects.filter(code = product_group_code).exists():
                 return JsonResponse({'message' : '존재하지 않는 제품그룹 코드입니다.'}, status = 403)
@@ -147,6 +194,8 @@ class ProductInfoView(View):
         if warehouse_code:
             if not Warehouse.objects.filter(code = input_data['warehouse_code']).exists():
                 return JsonResponse({'message' : '존재하지 않는 창고 코드입니다.'}, status = 403)
+
+
         try:
             with transaction.atomic():
                 # 회사코드가 있으면
@@ -165,7 +214,7 @@ class ProductInfoView(View):
                         product_num = '001'
                     
                     # 세트 상품이면 
-                    if is_set == 1:
+                    if is_set == "True":
                         CREATE_SET = {
                             'is_set' : True,  
                             'productgroup_code' : product_group_code , 
@@ -175,14 +224,28 @@ class ProductInfoView(View):
                         }
                         # 들어온 기타 정보사항 CREATE_SET에 추가
                         for key, value in input_data.items():
-                            if key in ['safe_quantity', 'keyword', 'warehouse_code', 'location']:
+                            if key in ['keyword', 'location']:
                                 CREATE_SET.update({key : value})
+                            
+                            if key == 'warehouse_code':
+                                if value == "":
+                                    warehouse_code = Warehouse.objects.get(main = True).code
+                                    CREATE_SET.update({key : warehouse_code })
+                                else:
+                                    CREATE_SET.update({key : value })
+
+                            if key == 'safe_quantity':
+                                if value == "":
+                                    CREATE_SET.update({key : 0})
+                                else:
+                                    CREATE_SET.update({key : value}) 
+                                
                         
                         # 새로운  세트 제품 등록
                         new_product = Product.objects.create(**CREATE_SET)
 
                         # 새로운 세트 제품의 구성품 등록
-                        for id, quantity in compositions.items():
+                        for id, quantity in composition.items():
                             ProductComposition.objects.create(
                                 set_product_id = new_product.id,
                                 composition_product_id = id,
@@ -201,8 +264,21 @@ class ProductInfoView(View):
 
                         # 들어온 기타 정보사항 CREATE_SET에 추가
                         for key, value in input_data.items():
-                            if key in ['safe_quantity', 'keyword', 'warehouse_code', 'location']:
+                            if key in ['keyword', 'location']:
                                 CREATE_SET.update({key : value})
+                            
+                            if key == 'warehouse_code':
+                                if value == "":
+                                    warehouse_code = Warehouse.objects.get(main = True).code
+                                    CREATE_SET.update({key : warehouse_code })
+                                else:
+                                    CREATE_SET.update({key : value })
+
+                            if key == 'safe_quantity':
+                                if value == "":
+                                    CREATE_SET.update({key : 0})
+                                else:
+                                    CREATE_SET.update({key : value})
                         
                         # 새로운 제품 등록
                         new_product = Product.objects.create(**CREATE_SET)
@@ -221,7 +297,7 @@ class ProductInfoView(View):
                         product_num = '001'
                     
                     # 세트 상품이면 
-                    if is_set == 1:
+                    if is_set == "True":
                         CREATE_SET = {
                             'is_set' : True,  
                             'productgroup_code' : product_group_code ,  
@@ -230,14 +306,27 @@ class ProductInfoView(View):
                         }
                         # 들어온 기타 정보사항 CREATE_SET에 추가
                         for key, value in input_data.items():
-                            if key in ['safe_quantity', 'keyword', 'warehouse_code', 'location']:
+                            if key in ['keyword', 'location']:
                                 CREATE_SET.update({key : value})
+
+                            if key == 'warehouse_code':
+                                if value == "":
+                                    warehouse_code = Warehouse.objects.get(main = True).code
+                                    CREATE_SET.update({key : warehouse_code })
+                                else:
+                                    CREATE_SET.update({key : value })
+                            
+                            if key == 'safe_quantity':
+                                if value == "":
+                                    CREATE_SET.update({key : 0})
+                                else:
+                                    CREATE_SET.update({key : value})
                         
                         # 새로운  세트 제품 등록
                         new_product = Product.objects.create(**CREATE_SET)
 
                         # 새로운 세트 제품의 구성품 등록
-                        for id, quantity in compositions.items():
+                        for id, quantity in composition.items():
                             ProductComposition.objects.create(
                                 set_product_id = new_product.id,
                                 composition_product_id = id,
@@ -255,16 +344,29 @@ class ProductInfoView(View):
 
                         # 들어온 기타 정보사항 CREATE_SET에 추가
                         for key, value in input_data.items():
-                            if key in ['safe_quantity', 'keyword', 'warehouse_code', 'location']:
+                            if key in ['keyword', 'location']:
                                 CREATE_SET.update({key : value})
+
+                            if key == 'warehouse_code':
+                                if value == "":
+                                    warehouse_code = Warehouse.objects.get(main = True).code
+                                    CREATE_SET.update({key : warehouse_code })
+                                else:
+                                    CREATE_SET.update({key : value })
+
+                            if key == 'safe_quantity':
+                                if value == "":
+                                    CREATE_SET.update({key : 0})
+                                else:
+                                    CREATE_SET.update({key : value})
                         
                         # 새로운 제품 등록
                         new_product = Product.objects.create(**CREATE_SET)
                         
-                        return JsonResponse({'message' : '[Case 4] 새로운 세트 상품이 등록되었습니다.'}, status = 200)
-        
+                        return JsonResponse({'message' : '[Case 4] 새로운 일반 상품이 등록되었습니다.'}, status = 200)
+
         except IntegrityError:
-            return JsonResponse({'message' : 'compositions에 입력된 id 값을 확인해주세요'}, status = 403)
+            return JsonResponse({'message' : 'composition에 입력된 id 값을 확인해주세요'}, status = 403)        
 
 class ModifyProductInfoView(View):
     def post(self, request):
@@ -379,3 +481,77 @@ class ProductEtcDescView(View):
         
         return JsonResponse({'message' : result}, status = 200)
 ###########################################################################################################
+
+class SetInfoView(View):
+    def get(self, request):
+        product_code = request.GET.get('product_code', None)
+
+        if not product_code:
+            return JsonResponse({'message' : 'product_code를 입력해주세요'})
+        
+        product_id = Product.objects.get(product_code = product_code).id
+
+        if Product.objects.get(id = product_id).is_set == 0:
+            return JsonResponse({'message' : '세트 상품이 아닙니다.'})
+
+        composition = ProductComposition.objects.filter(set_product_id = product_id )
+
+        result_list = []
+        
+        for object in composition:
+            composition_product_id = object.composition_product.id
+            composition_product_quantity = object.quantity
+
+            product = Product.objects.get(id = composition_product_id)
+
+            dict_W = {}
+            
+            warehouse_list = QuantityByWarehouse.objects.filter(product_id = composition_product_id).values()
+                       
+            for object in warehouse_list:
+                dict_W[object['warehouse_code']] = object['total_quantity']
+
+            if product.company_code== '':
+                dict_t = {
+                    'id'                : product.id,
+                    'is_set'            : product.is_set,
+                    'company_code'      : '',
+                    'company_name'      : '',
+                    'productgroup_code' : product.product_code,
+                    'productgroup_name' : ProductGroup.objects.get(code = product.productgroup_code).name,
+                    'product_num'       : product.product_num,
+                    'product_code'      : product.product_code,
+                    'safe_quantity'     : product.safe_quantity,
+                    'keyword'           : product.keyword,
+                    'name'              : product.name,
+                    'warehouse_code'    : product.warehouse_code,
+                    'locations'         : product.location,
+                    'status'            : product.status,
+                    'consumption'       : composition_product_quantity,
+                    'stock'             : dict_W
+                    }
+                
+                result_list.append(dict_t)
+            else:
+                dict_t = {
+                    'id'                : product.id,
+                    'is_set'            : product.is_set,
+                    'company_code'      : product.company_code,
+                    'company_name'      : Company.objects.get(code = product.company_code).name ,
+                    'productgroup_code' : product.product_code,
+                    'productgroup_name' : ProductGroup.objects.get(code = product.productgroup_code).name,
+                    'product_num'       : product.product_num,
+                    'product_code'      : product.product_code,
+                    'safe_quantity'     : product.safe_quantity,
+                    'keyword'           : product.keyword,
+                    'name'              : product.name,
+                    'warehouse_code'    : product.warehouse_code,
+                    'locations'         : product.location,
+                    'status'            : product.status,
+                    'consumption'       : composition_product_quantity,
+                    'stock'             : dict_W
+                }
+            
+                result_list.append(dict_t)
+        
+        return JsonResponse({'message' : result_list}, status = 200)

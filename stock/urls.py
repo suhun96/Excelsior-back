@@ -3,9 +3,8 @@ from django.urls import path
 from stock.views import * 
 
 urlpatterns = [
-    path('inbound', ProductInboundView.as_view()),
-    path('outbound', ProductOutboundView.as_view()),
-    path('list-price', ListProductPriceView.as_view()),
-    path('list-quantity', ListProductQuantityView.as_view()),
-    path('list-warehouse', ListProductWarehouseView.as_view())
+    path('sheet', NomalStockView.as_view()),
+    path('list', QunatityByWarehouseView.as_view()),
+    path('sheet-list', SheetListView.as_view()),  # 쿼리 파라미터 type으로 필터링 가능('inbound', 'outbound)
+    path('sheet-click', ClickSheetView.as_view()), #  쿼리 파라미터 sheet_id 필요합니다
 ]

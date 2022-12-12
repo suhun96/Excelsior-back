@@ -1,9 +1,10 @@
 import json, re
 
+from datetime           import datetime
 from django.views       import View
 from django.http        import JsonResponse
-from django.db          import transaction, connection, IntegrityError
-from django.db.models   import Q
+from django.db          import transaction
+from django.db.models   import Q , Sum
 
 # Models
 from stock.models       import *
@@ -11,207 +12,354 @@ from products.models    import *
 from users.models       import *
 from locations.models   import *
 
-class ProductInboundView(View):
-    def get(self, request):
-        product_inbound_list = list(ProductInbound.objects.filter().values())
 
-        return JsonResponse({'message' : product_inbound_list}, status = 403)
+# deco
+from users.decorator    import jwt_decoder
 
-    def post(self, request):
-        input_data = request.POST
-        product_id      = input_data.get('product_id', None)
-        company_code    = input_data.get('company_code', None)
-        warehouse_code  = input_data.get('warehouse_code', None)
-        quantity        = input_data.get('quantity', None)
-        unit_price      = input_data.get('unit_price', None)
-        etc             = input_data.get('etc', None)
+class NomalStockView(View):
+    def create_sheet(self, input_data):
+        input_data = input_data
 
-        if not Product.objects.filter(id = product_id).exists():
-            return JsonResponse({'message' : '존재하지 않는 product id 입니다.'}, status = 403)
+        input_user =  1
+        input_type = input_data.get('type', None)
+        input_etc  = input_data.get('etc', None)
+        input_company = input_data.get('company_code', None)
+        input_products = input_data.get('products', None)
 
-        if not company_code:
-            return JsonResponse({'message' : '거래처가 입력되지 않았습니다.'}, status = 403)
+        new_sheet = Sheet.objects.create(
+            user_id = input_user,
+            type = input_type,
+            company_code = input_company,
+            etc  = input_etc
+        )
         
-        if not Company.objects.filter(code = company_code).exists():
-            return JsonResponse({'message' : '거래처 코드가 존재하지 않습니다.'}, status = 403)
-
-        if not warehouse_code: 
-            return JsonResponse({'message' : '창고 코드가 입력되지 않았습니다.'}, statue = 403)
-
-        if not Warehouse.objects.filter(code = warehouse_code).exists():
-            return JsonResponse({'message' : '창고 코드가 존재하지 않습니다'}, statue = 403)
-
-        if not quantity:
-            return JsonResponse({'message' : '수량이 입력되지 않았습니다.'}, statue = 403)
-
-        if not unit_price:
-            return JsonResponse({'message' : '입고 가격이 입력되지 않았습니다.'}, statue = 403)
-
-        if not etc:
-            etc = ''
-        
-        try:
-            with transaction.atomic():
-                # step 1 입고
-                ProductInbound.objects.create(
-                    unit_price = unit_price,
-                    product_id = product_id,
-                    company_code = company_code,
-                    warehouse_code = warehouse_code,
-                    quantity = quantity,
-                    etc = etc
+        for product in input_products:
+            if Product.objects.filter(product_code = product['product_code']).exists() == True:
+                quantity        = product['quantity']
+                unit_price      = product['price']
+                location        = product['location']
+                warehouse_code  = product['warehouse_code']
+                product_id      = Product.objects.get(product_code =product['product_code']).id
+                
+                new_sheet_composition = SheetComposition.objects.create(
+                    sheet_id        = new_sheet.id,
+                    product_id      = product_id,
+                    unit_price      = unit_price,
+                    quantity        = quantity, 
+                    warehouse_code  = warehouse_code,
+                    location        = location
                 )
+        
+        return new_sheet
 
-                # step 2 창고수량 수정
-                if not ProductWarehouse.objects.filter(product_id = product_id, warehouse_code = warehouse_code).exists():
-                    before_stock_quantity = 0
-                else:
-                    before_stock_quantity = ProductWarehouse.objects.get(product_id = product_id, warehouse_code = warehouse_code).stock_quantity
-                
-                after_stock_quantity = int(before_stock_quantity) + int(quantity)
-                
-                ProductWarehouse.objects.update_or_create(product_id = product_id, warehouse_code = warehouse_code,
-                    defaults={
-                        'product_id' : product_id,
-                        'warehouse_code' : warehouse_code,
-                        'stock_quantity' : after_stock_quantity
-                    })
+    def create_serial_code(self, composition, new_sheet_id):
+        now = datetime.now()
+        year    = str(now.year)
+        month   = str(now.month).zfill(2)
+        day     = str(now.day).zfill(2)
+        today = year[2:4] + month + day
 
-                # step 3 최신 입고가 수정
-                ProductPrice.objects.update_or_create( product_id =product_id, company_code = company_code,
-                    defaults={
-                        'product_id' : product_id,
-                        'inbound_price' : unit_price
-                    })
+        product_id      = composition.product.id
+        quantity        = composition.quantity
 
-                # step 4 전체 제품 수량 체크
-                stocks = ProductWarehouse.objects.filter(product_id = product_id).values('stock_quantity')
+        product_code = Product.objects.get(id = product_id).product_code
+        
+        serial_code1 = product_code + today
 
-                sum_qauntity = 0
-                
-                for stock in stocks:
-                    quantity = stock['stock_quantity']
-                    sum_qauntity = sum_qauntity + quantity
+       
+        if not SerialAction.objects.filter(serial__icontains = serial_code1).exists():
+            for i in range(quantity):
+                route = '01'
+                numbering = str(i + 1).zfill(3)
+                serial_code2 = serial_code1 + route + numbering   
+                SerialAction.objects.create(serial = serial_code2, create = new_sheet_id)
+        else:
+            last_serial = SerialAction.objects.filter(serial__icontains = serial_code1).latest('id').serial
             
-                ProductQuantity.objects.update_or_create(product_id =product_id, 
-                defaults= {
-                    'product_id' : product_id,
-                    'total_quantity' : sum_qauntity
-                })
-            return JsonResponse({'message' : '입고 처리가 완료되었습니다.'}, status = 200)    
-        
-        except:
-            return JsonResponse({'message' : '입고 처리중 예외사항이 발생했습니다.'}, status = 403)
+            before_route = last_serial.replace(serial_code1, "")
+            before_route = before_route[:2]
+            
+            after_route = int(before_route) + 1
+            
+            for i  in range(quantity):
+                numbering = str(i + 1).zfill(3)
+                serial_code2 = serial_code1 + str(after_route).zfill(2) + numbering
+                SerialAction.objects.create(serial = serial_code2, create = new_sheet_id)
 
-class ListProductQuantityView(View):
-    def get(self, request):
-        product_quantity_list = list(ProductQuantity.objects.filter().values())
-
-        return JsonResponse({'message' : product_quantity_list}, status = 200)
-
-class ListProductPriceView(View):
-    def get(self, request):
-        product_price_list = list(ProductPrice.objects.filter().values())
-
-        return JsonResponse({'message' : product_price_list}, status = 200)
-
-class ListProductWarehouseView(View):
-    def get(self, request):
-        product_Warehouse_list = list(ProductWarehouse.objects.filter().values())
-
-        return JsonResponse({'message' : product_Warehouse_list}, status = 200)
-
-class ProductOutboundView(View):
     def post(self, request):
-        input_data = request.POST
-        product_id      = input_data.get('product_id', None)
-        company_code    = input_data.get('company_code', None)
-        warehouse_code  = input_data.get('warehouse_code', None)
-        quantity        = input_data.get('quantity', None)
-        unit_price      = input_data.get('unit_price', None)
-        etc             = input_data.get('etc', None)
+        input_data = json.loads(request.body)
 
-        if not Product.objects.filter(id = product_id).exists():
-            return JsonResponse({'message' : '존재하지 않는 product id 입니다.'}, status = 403)
-
-        if not company_code:
-            return JsonResponse({'message' : '거래처가 입력되지 않았습니다.'}, status = 403)
-        
-        if not Company.objects.filter(code = company_code).exists():
-            return JsonResponse({'message' : '거래처 코드가 존재하지 않습니다.'}, status = 403)
-
-        if not warehouse_code: 
-            return JsonResponse({'message' : '창고 코드가 입력되지 않았습니다.'}, statue = 403)
-
-        if not Warehouse.objects.filter(code = warehouse_code).exists():
-            return JsonResponse({'message' : '창고 코드가 존재하지 않습니다'}, statue = 403)
-
-        if not quantity:
-            return JsonResponse({'message' : '수량이 입력되지 않았습니다.'}, statue = 403)
-
-        if not unit_price:
-            return JsonResponse({'message' : '입고 가격이 입력되지 않았습니다.'}, statue = 403)
-
-        if not etc:
-            etc = ''
+        new_sheet = self.create_sheet(input_data)
+        new_sheet_id = new_sheet.id
 
         try:
             with transaction.atomic():
-                # step 1 입고
-                ProductOutbound.objects.create(
-                    unit_price = unit_price,
-                    product_id = product_id,
-                    company_code = company_code,
-                    warehouse_code = warehouse_code,
-                    quantity = quantity,
-                    etc = etc
-                )
+                if new_sheet.type == 'inbound':
+                    compositions = SheetComposition.objects.filter(sheet_id = new_sheet_id).values(
+                            'product',
+                            'unit_price',
+                            'quantity',
+                            'warehouse_code'
+                        )
 
-                # step 2 창고수량 수정
-                if ProductWarehouse.objects.get(product_id = product_id, warehouse_code = warehouse_code).stock_quantity == 0:
-                    return JsonResponse({'message' : f'{warehouse_code}에 {product_id}상품의 수량을 확인해주세요.'}, status = 403)
+                    for composition in compositions:
+                        product_id     = composition.get('product')
+                        warehouse_code = composition.get('warehouse_code')
+                        quantity       = composition.get('quantity')
+                        # unit_price     = composition.get('unit_price') 
+                        
+                        stock = StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id)
+                        
+                        if stock.exists():
+                            before_quantity = stock.last().stock_quantity
+                            stock_quantity  = before_quantity + int(quantity)
+                        else:
+                            stock_quantity  = int(quantity)
 
-                if not ProductWarehouse.objects.filter(product_id = product_id, warehouse_code = warehouse_code).exists():
-                    return JsonResponse({'message' : f'{warehouse_code}에 {product_id}상품이 존재하지 않습니다.'}, status = 403)
-                else:
-                    before_stock_quantity = ProductWarehouse.objects.get(product_id = product_id, warehouse_code = warehouse_code).stock_quantity
-                
-                after_stock_quantity = int(before_stock_quantity) - int(quantity)
-                
-                ProductWarehouse.objects.update_or_create(product_id = product_id, warehouse_code = warehouse_code,
-                    defaults={
-                        'product_id' : product_id,
-                        'warehouse_code' : warehouse_code,
-                        'stock_quantity' : after_stock_quantity
-                    })
+                        StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id).create(
+                            sheet_id = new_sheet_id,
+                            stock_quantity = stock_quantity,
+                            product_id = product_id,
+                            warehouse_code = warehouse_code )
+                        
+                        
+                        QuantityByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id).update_or_create(
+                            product_id = product_id,
+                            warehouse_code = warehouse_code,
+                            defaults={
+                                
+                                'total_quantity' : stock_quantity,
+                            })
 
-                # step 3 최신 입고가 수정
-                ProductPrice.objects.update_or_create(product_id =product_id, company_code = company_code,
-                    defaults={
-                        'product_id' : product_id,
-                        'outbound_price' : unit_price
-                    })
+                    return JsonResponse({'message' : '입고 성공'}, status = 200)
 
-                # step 4 전체 제품 수량 체크
-                stocks = ProductWarehouse.objects.filter(product_id = product_id).values('stock_quantity')
+                if new_sheet.type == 'outbound':
+                    compositions = SheetComposition.objects.filter(sheet_id = new_sheet_id).values(
+                            'product',
+                            'unit_price',
+                            'quantity',
+                            'warehouse_code'
+                        )
 
-                sum_qauntity = 0
-                
-                for stock in stocks:
-                    quantity = stock['stock_quantity']
-                    sum_qauntity = sum_qauntity + quantity
-            
-                ProductQuantity.objects.update_or_create(product_id =product_id, 
-                defaults= {
-                    'product_id' : product_id,
-                    'total_quantity' : sum_qauntity
-                })
-            return JsonResponse({'message' : '출고 처리가 완료되었습니다.'}, status = 200)    
+                    for composition in compositions:
+                        product_id     = composition.get('product')
+                        warehouse_code = composition.get('warehouse_code')
+                        quantity       = composition.get('quantity')
+                        # unit_price     = composition.get('unit_price') 
+                        
+                        stock = StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id)
+                        
+                        if stock.exists():
+                            before_quantity = stock.last().stock_quantity
+                            stock_quantity  = before_quantity - int(quantity)
+                        else:
+                            stock_quantity  = int(quantity)
+
+                        StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id).create(
+                            sheet_id = new_sheet_id,
+                            stock_quantity = stock_quantity,
+                            product_id = product_id,
+                            warehouse_code = warehouse_code )
+                        
+                        QuantityByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id).update_or_create(
+                            product_id = product_id,
+                            warehouse_code = warehouse_code,
+                            defaults={
+                                
+                                'total_quantity' : stock_quantity,
+                            })
+                        
+                    return JsonResponse({'message' : '출고 성공'}, status = 200)
+
+                if new_sheet.type == 'generate':
+                    generated_composition = SheetComposition.objects.get(sheet_id = new_sheet_id)
+
+                    product_id     = generated_composition.product.id
+                    warehouse_code = generated_composition.warehouse_code
+                    quantity       = generated_composition.quantity
+                    # unit_price     = composition.get('unit_price') 
+
+
+                    # 재고 있는지 확인
+                    stock = StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id)
+                    
+                    if stock.exists():
+                        before_quantity = stock.last().stock_quantity
+                        stock_quantity  = before_quantity + int(quantity)
+                    else:
+                        stock_quantity  = int(quantity)
+
+                    # 창고별 입고, 출고 내역 업데이트 
+                    StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id).create(
+                        sheet_id = new_sheet_id,
+                        stock_quantity = stock_quantity,
+                        product_id = product_id,
+                        warehouse_code = warehouse_code )
+                    
+                    # 창고별 제품 총 수량
+                    QuantityByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id).update_or_create(
+                        product_id = product_id,
+                        warehouse_code = warehouse_code,
+                        defaults={
+                            
+                            'total_quantity' : stock_quantity,
+                        })
+
+                    # 소진 
+                    used_sheet = Sheet.objects.create(
+                        user_id = 1,
+                        type = 'used',
+                        company_code = 'EX',
+                        etc = f'Sheet_ID :{new_sheet_id} 세트 생산으로 인한 재고소진'
+                    )
+
+                    set_compositions = ProductComposition.objects.filter(set_product_id = product_id).values()
+
+                    for composition in set_compositions:
+                        SheetComposition.objects.create(
+                            sheet_id        = used_sheet.id,
+                            product_id      = composition['composition_product_id'],
+                            unit_price      = 333330,
+                            quantity        = composition['quantity'],
+                            warehouse_code  = warehouse_code,
+                            location        = Product.objects.get(id = composition['composition_product_id']).location,
+                            etc             = f'Sheet_ID : {new_sheet_id} 생산으로 인한 구성품 소진입니다.'
+                        )
+
+                        stock = StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = composition['composition_product_id'])
+                        
+                        if stock.exists():
+                            before_quantity = stock.last().stock_quantity
+                            stock_quantity  = before_quantity - int(composition['quantity'])
+                        else:
+                            stock_quantity  = int(composition['quantity'])
+
+                        StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = composition['composition_product_id']).create(
+                            sheet_id = used_sheet.id,
+                            stock_quantity = stock_quantity,
+                            product_id = composition['composition_product_id'],
+                            warehouse_code = warehouse_code )
+                        
+                        QuantityByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = composition['composition_product_id']).update_or_create(
+                            product_id = composition['composition_product_id'],
+                            warehouse_code = warehouse_code,
+                            defaults={
+                                
+                                'total_quantity' : stock_quantity,
+                            })
+                    
+                    # serial code 생선
+                    self.create_serial_code(generated_composition, new_sheet_id)
+                    serial_codes = SerialAction.objects.filter(create = new_sheet_id).values('serial')
+                    serial_code_list = []
+                    for serial_code in serial_codes:
+                        serial_code_list.append(serial_code['serial'])
+                    
+                    return JsonResponse({'message' : '생산 성공', 'serial_list' : serial_code_list}, status = 200)
+        except KeyError:
+            return JsonResponse({'message' : 'keyerror'}, status = 403)
+
+
+class QunatityByWarehouseView(View):
+    def get(self, request):
         
-        except:
-            return JsonResponse({'message' : '출고 처리중 예외사항이 발생했습니다.'}, status = 403)
+        product_code_list = request.GET.getlist('product_code', None)
+        
+        list_A = []
+        for product_code in product_code_list:
+            product = Product.objects.get(product_code = product_code)
+            product_id = product.id
+            warehouse_list = QuantityByWarehouse.objects.filter(product_id = product_id).values('warehouse_code', 'total_quantity')
+            dict_product = {}
+            dict_product_id = {product_code : dict_product}
+            for warehouse_code in warehouse_list:
+                code = warehouse_code['warehouse_code']
+                total_quantity = warehouse_code['total_quantity']
+                dict_product[code] = total_quantity   
+            
+            list_A.append(dict_product_id)
 
-class SetProductionView(View):
-    def post(self, request):
-        input
-        return 
+        return JsonResponse({'message' : list_A})
+
+
+class SheetListView(View):
+    def get(self, request):
+        type = request.GET.get('type', None)
+
+        q = Q()
+        if type:
+            q &= Q(type__icontains = type)
+
+        
+        sheets = Sheet.objects.filter(q).values(
+            'id',
+            'user',
+            'type',
+            'company_code',
+            'etc',
+            'created_at'
+        ).order_by('created_at')
+
+        for_list = []
+        for sheet in sheets:
+            id           = sheet['id']
+            user_name    = User.objects.get(id = sheet['user']).name
+            type         = sheet['type']
+            # type 체인지
+            if type == 'inbound':
+                type = '입고'
+            elif type == 'outbound':
+                type = '출고'
+            elif type == 'generate':
+                type = '세트 생산'
+            elif type == 'used':
+                type = '소모'
+
+            company_name = Company.objects.get(code = sheet['company_code']).name
+            etc          = sheet['etc']
+            created_at   = sheet['created_at']
+            
+            dict = {
+                'ID'      :  id,       
+                '타입'      : type,
+                '작성자'    : user_name,
+                '회사명'    : company_name,
+                '비고란'    : etc,
+                '작성일'    : created_at
+            }
+            
+            for_list.append(dict)
+
+
+        return JsonResponse({'message' : for_list}, status = 200)
+
+class ClickSheetView(View):
+    def get(self, request):
+        sheet_id = request.GET.get('sheet_id', None)
+
+        if not sheet_id:
+            return JsonResponse({'message' : 'sheet id 가 입력되지 않았습니다.'}, status = 200)
+
+        compositions = SheetComposition.objects.filter(sheet_id = sheet_id).values()
+
+        for_list = []
+        for composition in compositions:
+            product = Product.objects.get(id = composition['product_id'])
+            total = QuantityByWarehouse.objects.filter(product_id = product.id).aggregate(Sum('total_quantity'))
+            dict = {
+                'product_code'          : product.product_code,
+                'product_group_name'    : ProductGroup.objects.get(code = product.productgroup_code).name,
+                'company_name'          : Company.objects.get(code = product.company_code).name,
+                'unit_price'            : composition['unit_price'],
+                'quantity'              : composition['quantity'],
+                'total_quantity'        : total['total_quantity__sum'],
+                'warehouse_name'        : Warehouse.objects.get(code = composition['warehouse_code']).name,
+                'stock_quantity'        : QuantityByWarehouse.objects.get(warehouse_code = composition['warehouse_code'], product_id = product.id).total_quantity,
+                'stock_location'        : composition['location'],
+                'etc'                   : composition['etc']   
+            } 
+            for_list.append(dict)
+
+        return JsonResponse({'message' : for_list}, status = 200)
+    
+ 
