@@ -554,3 +554,30 @@ class SetInfoView(View):
                 result_list.append(dict_t)
         
         return JsonResponse({'message' : result_list}, status = 200)
+
+
+class ProductStatusView(View):
+    @jwt_decoder
+    def post(self, request):
+        input_data = request.POST
+        user = request.user
+        product_id = input_data.get('product_id', None)
+        try:
+            with transaction.atomic():
+
+                if not product_id:
+                    return JsonResponse({'message' : "product_id를 입력해주세요"}, status = 403)
+
+                if user.admin == False:
+                    return JsonResponse({'message' : '당신은 권한이 없습니다. '}, status = 403)
+
+                if input_data['status'] == "False":
+                    Product.objects.filter(id = product_id).update( status = False)
+                    return JsonResponse({'message' : '제품 상태 False'}, status = 200)
+                
+                if input_data['status'] == "True": 
+                    Product.objects.filter(id = product_id).update( status = True)
+                    return JsonResponse({'message' : '제품 상태 True'}, status = 200)
+
+        except Exception:
+            return JsonResponse({'message' : '예외 사항이 발생해서 트랜잭션을 중지했습니다.'}, status = 403)
