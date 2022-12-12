@@ -413,8 +413,8 @@ class ProductEtcTitleView(View):
             UPDATE_SET = {}
 
             for key, value in input_data.items():
-                if key == 'modify_title':
-                    UPDATE_SET.update({'title' : value})
+                if key == 'title':
+                    UPDATE_SET.update({key : value})
                 if key == 'status':
                     if value == 'false':
                         UPDATE_SET.update({'status': False})
