@@ -424,7 +424,6 @@ class ProductEtcTitleView(View):
             ProductEtcTitle.objects.filter(id = etc_title_id).update(**UPDATE_SET)
             return JsonResponse({'message' : 'updated'}, status = 200)
         
-            
 
     def get(self, request):
         # 권한 설정
