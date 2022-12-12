@@ -15,7 +15,7 @@ from locations.models   import *
 from stock.models       import *
 
 # decorator & utills 
-from users.decorator    import jwt_decoder, check_status
+from users.decorator    import jwt_decoder
 from products.utils     import *
 
 class ProductGroupView(View):
