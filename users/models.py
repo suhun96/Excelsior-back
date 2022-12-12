@@ -15,3 +15,21 @@ class User(models.Model):
 
     class Meta:
         db_table = 'users'
+
+class UserPermission(models.Model):
+    uesr = models.ForeignKey(User, on_delete = models.CASCADE)
+    per1 = models.BooleanField(default = False)
+    per2 = models.BooleanField(default = False)
+    per3 = models.BooleanField(default = False)
+    
+    class Meta:
+        db_table = 'user_permission'
+
+class PermissionGroup(models.Model):
+    title = models.CharField(max_length= 300, default= '그룹 제목')
+    per1 = models.IntegerField(default=0)
+    per2 = models.IntegerField(default=0)
+    per3 = models.IntegerField(default=0)
+
+    class Meta:
+        db_table = 'permission_group'

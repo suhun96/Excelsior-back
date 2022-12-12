@@ -98,11 +98,15 @@ class SignInView(View):
         input_pw = signin_data['password']
         user = User.objects.filter(phone = signin_data['phone'])
         try:
+
             if user.exists() == False:
                 return JsonResponse({'Message' : 'The mobile phone number you entered does not exist.'}, status = 402)
             
             try_user = User.objects.get(phone = signin_data['phone'])
-        
+
+            if try_user.status == False:
+                return JsonResponse({'message' : '관리자에게 계정 허가를 요청하세요.'}, status = 403)
+
             if bcrypt.checkpw(input_pw.encode('utf-8'), try_user.password.encode('utf-8') ) == False:
                 return JsonResponse({'Message' : 'Please check the password.'}, status = 402)
             
