@@ -128,8 +128,8 @@ class CompanyModifyView(View):
 class CompanyEtcTitleView(View):
     def post(self, request):
         input_data = request.POST
+        company_etc_id = input_data.get('company_etc_id', None)
         
-        # 나중에 권한 적용
         try:
             with transaction.atomic():
                 UPDATE_SET = {}
@@ -137,15 +137,16 @@ class CompanyEtcTitleView(View):
                 for key, value in input_data.items():
                     if key == 'company_etc_title':
                         UPDATE_SET.update({'title' : value})
-                    if key == 'company_etc_status':
-                        if value == 'false':
+                        print(value)
+                    if key == 'status':
+                        if value == 'False':
                             UPDATE_SET.update({'status': False})
-                        elif value == 'true':
+                        elif value == 'True':
                             UPDATE_SET.update({'status': True})
-
-                CompanyEtcTitle.objects.filter(id = input_data['company_etc_id']).update(**UPDATE_SET)
-                return JsonResponse({'message' : 'updated'}, status = 200)
-        except:
+                
+                CompanyEtcTitle.objects.filter(id = company_etc_id).update(**UPDATE_SET)
+            return JsonResponse({'message' : 'updated'}, status = 200)
+        except Exception:
             return JsonResponse({'message' : '예외 사항 발생'}, status = 403)
 
     def get(self, request):
@@ -225,3 +226,29 @@ class CompanyPhonebookView(View):
         )
 
         return JsonResponse({'test' : 'check'}, status = 200)
+
+class CompnayStatusView(View):
+    @jwt_decoder
+    def post(self, request):
+        input_data = request.POST
+        user = request.user
+        company_id = input_data.get('company_id', None)
+        try:
+            with transaction.atomic():
+
+                if not company_id:
+                    return JsonResponse({'message' : "company_id를 입력해주세요"}, status = 403)
+
+                if user.admin == False:
+                    return JsonResponse({'message' : '당신은 권한이 없습니다. '}, status = 403)
+
+                if input_data['status'] == "False":
+                    Company.objects.filter(id = company_id).update( status = False)
+                    return JsonResponse({'message' : '회사 상태 False'}, status = 200)
+                
+                if input_data['status'] == "True": 
+                    Company.objects.filter(id = company_id).update( status = True)
+                    return JsonResponse({'message' : '회사 그룹 상태 True'}, status = 200)
+
+        except Exception:
+            return JsonResponse({'message' : '예외 사항이 발생해서 트랜잭션을 중지했습니다.'}, status = 403)
