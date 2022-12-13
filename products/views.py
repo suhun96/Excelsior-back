@@ -20,8 +20,7 @@ from products.utils     import *
 
 import telegram
 from my_settings        import TELEGRAM_TOKEN, CHAT_ID
-TELEGRAM_TOKEN = TELEGRAM_TOKEN
-CHAT_ID = CHAT_ID
+
 
 class ProductGroupView(View):
     def get(self, request):
