@@ -35,7 +35,8 @@ class ProductGroupView(View):
             return JsonResponse({'message' : result}, status = 200)
         except:
             return JsonResponse({'message' : '예외 상황 발생'}, status = 403)
-   
+            
+    @jwt_decoder
     def post(self, request):
         input_data = request.POST
 
@@ -80,6 +81,7 @@ class ProductGroupView(View):
         return JsonResponse({'message' : check_PG}, status = 200)
 
 class ModifyProductGroupView(View):
+    @jwt_decoder
     def post(self, request):
         input_data = request.POST
         group_id = request.GET.get('group_id')
@@ -171,7 +173,7 @@ class ProductInfoView(View):
         return JsonResponse({'message' : result_list}, status = 200)
         # except KeyError:
         #     return JsonResponse({'message' : 'keyerror'}, status = 403)
-    
+    @jwt_decoder
     def post(self, request):
         input_data = json.loads(request.body)
         name = input_data.get('name', None)
@@ -374,6 +376,7 @@ class ProductInfoView(View):
             return JsonResponse({'message' : 'composition에 입력된 id 값을 확인해주세요'}, status = 403)        
 
 class ModifyProductInfoView(View):
+    @jwt_decoder
     def post(self, request):
         input_data = request.POST
         product_id = input_data.get('id', None)
@@ -407,6 +410,7 @@ class ModifyProductInfoView(View):
             return JsonResponse({'message' : '예외 사항 발생'}, status = 403)
 
 class ProductEtcTitleView(View):
+    @jwt_decoder
     def post(self, request):
         input_data = request.POST
         etc_title_id = input_data.get('etc_title_id', None)
@@ -437,6 +441,7 @@ class ProductEtcTitleView(View):
         return JsonResponse({'message' : title_list}, status = 200)
 
 class ProductEtcDescView(View):
+    @jwt_decoder
     def post(self, request):
         input_data = request.POST
         product_id = input_data.get('product_id', None)

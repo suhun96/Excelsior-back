@@ -42,9 +42,9 @@ class CompanyView(View):
 
         return JsonResponse({'message' : result} , status = 200)
 
+    @jwt_decoder
     def post(self, request):
         input_data = request.POST
-        print1 = input_data
         try:
             with transaction.atomic():
                 # 필수값 (이름, 코드, 번호)이 있는지 확인 없으면 에러 발생.
@@ -88,11 +88,12 @@ class CompanyView(View):
 
                 check_created = list(Company.objects.filter(id = new_company.id).values())
 
-            return JsonResponse({'message' : check_created, 'take' : print1}, status = 200)
+            return JsonResponse({'message' : check_created}, status = 200)
         except KeyError:
             return JsonResponse({'message' : 'KEY ERROR'}, status = 403)
 
 class CompanyModifyView(View):
+    @jwt_decoder
     def post(self, request):
         modify_data = request.POST
         company_id = request.GET.get('id')
@@ -126,6 +127,7 @@ class CompanyModifyView(View):
             return JsonResponse({'message' : "예외 사항이 발생했습니다."}, status = 403)
 
 class CompanyEtcTitleView(View):
+    @jwt_decoder
     def post(self, request):
         input_data = request.POST
         company_etc_id = input_data.get('company_etc_id', None)
@@ -137,7 +139,7 @@ class CompanyEtcTitleView(View):
                 for key, value in input_data.items():
                     if key == 'company_etc_title':
                         UPDATE_SET.update({'title' : value})
-                        print(value)
+                    
                     if key == 'status':
                         if value == 'False':
                             UPDATE_SET.update({'status': False})
@@ -156,6 +158,7 @@ class CompanyEtcTitleView(View):
         return JsonResponse({'message' : title_list}, status = 200)   
 
 class CompanyEtcDescView(View):
+    @jwt_decoder
     def post(self, request):
         input_data = request.POST
         
@@ -212,7 +215,7 @@ class CompanyPhonebookView(View):
         ))
 
         return JsonResponse({'message' : check}, status = 200)
-    
+    @jwt_decoder
     def post(self, request):
         input_data = request.POST
 
