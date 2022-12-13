@@ -40,7 +40,8 @@ class ProductGroupView(View):
             return JsonResponse({'message' : result}, status = 200)
         except:
             return JsonResponse({'message' : '예외 상황 발생'}, status = 403)
-   
+            
+    @jwt_decoder
     def post(self, request):
         input_data = request.POST
 
@@ -85,6 +86,7 @@ class ProductGroupView(View):
         return JsonResponse({'message' : check_PG}, status = 200)
 
 class ModifyProductGroupView(View):
+    @jwt_decoder
     def post(self, request):
         input_data = request.POST
         group_id = request.GET.get('group_id')
@@ -120,7 +122,7 @@ class ProductInfoView(View):
         if name:
             q &= Q(name__icontains = name)
         if keyword:
-            q &= Q(search_word__icontains = keyword)
+            q &= Q(keyword__icontains = keyword)
         if productgroup_code:
             q &= Q(productgroup_code__icontains = productgroup_code)
         if warehouse_code:
@@ -146,7 +148,8 @@ class ProductInfoView(View):
                     'keyword'           : product['keyword'],
                     'name'              : product['name'],
                     'warehouse_code'    : product['warehouse_code'],
-                    'locations'         : product['location'],
+                    'warehouse_name'    : Warehouse.objects.get(code = product['warehouse_code']).name,
+                    'location'         : product['location'],
                     'status'            : product['status'],
                 }
                 result_list.append(dict_t)
@@ -165,7 +168,8 @@ class ProductInfoView(View):
                     'keyword'           : product['keyword'],
                     'name'              : product['name'],
                     'warehouse_code'    : product['warehouse_code'],
-                    'locations'         : product['location'],
+                    'warehouse_name'    : Warehouse.objects.get(code = product['warehouse_code']).name,
+                    'location'         : product['location'],
                     'status'            : product['status'],
                 }
                 result_list.append(dict_t)
@@ -174,7 +178,7 @@ class ProductInfoView(View):
         return JsonResponse({'message' : result_list}, status = 200)
         # except KeyError:
         #     return JsonResponse({'message' : 'keyerror'}, status = 403)
-    
+    @jwt_decoder
     def post(self, request):
         input_data = json.loads(request.body)
         name = input_data.get('name', None)
@@ -200,7 +204,6 @@ class ProductInfoView(View):
             if not Warehouse.objects.filter(code = input_data['warehouse_code']).exists():
                 return JsonResponse({'message' : '존재하지 않는 창고 코드입니다.'}, status = 403)
 
-
         try:
             with transaction.atomic():
                 # 회사코드가 있으면
@@ -225,7 +228,8 @@ class ProductInfoView(View):
                             'productgroup_code' : product_group_code , 
                             'company_code' : company_code, 
                             'name' : name,
-                            'product_num' : product_num
+                            'product_num'  : product_num,
+                            'product_code' : company_code + product_group_code + product_num
                         }
                         # 들어온 기타 정보사항 CREATE_SET에 추가
                         for key, value in input_data.items():
@@ -262,9 +266,10 @@ class ProductInfoView(View):
                         CREATE_SET = {
                             'is_set' : False,  
                             'productgroup_code' : product_group_code , 
-                            'company_code' : company_code, 
-                            'name' : name,
-                            'product_num' : product_num
+                            'company_code'      : company_code, 
+                            'name'              : name,
+                            'product_num'       : product_num,
+                            'product_code'      : company_code + product_group_code + product_num
                         }
 
                         # 들어온 기타 정보사항 CREATE_SET에 추가
@@ -307,7 +312,8 @@ class ProductInfoView(View):
                             'is_set' : True,  
                             'productgroup_code' : product_group_code ,  
                             'name' : name,
-                            'product_num' : product_num
+                            'product_num' : product_num,
+                            'product_code' : product_group_code + product_num
                         }
                         # 들어온 기타 정보사항 CREATE_SET에 추가
                         for key, value in input_data.items():
@@ -344,7 +350,8 @@ class ProductInfoView(View):
                             'is_set' : False,  
                             'productgroup_code' : product_group_code ,  
                             'name' : name,
-                            'product_num' : product_num
+                            'product_num' : product_num,
+                            'product_code' : product_group_code + product_num
                         }
 
                         # 들어온 기타 정보사항 CREATE_SET에 추가
@@ -374,6 +381,7 @@ class ProductInfoView(View):
             return JsonResponse({'message' : 'composition에 입력된 id 값을 확인해주세요'}, status = 403)        
 
 class ModifyProductInfoView(View):
+    @jwt_decoder
     def post(self, request):
         input_data = request.POST
         product_id = input_data.get('id', None)
@@ -407,6 +415,7 @@ class ModifyProductInfoView(View):
             return JsonResponse({'message' : '예외 사항 발생'}, status = 403)
 
 class ProductEtcTitleView(View):
+    @jwt_decoder
     def post(self, request):
         input_data = request.POST
         etc_title_id = input_data.get('etc_title_id', None)
@@ -437,6 +446,7 @@ class ProductEtcTitleView(View):
         return JsonResponse({'message' : title_list}, status = 200)
 
 class ProductEtcDescView(View):
+    @jwt_decoder
     def post(self, request):
         input_data = request.POST
         product_id = input_data.get('product_id', None)
@@ -529,7 +539,7 @@ class SetInfoView(View):
                     'keyword'           : product.keyword,
                     'name'              : product.name,
                     'warehouse_code'    : product.warehouse_code,
-                    'locations'         : product.location,
+                    'location'          : product.location,
                     'status'            : product.status,
                     'consumption'       : composition_product_quantity,
                     'stock'             : dict_W
@@ -550,7 +560,7 @@ class SetInfoView(View):
                     'keyword'           : product.keyword,
                     'name'              : product.name,
                     'warehouse_code'    : product.warehouse_code,
-                    'locations'         : product.location,
+                    'location'          : product.location,
                     'status'            : product.status,
                     'consumption'       : composition_product_quantity,
                     'stock'             : dict_W

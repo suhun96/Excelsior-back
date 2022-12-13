@@ -19,40 +19,55 @@ from products.utils     import telegram_bot
 
 
 class NomalStockView(View):
-    def create_sheet(self, input_data):
+    def create_sheet(self, input_data, user):
+        user = user
         input_data = input_data
 
-        input_user =  1
+        input_user =  user.id
         input_type = input_data.get('type', None)
         input_etc  = input_data.get('etc', None)
         input_company = input_data.get('company_code', None)
         input_products = input_data.get('products', None)
-
-        new_sheet = Sheet.objects.create(
-            user_id = input_user,
-            type = input_type,
-            company_code = input_company,
-            etc  = input_etc
-        )
-        
-        for product in input_products:
-            if Product.objects.filter(product_code = product['product_code']).exists() == True:
-                quantity        = product['quantity']
-                unit_price      = product['price']
-                location        = product['location']
-                warehouse_code  = product['warehouse_code']
-                product_id      = Product.objects.get(product_code =product['product_code']).id
-                
-                new_sheet_composition = SheetComposition.objects.create(
-                    sheet_id        = new_sheet.id,
-                    product_id      = product_id,
-                    unit_price      = unit_price,
-                    quantity        = quantity, 
-                    warehouse_code  = warehouse_code,
-                    location        = location
+        try:
+            with transaction.atomic():
+                new_sheet = Sheet.objects.create(
+                    user_id = input_user,
+                    type = input_type,
+                    company_code = input_company,
+                    etc  = input_etc
                 )
-        
-        return new_sheet
+
+                if not input_products:
+                    raise Exception({'message' : '입,출고서에 제품을 비워 등록할 수 없습니다.'})
+                
+
+                for product in input_products:
+                    product_code = product['product_code']
+
+                    if Product.objects.filter(product_code = product_code).exists() == False:
+                        raise Exception({'message' : f'{product_code}는 존재하지 않습니다.'}) 
+                        
+                    quantity        = product['quantity']
+                    warehouse_code  = product['warehouse_code']
+                    product_id      = Product.objects.get(product_code =product['product_code']).id
+                    unit_price      = product['price']
+                    location        = product['location']
+                
+
+                    new_sheet_composition = SheetComposition.objects.create(
+                        sheet_id        = new_sheet.id,
+                        product_id      = product_id,
+                        quantity        = quantity, 
+                        warehouse_code  = warehouse_code,
+                        location        = location,
+                        unit_price      = unit_price,
+                    )
+
+            return new_sheet
+        except:
+            raise Exception({'message' : 'sheet를 생성하는중 에러가 발생했습니다.'})
+                
+            
 
     def create_serial_code(self, composition, new_sheet_id):
         now = datetime.now()
@@ -87,11 +102,13 @@ class NomalStockView(View):
                 numbering = str(i + 1).zfill(3)
                 serial_code2 = serial_code1 + str(after_route).zfill(2) + numbering
                 SerialAction.objects.create(serial = serial_code2, create = new_sheet_id)
-
+    
+    @jwt_decoder
     def post(self, request):
         input_data = json.loads(request.body)
+        user = request.user
 
-        new_sheet = self.create_sheet(input_data)
+        new_sheet = self.create_sheet(input_data, user)
         new_sheet_id = new_sheet.id
 
         try:
@@ -326,12 +343,12 @@ class SheetListView(View):
             created_at   = sheet['created_at']
             
             dict = {
-                'ID'      :  id,       
-                '타입'      : type,
-                '작성자'    : user_name,
-                '회사명'    : company_name,
-                '비고란'    : etc,
-                '작성일'    : created_at
+                'id'        :  id,       
+                'type'      : type,
+                'user'      : user_name,
+                'created_at'    : created_at,
+                'company_name'  : company_name,
+                'etc'       : etc
             }
             
             for_list.append(dict)
@@ -352,20 +369,76 @@ class ClickSheetView(View):
         for composition in compositions:
             product = Product.objects.get(id = composition['product_id'])
             total = QuantityByWarehouse.objects.filter(product_id = product.id).aggregate(Sum('total_quantity'))
-            dict = {
-                'product_code'          : product.product_code,
-                'product_group_name'    : ProductGroup.objects.get(code = product.productgroup_code).name,
-                'company_name'          : Company.objects.get(code = product.company_code).name,
-                'unit_price'            : composition['unit_price'],
-                'quantity'              : composition['quantity'],
-                'total_quantity'        : total['total_quantity__sum'],
-                'warehouse_name'        : Warehouse.objects.get(code = composition['warehouse_code']).name,
-                'stock_quantity'        : QuantityByWarehouse.objects.get(warehouse_code = composition['warehouse_code'], product_id = product.id).total_quantity,
-                'stock_location'        : composition['location'],
-                'etc'                   : composition['etc']   
-            } 
+
+            if product.company_code == "" :
+                dict = {
+                    'product_code'          : product.product_code,
+                    'product_group_name'    : ProductGroup.objects.get(code = product.productgroup_code).name,
+                    'unit_price'            : composition['unit_price'],
+                    'quantity'              : composition['quantity'],
+                    'total_quantity'        : total['total_quantity__sum'],
+                    'warehouse_name'        : Warehouse.objects.get(code = composition['warehouse_code']).name,
+                    'stock_quantity'        : QuantityByWarehouse.objects.get(warehouse_code = composition['warehouse_code'], product_id = product.id).total_quantity,
+                    'stock_location'        : composition['location'],
+                    'etc'                   : composition['etc']   
+                } 
+            else:
+                dict = {
+                    'product_code'          : product.product_code,
+                    'product_group_name'    : ProductGroup.objects.get(code = product.productgroup_code).name,
+                    'company_name'          : Company.objects.get(code = product.company_code).name,
+                    'unit_price'            : composition['unit_price'],
+                    'quantity'              : composition['quantity'],
+                    'total_quantity'        : total['total_quantity__sum'],
+                    'warehouse_name'        : Warehouse.objects.get(code = composition['warehouse_code']).name,
+                    'stock_quantity'        : QuantityByWarehouse.objects.get(warehouse_code = composition['warehouse_code'], product_id = product.id).total_quantity,
+                    'stock_location'        : composition['location'],
+                    'etc'                   : composition['etc']   
+                }
+
             for_list.append(dict)
 
         return JsonResponse({'message' : for_list}, status = 200)
     
  
+class TotalQuantityView(View):
+    def get(self, request):
+        warehouse_code = request.GET.get('warehouse_code', None)
+
+        result_list = []
+
+        if warehouse_code:
+            check = QuantityByWarehouse.objects.filter(warehouse_code = warehouse_code)
+
+            for obj in check:
+                get_product = Product.objects.get(id = obj.product_id)
+                dict = {
+                    'product_code' : get_product.product_code,
+                    'product_name' : get_product.name,
+                    'warehouse_code' : obj.warehouse_code,
+                    'warehouse_name' : Warehouse.objects.get(code = obj.warehouse_code).name,
+                    'status'       : get_product.status,
+                    'safe_quantity': get_product.safe_quantity,
+                    'quantity'     : obj.total_quantity
+                }
+                result_list.append(dict) 
+            return JsonResponse({'message': result_list})
+        
+        else:
+            ids = []
+            
+            for product_id in QuantityByWarehouse.objects.all().values('product'):
+                ids.append(product_id['product'])
+
+            for num in set(ids):
+                get_product = Product.objects.get(id = num)
+                check = QuantityByWarehouse.objects.filter(product_id = num).aggregate(quantity = Sum('total_quantity'))
+                dict = {
+                    'product_code' : get_product.product_code,
+                    'product_name' : get_product.name,
+                    'status'       : get_product.status,
+                    'safe_quantity': get_product.safe_quantity,
+                    'quantity'     : check['quantity']
+                }
+                result_list.append(dict) 
+            return JsonResponse({'message': result_list})

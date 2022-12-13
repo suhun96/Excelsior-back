@@ -35,6 +35,7 @@ class CreateWarehouseTypeView(View):
         return JsonResponse({'message' : type_list }, status = 200)
 
 class WarehouseInfoView(View):
+    @jwt_decoder
     def post(self, request):
         input_data = request.POST
         
