@@ -383,3 +383,6 @@ class ClickSheetView(View):
         return JsonResponse({'message' : for_list}, status = 200)
     
  
+class TotalQuantityView(View):
+    def get(self, request):
+        ㅅ
