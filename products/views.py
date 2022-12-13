@@ -141,6 +141,7 @@ class ProductInfoView(View):
                     'keyword'           : product['keyword'],
                     'name'              : product['name'],
                     'warehouse_code'    : product['warehouse_code'],
+                    'warehouse_name'    : Warehouse.objects.get(code = product['warehouse_code']).name,
                     'locations'         : product['location'],
                     'status'            : product['status'],
                 }
@@ -160,6 +161,7 @@ class ProductInfoView(View):
                     'keyword'           : product['keyword'],
                     'name'              : product['name'],
                     'warehouse_code'    : product['warehouse_code'],
+                    'warehouse_name'    : Warehouse.objects.get(code = product['warehouse_code']).name,
                     'locations'         : product['location'],
                     'status'            : product['status'],
                 }
@@ -195,7 +197,6 @@ class ProductInfoView(View):
             if not Warehouse.objects.filter(code = input_data['warehouse_code']).exists():
                 return JsonResponse({'message' : '존재하지 않는 창고 코드입니다.'}, status = 403)
 
-
         try:
             with transaction.atomic():
                 # 회사코드가 있으면
@@ -220,7 +221,8 @@ class ProductInfoView(View):
                             'productgroup_code' : product_group_code , 
                             'company_code' : company_code, 
                             'name' : name,
-                            'product_num' : product_num
+                            'product_num'  : product_num,
+                            'product_code' : company_code + product_group_code + product_num
                         }
                         # 들어온 기타 정보사항 CREATE_SET에 추가
                         for key, value in input_data.items():
@@ -257,9 +259,10 @@ class ProductInfoView(View):
                         CREATE_SET = {
                             'is_set' : False,  
                             'productgroup_code' : product_group_code , 
-                            'company_code' : company_code, 
-                            'name' : name,
-                            'product_num' : product_num
+                            'company_code'      : company_code, 
+                            'name'              : name,
+                            'product_num'       : product_num,
+                            'product_code'      : company_code + product_group_code + product_num
                         }
 
                         # 들어온 기타 정보사항 CREATE_SET에 추가
@@ -302,7 +305,8 @@ class ProductInfoView(View):
                             'is_set' : True,  
                             'productgroup_code' : product_group_code ,  
                             'name' : name,
-                            'product_num' : product_num
+                            'product_num' : product_num,
+                            'product_code' : product_group_code + product_num
                         }
                         # 들어온 기타 정보사항 CREATE_SET에 추가
                         for key, value in input_data.items():
@@ -339,7 +343,8 @@ class ProductInfoView(View):
                             'is_set' : False,  
                             'productgroup_code' : product_group_code ,  
                             'name' : name,
-                            'product_num' : product_num
+                            'product_num' : product_num,
+                            'product_code' : product_group_code + product_num
                         }
 
                         # 들어온 기타 정보사항 CREATE_SET에 추가

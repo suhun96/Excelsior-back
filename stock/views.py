@@ -33,21 +33,23 @@ class NomalStockView(View):
             etc  = input_etc
         )
         
+
         for product in input_products:
             if Product.objects.filter(product_code = product['product_code']).exists() == True:
                 quantity        = product['quantity']
-                unit_price      = product['price']
-                location        = product['location']
                 warehouse_code  = product['warehouse_code']
                 product_id      = Product.objects.get(product_code =product['product_code']).id
-                
+                unit_price      = product['price']
+                location        = product['location']
+            
+
                 new_sheet_composition = SheetComposition.objects.create(
                     sheet_id        = new_sheet.id,
                     product_id      = product_id,
-                    unit_price      = unit_price,
                     quantity        = quantity, 
                     warehouse_code  = warehouse_code,
-                    location        = location
+                    location        = location,
+                    unit_price      = unit_price,
                 )
         
         return new_sheet
@@ -346,18 +348,33 @@ class ClickSheetView(View):
         for composition in compositions:
             product = Product.objects.get(id = composition['product_id'])
             total = QuantityByWarehouse.objects.filter(product_id = product.id).aggregate(Sum('total_quantity'))
-            dict = {
-                'product_code'          : product.product_code,
-                'product_group_name'    : ProductGroup.objects.get(code = product.productgroup_code).name,
-                'company_name'          : Company.objects.get(code = product.company_code).name,
-                'unit_price'            : composition['unit_price'],
-                'quantity'              : composition['quantity'],
-                'total_quantity'        : total['total_quantity__sum'],
-                'warehouse_name'        : Warehouse.objects.get(code = composition['warehouse_code']).name,
-                'stock_quantity'        : QuantityByWarehouse.objects.get(warehouse_code = composition['warehouse_code'], product_id = product.id).total_quantity,
-                'stock_location'        : composition['location'],
-                'etc'                   : composition['etc']   
-            } 
+
+            if product.company_code == "" :
+                dict = {
+                    'product_code'          : product.product_code,
+                    'product_group_name'    : ProductGroup.objects.get(code = product.productgroup_code).name,
+                    'unit_price'            : composition['unit_price'],
+                    'quantity'              : composition['quantity'],
+                    'total_quantity'        : total['total_quantity__sum'],
+                    'warehouse_name'        : Warehouse.objects.get(code = composition['warehouse_code']).name,
+                    'stock_quantity'        : QuantityByWarehouse.objects.get(warehouse_code = composition['warehouse_code'], product_id = product.id).total_quantity,
+                    'stock_location'        : composition['location'],
+                    'etc'                   : composition['etc']   
+                } 
+            else:
+                dict = {
+                    'product_code'          : product.product_code,
+                    'product_group_name'    : ProductGroup.objects.get(code = product.productgroup_code).name,
+                    'company_name'          : Company.objects.get(code = product.company_code).name,
+                    'unit_price'            : composition['unit_price'],
+                    'quantity'              : composition['quantity'],
+                    'total_quantity'        : total['total_quantity__sum'],
+                    'warehouse_name'        : Warehouse.objects.get(code = composition['warehouse_code']).name,
+                    'stock_quantity'        : QuantityByWarehouse.objects.get(warehouse_code = composition['warehouse_code'], product_id = product.id).total_quantity,
+                    'stock_location'        : composition['location'],
+                    'etc'                   : composition['etc']   
+                }
+
             for_list.append(dict)
 
         return JsonResponse({'message' : for_list}, status = 200)
