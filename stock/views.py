@@ -32,6 +32,9 @@ class NomalStockView(View):
             company_code = input_company,
             etc  = input_etc
         )
+
+        if not input_products:
+            return JsonResponse({'message' : '입,출고서에 제품을 비워 등록할 수 없습니다.'}, status = 403)
         
 
         for product in input_products:
@@ -322,12 +325,12 @@ class SheetListView(View):
             created_at   = sheet['created_at']
             
             dict = {
-                'ID'      :  id,       
-                '타입'      : type,
-                '작성자'    : user_name,
-                '회사명'    : company_name,
-                '비고란'    : etc,
-                '작성일'    : created_at
+                'id'        :  id,       
+                'type'      : type,
+                'user'      : user_name,
+                'created_at'    : created_at,
+                'company_name'  : company_name,
+                'etc'       : etc
             }
             
             for_list.append(dict)
