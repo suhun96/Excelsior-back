@@ -115,7 +115,7 @@ class ProductInfoView(View):
         if name:
             q &= Q(name__icontains = name)
         if keyword:
-            q &= Q(search_word__icontains = keyword)
+            q &= Q(keyword__icontains = keyword)
         if productgroup_code:
             q &= Q(productgroup_code__icontains = productgroup_code)
         if warehouse_code:
@@ -142,7 +142,7 @@ class ProductInfoView(View):
                     'name'              : product['name'],
                     'warehouse_code'    : product['warehouse_code'],
                     'warehouse_name'    : Warehouse.objects.get(code = product['warehouse_code']).name,
-                    'locations'         : product['location'],
+                    'location'         : product['location'],
                     'status'            : product['status'],
                 }
                 result_list.append(dict_t)
@@ -162,7 +162,7 @@ class ProductInfoView(View):
                     'name'              : product['name'],
                     'warehouse_code'    : product['warehouse_code'],
                     'warehouse_name'    : Warehouse.objects.get(code = product['warehouse_code']).name,
-                    'locations'         : product['location'],
+                    'location'         : product['location'],
                     'status'            : product['status'],
                 }
                 result_list.append(dict_t)
@@ -529,7 +529,7 @@ class SetInfoView(View):
                     'keyword'           : product.keyword,
                     'name'              : product.name,
                     'warehouse_code'    : product.warehouse_code,
-                    'locations'         : product.location,
+                    'location'          : product.location,
                     'status'            : product.status,
                     'consumption'       : composition_product_quantity,
                     'stock'             : dict_W
@@ -550,7 +550,7 @@ class SetInfoView(View):
                     'keyword'           : product.keyword,
                     'name'              : product.name,
                     'warehouse_code'    : product.warehouse_code,
-                    'locations'         : product.location,
+                    'location'          : product.location,
                     'status'            : product.status,
                     'consumption'       : composition_product_quantity,
                     'stock'             : dict_W
