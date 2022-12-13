@@ -4,7 +4,7 @@ import json, re
 from django.views       import View
 from django.http        import JsonResponse
 from django.db          import transaction, connection, IntegrityError
-from django.db.models   import Q
+from django.db.models   import Q, Sum
 
 
 # Model
@@ -17,6 +17,11 @@ from stock.models       import *
 # decorator & utills 
 from users.decorator    import jwt_decoder
 from products.utils     import *
+
+import telegram
+from my_settings        import TELEGRAM_TOKEN, CHAT_ID
+TELEGRAM_TOKEN = TELEGRAM_TOKEN
+CHAT_ID = CHAT_ID
 
 class ProductGroupView(View):
     def get(self, request):
