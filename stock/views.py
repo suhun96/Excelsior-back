@@ -17,45 +17,55 @@ from locations.models   import *
 from users.decorator    import jwt_decoder
 
 class NomalStockView(View):
-    def create_sheet(self, input_data):
+    def create_sheet(self, input_data, user):
+        user = user
         input_data = input_data
 
-        input_user =  1
+        input_user =  user.id
         input_type = input_data.get('type', None)
         input_etc  = input_data.get('etc', None)
         input_company = input_data.get('company_code', None)
         input_products = input_data.get('products', None)
-
-        new_sheet = Sheet.objects.create(
-            user_id = input_user,
-            type = input_type,
-            company_code = input_company,
-            etc  = input_etc
-        )
-
-        if not input_products:
-            return JsonResponse({'message' : '입,출고서에 제품을 비워 등록할 수 없습니다.'}, status = 403)
-        
-
-        for product in input_products:
-            if Product.objects.filter(product_code = product['product_code']).exists() == True:
-                quantity        = product['quantity']
-                warehouse_code  = product['warehouse_code']
-                product_id      = Product.objects.get(product_code =product['product_code']).id
-                unit_price      = product['price']
-                location        = product['location']
-            
-
-                new_sheet_composition = SheetComposition.objects.create(
-                    sheet_id        = new_sheet.id,
-                    product_id      = product_id,
-                    quantity        = quantity, 
-                    warehouse_code  = warehouse_code,
-                    location        = location,
-                    unit_price      = unit_price,
+        try:
+            with transaction.atomic():
+                new_sheet = Sheet.objects.create(
+                    user_id = input_user,
+                    type = input_type,
+                    company_code = input_company,
+                    etc  = input_etc
                 )
-        
-        return new_sheet
+
+                if not input_products:
+                    raise Exception({'message' : '입,출고서에 제품을 비워 등록할 수 없습니다.'})
+                
+
+                for product in input_products:
+                    product_code = product['product_code']
+
+                    if Product.objects.filter(product_code = product_code).exists() == False:
+                        raise Exception({'message' : f'{product_code}는 존재하지 않습니다.'}) 
+                        
+                    quantity        = product['quantity']
+                    warehouse_code  = product['warehouse_code']
+                    product_id      = Product.objects.get(product_code =product['product_code']).id
+                    unit_price      = product['price']
+                    location        = product['location']
+                
+
+                    new_sheet_composition = SheetComposition.objects.create(
+                        sheet_id        = new_sheet.id,
+                        product_id      = product_id,
+                        quantity        = quantity, 
+                        warehouse_code  = warehouse_code,
+                        location        = location,
+                        unit_price      = unit_price,
+                    )
+
+            return new_sheet
+        except:
+            raise Exception({'message' : 'sheet를 생성하는중 에러가 발생했습니다.'})
+                
+            
 
     def create_serial_code(self, composition, new_sheet_id):
         now = datetime.now()
@@ -90,11 +100,13 @@ class NomalStockView(View):
                 numbering = str(i + 1).zfill(3)
                 serial_code2 = serial_code1 + str(after_route).zfill(2) + numbering
                 SerialAction.objects.create(serial = serial_code2, create = new_sheet_id)
-
+    
+    @jwt_decoder
     def post(self, request):
         input_data = json.loads(request.body)
+        user = request.user
 
-        new_sheet = self.create_sheet(input_data)
+        new_sheet = self.create_sheet(input_data, user)
         new_sheet_id = new_sheet.id
 
         try:
