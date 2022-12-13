@@ -8,9 +8,6 @@ from stock.models       import *
 import telegram
 from my_settings        import TELEGRAM_TOKEN, CHAT_ID
 
-TELEGRAM_TOKEN = TELEGRAM_TOKEN
-CHAT_ID = CHAT_ID
-
 def telegram_bot():
     bot = telegram.Bot(token = TELEGRAM_TOKEN)
 
