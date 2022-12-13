@@ -110,6 +110,103 @@ class ModifyProductGroupView(View):
             return JsonResponse({'message' : "예외 사항이 발생했습니다."}, status = 403)
 
 class ProductInfoView(View):
+    def create_sheet_new(self, input_data, user, new_product):
+        user = user
+        input_user =  user.id
+        input_data = input_data
+        company_code = input_data.get('company_code', None)
+        
+        quantity = input_data.get('quantity', None)
+        new_product_code = new_product.product_code
+
+        try:
+            with transaction.atomic():
+                if company_code:
+                    new_sheet = Sheet.objects.create(
+                        user_id = input_user,
+                        type = 'new',
+                        company_code = company_code,
+                        etc  = '초도 입고'
+                    )
+                            
+                    if Product.objects.filter(product_code = new_product_code).exists() == False:
+                        raise Exception({'message' : f'{new_product_code}는 존재하지 않습니다.'}) 
+                
+                    SheetComposition.objects.create(
+                        sheet_id        = new_sheet.id,
+                        product_id      = new_product.id,
+                        quantity        = quantity, 
+                        warehouse_code  = Warehouse.objects.get(main = True).code,
+                        location        = new_product.location,
+                        unit_price      = 0,
+                    )
+                    
+                    stock = StockByWarehouse.objects.filter(warehouse_code = Warehouse.objects.get(main = True).code , product_id = new_product.id)
+                        
+                    if stock.exists():
+                        before_quantity = stock.last().stock_quantity
+                        stock_quantity  = before_quantity + int(quantity)
+                    else:
+                        stock_quantity  = int(quantity)
+
+                    StockByWarehouse.objects.filter(warehouse_code = Warehouse.objects.get(main = True).code, product_id = new_product.id).create(
+                        sheet_id = new_sheet.id,
+                        stock_quantity = stock_quantity,
+                        product_id = new_product.id,
+                        warehouse_code = Warehouse.objects.get(main = True).code )
+                    
+                    
+                    QuantityByWarehouse.objects.filter(warehouse_code = Warehouse.objects.get(main = True).code, product_id = new_product.id).update_or_create(
+                        product_id = new_product.id,
+                        warehouse_code = Warehouse.objects.get(main = True).code,
+                        defaults={
+                            
+                            'total_quantity' : stock_quantity,
+                        })
+                else:
+                    new_sheet = Sheet.objects.create(
+                        user_id = input_user,
+                        type = 'new',
+                        etc  = '초도 입고'
+                    )
+                            
+                    if Product.objects.filter(product_code = new_product_code).exists() == False:
+                        raise Exception({'message' : f'{new_product_code}는 존재하지 않습니다.'}) 
+                
+                    SheetComposition.objects.create(
+                        sheet_id        = new_sheet.id,
+                        product_id      = new_product.id,
+                        quantity        = quantity, 
+                        warehouse_code  = Warehouse.objects.get(main = True).code,
+                        location        = new_product.location,
+                        unit_price      = 0,
+                    )
+                    
+                    stock = StockByWarehouse.objects.filter(warehouse_code = Warehouse.objects.get(main = True).code , product_id = new_product.id)
+                        
+                    if stock.exists():
+                        before_quantity = stock.last().stock_quantity
+                        stock_quantity  = before_quantity + int(quantity)
+                    else:
+                        stock_quantity  = int(quantity)
+
+                    StockByWarehouse.objects.filter(warehouse_code = Warehouse.objects.get(main = True).code, product_id = new_product.id).create(
+                        sheet_id = new_sheet.id,
+                        stock_quantity = stock_quantity,
+                        product_id = new_product.id,
+                        warehouse_code = Warehouse.objects.get(main = True).code )
+                    
+                    
+                    QuantityByWarehouse.objects.filter(warehouse_code = Warehouse.objects.get(main = True).code, product_id = new_product.id).update_or_create(
+                        product_id = new_product.id,
+                        warehouse_code = Warehouse.objects.get(main = True).code,
+                        defaults={
+                            
+                            'total_quantity' : stock_quantity,
+                        })
+        except:
+            raise Exception({'message' : 'sheet를 생성하는중 에러가 발생했습니다.'})
+
     def get(self, request):
         name                = request.GET.get('name', None)
         keyword             = request.GET.get('keyword', None)
@@ -180,6 +277,7 @@ class ProductInfoView(View):
         #     return JsonResponse({'message' : 'keyerror'}, status = 403)
     @jwt_decoder
     def post(self, request):
+        user = request.user
         input_data = json.loads(request.body)
         name = input_data.get('name', None)
         product_group_code = input_data.get('product_group_code', None)
@@ -253,6 +351,8 @@ class ProductInfoView(View):
                         # 새로운  세트 제품 등록
                         new_product = Product.objects.create(**CREATE_SET)
 
+                        self.create_sheet_new(input_data, user, new_product)
+
                         # 새로운 세트 제품의 구성품 등록
                         for id, quantity in composition.items():
                             ProductComposition.objects.create(
@@ -293,6 +393,8 @@ class ProductInfoView(View):
                         # 새로운 제품 등록
                         new_product = Product.objects.create(**CREATE_SET)
                         
+                        self.create_sheet_new(input_data, user, new_product)
+
                         return JsonResponse({'message' : '[Case 2] 새로운 일반 상품이 등록되었습니다'}, status = 200) 
                     
                 # 회사코드가 없으면 
@@ -336,6 +438,8 @@ class ProductInfoView(View):
                         # 새로운  세트 제품 등록
                         new_product = Product.objects.create(**CREATE_SET)
 
+                        self.create_sheet_new(input_data, user, new_product)
+
                         # 새로운 세트 제품의 구성품 등록
                         for id, quantity in composition.items():
                             ProductComposition.objects.create(
@@ -374,6 +478,8 @@ class ProductInfoView(View):
                         
                         # 새로운 제품 등록
                         new_product = Product.objects.create(**CREATE_SET)
+                        
+                        self.create_sheet_new(input_data, user, new_product)
                         
                         return JsonResponse({'message' : '[Case 4] 새로운 일반 상품이 등록되었습니다.'}, status = 200)
 
