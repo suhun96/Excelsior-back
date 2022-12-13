@@ -385,4 +385,42 @@ class ClickSheetView(View):
  
 class TotalQuantityView(View):
     def get(self, request):
-        ㅅ
+        warehouse_code = request.GET.get('warehouse_code', None)
+
+        result_list = []
+
+        if warehouse_code:
+            check = QuantityByWarehouse.objects.filter(warehouse_code = warehouse_code)
+
+            for obj in check:
+                get_product = Product.objects.get(id = obj.product_id)
+                dict = {
+                    'product_code' : get_product.product_code,
+                    'product_name' : get_product.name,
+                    'warehouse_code' : obj.warehouse_code,
+                    'warehouse_name' : Warehouse.objects.get(code = obj.warehouse_code).name,
+                    'status'       : get_product.status,
+                    'safe_quantity': get_product.safe_quantity,
+                    'quantity'     : obj.total_quantity
+                }
+                result_list.append(dict) 
+            return JsonResponse({'message': result_list})
+        
+        else:
+            ids = []
+            
+            for product_id in QuantityByWarehouse.objects.all().values('product'):
+                ids.append(product_id['product'])
+
+            for num in set(ids):
+                get_product = Product.objects.get(id = num)
+                check = QuantityByWarehouse.objects.filter(product_id = num).aggregate(quantity = Sum('total_quantity'))
+                dict = {
+                    'product_code' : get_product.product_code,
+                    'product_name' : get_product.name,
+                    'status'       : get_product.status,
+                    'safe_quantity': get_product.safe_quantity,
+                    'quantity'     : check['quantity']
+                }
+                result_list.append(dict) 
+            return JsonResponse({'message': result_list})
