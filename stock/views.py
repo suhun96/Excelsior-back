@@ -419,7 +419,8 @@ class TotalQuantityView(View):
                     'warehouse_name' : Warehouse.objects.get(code = obj.warehouse_code).name,
                     'status'       : get_product.status,
                     'safe_quantity': get_product.safe_quantity,
-                    'quantity'     : obj.total_quantity
+                    'quantity'     : obj.total_quantity,
+                    'ketword'      : get_product.keyword
                 }
                 result_list.append(dict) 
             return JsonResponse({'message': result_list})
@@ -438,7 +439,8 @@ class TotalQuantityView(View):
                     'product_name' : get_product.name,
                     'status'       : get_product.status,
                     'safe_quantity': get_product.safe_quantity,
-                    'quantity'     : check['quantity']
+                    'quantity'     : check['quantity'],
+                    'ketword'      : get_product.keyword
                 }
                 result_list.append(dict) 
             return JsonResponse({'message': result_list})
