@@ -15,6 +15,8 @@ from locations.models   import *
 
 # deco
 from users.decorator    import jwt_decoder
+from products.utils     import telegram_bot
+
 
 class NomalStockView(View):
     def create_sheet(self, input_data):
@@ -131,6 +133,8 @@ class NomalStockView(View):
                                 'total_quantity' : stock_quantity,
                             })
 
+                    telegram_bot()
+
                     return JsonResponse({'message' : '입고 성공'}, status = 200)
 
                 if new_sheet.type == 'outbound':
@@ -168,7 +172,9 @@ class NomalStockView(View):
                                 
                                 'total_quantity' : stock_quantity,
                             })
-                        
+                    
+                    telegram_bot()
+
                     return JsonResponse({'message' : '출고 성공'}, status = 200)
 
                 if new_sheet.type == 'generate':
