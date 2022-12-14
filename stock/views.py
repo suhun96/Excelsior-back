@@ -19,6 +19,37 @@ from products.utils     import telegram_bot
 
 
 class NomalStockView(View):
+    def price_checker(self, input_data):
+        input_data = input_data
+        input_products = input_data.get('products', None)
+        input_company = input_data.get('company_code')
+
+        try:
+            with transaction.atomic():
+                if input_data['type'] == 'inbound':
+                    for product in input_products:
+                        product_id = Product.objects.get(product_code =product['product_code']).id
+                        ProductPrice.objects.update_or_create(
+                            product_id = product_id,
+                            company_code = input_company,
+                            defaults={
+                                'inbound_price' : product['price']
+                            }
+                        )
+                        
+                if input_data['type'] == 'outbound':
+                    for product in input_products:
+                        product_id = Product.objects.get(product_code =product['product_code']).id
+                        ProductPrice.objects.update_or_create(
+                            product_id = product_id,
+                            company_code = input_company,
+                            defaults={
+                                'outbound_price' : product['price']
+                            }
+                        )
+        except:
+            raise Exception({'message' : 'price_checker를 생성하는중 에러가 발생했습니다.'})
+
     def create_sheet(self, input_data, user):
         user = user
         input_data = input_data
@@ -28,6 +59,7 @@ class NomalStockView(View):
         input_etc  = input_data.get('etc', None)
         input_company = input_data.get('company_code', None)
         input_products = input_data.get('products', None)
+        
         try:
             with transaction.atomic():
                 new_sheet = Sheet.objects.create(
@@ -52,7 +84,6 @@ class NomalStockView(View):
                     product_id      = Product.objects.get(product_code =product['product_code']).id
                     unit_price      = product['price']
                     location        = product['location']
-                
 
                     new_sheet_composition = SheetComposition.objects.create(
                         sheet_id        = new_sheet.id,
@@ -67,8 +98,6 @@ class NomalStockView(View):
         except:
             raise Exception({'message' : 'sheet를 생성하는중 에러가 발생했습니다.'})
                 
-            
-
     def create_serial_code(self, composition, new_sheet_id):
         now = datetime.now()
         year    = str(now.year)
@@ -150,6 +179,7 @@ class NomalStockView(View):
                                 'total_quantity' : stock_quantity,
                             })
 
+                    self.price_checker(input_data)
                     telegram_bot()
 
                     return JsonResponse({'message' : '입고 성공'}, status = 200)
@@ -189,9 +219,9 @@ class NomalStockView(View):
                                 
                                 'total_quantity' : stock_quantity,
                             })
-                    
+                    self.price_checker(input_data)
                     telegram_bot()
-
+                    
                     return JsonResponse({'message' : '출고 성공'}, status = 200)
 
                 if new_sheet.type == 'generate':
