@@ -114,6 +114,9 @@ class ProductInfoView(View):
         input_user =  user.id
         input_data = input_data
         company_code = input_data.get('company_code', None)
+
+        if not company_code:
+            company_code = "AA"
         
         quantity = input_data.get('quantity', None)
         new_product_code = new_product.product_code
@@ -441,7 +444,7 @@ class ProductInfoView(View):
                             'product_code' : product_group_code + product_num,
                             'warehouse_code' : warehouse_code
                         }
-                        print(CREATE_SET)
+                        
                         # 들어온 기타 정보사항 CREATE_SET에 추가
                         for key, value in input_data.items():
                             if key in ['keyword', 'location']:
