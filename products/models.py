@@ -42,6 +42,7 @@ class Product(models.Model):
     warehouse_code    = models.CharField(max_length = 10)
     location          = models.CharField(max_length = 100)
     status            = models.BooleanField(default= True)
+    barcode           = models.CharField(max_length= 30, default=0)
     created_at        = models.DateTimeField(auto_now_add = True)
     
     class Meta:
