@@ -405,12 +405,13 @@ class ClickSheetView(View):
                     'product_code'          : product.product_code,
                     'product_name'          : product.name,
                     'product_group_name'    : ProductGroup.objects.get(code = product.productgroup_code).name,
+                    'product_barcode'       : product.barcode,
                     'unit_price'            : composition['unit_price'],
                     'quantity'              : composition['quantity'],
                     'total_quantity'        : total['total_quantity__sum'],
                     'warehouse_name'        : Warehouse.objects.get(code = composition['warehouse_code']).name,
-                    'stock_quantity'        : QuantityByWarehouse.objects.get(warehouse_code = composition['warehouse_code'], product_id = product.id).total_quantity,
-                    'stock_location'        : composition['location'],
+                    'partial_quantity'      : QuantityByWarehouse.objects.get(warehouse_code = composition['warehouse_code'], product_id = product.id).total_quantity,
+                    'location'              : composition['location'],
                     'etc'                   : composition['etc']   
                 } 
             else:
@@ -418,13 +419,14 @@ class ClickSheetView(View):
                     'product_code'          : product.product_code,
                     'product_name'          : product.name,
                     'product_group_name'    : ProductGroup.objects.get(code = product.productgroup_code).name,
+                    'product_barcode'       : product.barcode,
                     'company_name'          : Company.objects.get(code = product.company_code).name,
                     'unit_price'            : composition['unit_price'],
                     'quantity'              : composition['quantity'],
                     'total_quantity'        : total['total_quantity__sum'],
                     'warehouse_name'        : Warehouse.objects.get(code = composition['warehouse_code']).name,
-                    'stock_quantity'        : QuantityByWarehouse.objects.get(warehouse_code = composition['warehouse_code'], product_id = product.id).total_quantity,
-                    'stock_location'        : composition['location'],
+                    'partial_quantity'      : QuantityByWarehouse.objects.get(warehouse_code = composition['warehouse_code'], product_id = product.id).total_quantity,
+                    'location'              : composition['location'],
                     'etc'                   : composition['etc']   
                 }
 
@@ -476,3 +478,20 @@ class TotalQuantityView(View):
                 }
                 result_list.append(dict) 
             return JsonResponse({'message': result_list})
+
+class PriceCheckView(View):
+    def post(self, request):
+        input_data = request.POST
+        
+        company_code = input_data['company_code']
+        product_id   = Product.objects.get(product_code = input_data['product_code']).id
+        type         = input_data['type']
+        
+        if type == 'inbound':
+            price = ProductPrice.objects.get(company_code = company_code, product_id = product_id).inbound_price
+        
+        if type == 'outbound':
+            price = ProductPrice.objects.get(company_code = company_code, product_id = product_id).outbound_price
+
+        
+        return JsonResponse({'message' : f'{price}'}, status = 200)
