@@ -373,6 +373,7 @@ class ClickSheetView(View):
             if product.company_code == "" :
                 dict = {
                     'product_code'          : product.product_code,
+                    'product_name'          : product.name,
                     'product_group_name'    : ProductGroup.objects.get(code = product.productgroup_code).name,
                     'unit_price'            : composition['unit_price'],
                     'quantity'              : composition['quantity'],
@@ -385,6 +386,7 @@ class ClickSheetView(View):
             else:
                 dict = {
                     'product_code'          : product.product_code,
+                    'product_name'          : product.name,
                     'product_group_name'    : ProductGroup.objects.get(code = product.productgroup_code).name,
                     'company_name'          : Company.objects.get(code = product.company_code).name,
                     'unit_price'            : composition['unit_price'],
