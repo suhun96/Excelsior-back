@@ -301,7 +301,7 @@ class ProductInfoView(View):
             if not Warehouse.objects.filter(code = input_data['warehouse_code']).exists():
                 return JsonResponse({'message' : '존재하지 않는 창고 코드입니다.'}, status = 403)
         if not warehouse_code:
-            warehouse_code = Warehouse.object.get(main = True).code
+            warehouse_code = Warehouse.objects.get(main = True).code
 
         try:
             with transaction.atomic():
@@ -441,7 +441,7 @@ class ProductInfoView(View):
                             'product_code' : product_group_code + product_num,
                             'warehouse_code' : warehouse_code
                         }
-
+                        print(CREATE_SET)
                         # 들어온 기타 정보사항 CREATE_SET에 추가
                         for key, value in input_data.items():
                             if key in ['keyword', 'location']:
