@@ -4,14 +4,6 @@ from users.models import *
 from products.models import *
 from companies.models import *
 
-class ProductPrice(models.Model):
-    product = models.ForeignKey(Product, on_delete= models.CASCADE)
-    company_code = models.CharField(max_length= 10)
-    inbound_price = models.IntegerField(default=0)
-    outbound_price = models.IntegerField(default=0)
-
-    class Meta:
-        db_table = 'inventory_price'
 
 class Sheet(models.Model):
     user       = models.ForeignKey(User, on_delete= models.CASCADE)
@@ -70,3 +62,12 @@ class QuantityByWarehouse(models.Model):
 
     class Meta:
         db_table = 'quantity_by_warehouse'
+
+class ProductPrice(models.Model):
+    product = models.ForeignKey(Product, on_delete= models.CASCADE)
+    company_code = models.CharField(max_length= 10)
+    inbound_price = models.IntegerField(default=0)
+    outbound_price = models.IntegerField(default=0)
+
+    class Meta:
+        db_table = 'inventory_price'
