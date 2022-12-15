@@ -220,7 +220,7 @@ class NomalStockView(View):
                                 'total_quantity' : stock_quantity,
                             })
                     self.price_checker(input_data)
-                    telegram_bot()
+                    telegram_bot(new_sheet_id)
                     
                     return JsonResponse({'message' : '출고 성공'}, status = 200)
 

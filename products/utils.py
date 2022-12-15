@@ -20,7 +20,7 @@ def telegram_bot(new_sheet_id):
 
 
     for product in products:
-        product      = Product.objects.get(id = product.id)
+        product      = Product.objects.get(id = int(product['product']))
         product_code = product.product_code
         TOTAL        = QuantityByWarehouse.objects.filter(product_id = product.id ).annotate(quantity = Sum('total_quantity'))
         
