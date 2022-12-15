@@ -215,7 +215,7 @@ class ProductInfoView(View):
         productgroup_code   = request.GET.get('product_group_code', None)
         warehouse_code      = request.GET.get('warehouse_code', None)
         product_code        = request.GET.get('product_code', None)
-
+        barcode             = request.GET.get('barcode', None)
         # try:
         q = Q()
         if name:
@@ -228,6 +228,8 @@ class ProductInfoView(View):
             q &= Q(warehouse_code__icontains = warehouse_code)
         if product_code:
             q &= Q(product_code__icontains = product_code)
+        if barcode:
+            q &= Q(barcode__icontains = barcode)
 
         result_list = []
         products = Product.objects.filter(q).values()
@@ -249,6 +251,7 @@ class ProductInfoView(View):
                     'warehouse_code'    : product['warehouse_code'],
                     'warehouse_name'    : Warehouse.objects.get(code = product['warehouse_code']).name,
                     'location'          : product['location'],
+                    'barcode'           : product['barcode'],
                     'status'            : product['status'],
                 }
                 result_list.append(dict_t)
@@ -269,6 +272,7 @@ class ProductInfoView(View):
                     'warehouse_code'    : product['warehouse_code'],
                     'warehouse_name'    : Warehouse.objects.get(code = product['warehouse_code']).name,
                     'location'          : product['location'],
+                    'barcode'           : product['barcode'],
                     'status'            : product['status'],
                 }
                 result_list.append(dict_t)
@@ -336,7 +340,7 @@ class ProductInfoView(View):
                         }
                         # 들어온 기타 정보사항 CREATE_SET에 추가
                         for key, value in input_data.items():
-                            if key in ['keyword', 'location']:
+                            if key in ['keyword', 'location', 'barcode']:
                                 CREATE_SET.update({key : value})
 
                             if key == 'safe_quantity':
@@ -373,7 +377,7 @@ class ProductInfoView(View):
 
                         # 들어온 기타 정보사항 CREATE_SET에 추가
                         for key, value in input_data.items():
-                            if key in ['keyword', 'location']:
+                            if key in ['keyword', 'location','barcode']:
                                 CREATE_SET.update({key : value})
 
                             if key == 'safe_quantity':
@@ -412,7 +416,7 @@ class ProductInfoView(View):
                         }
                         # 들어온 기타 정보사항 CREATE_SET에 추가
                         for key, value in input_data.items():
-                            if key in ['keyword', 'location']:
+                            if key in ['keyword', 'location','barcode']:
                                 CREATE_SET.update({key : value})
                             
                             if key == 'safe_quantity':
@@ -447,7 +451,7 @@ class ProductInfoView(View):
                         
                         # 들어온 기타 정보사항 CREATE_SET에 추가
                         for key, value in input_data.items():
-                            if key in ['keyword', 'location']:
+                            if key in ['keyword', 'location','barcode']:
                                 CREATE_SET.update({key : value})
 
                             if key == 'safe_quantity':
