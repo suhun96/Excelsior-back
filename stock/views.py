@@ -180,7 +180,7 @@ class NomalStockView(View):
                             })
 
                     self.price_checker(input_data)
-                    telegram_bot()
+                    telegram_bot(new_sheet_id)
 
                     return JsonResponse({'message' : '입고 성공'}, status = 200)
 
@@ -334,7 +334,6 @@ class QunatityByWarehouseView(View):
 
         return JsonResponse({'message' : list_A})
 
-
 class SheetListView(View):
     def get(self, request):
         type = request.GET.get('type', None)
@@ -434,7 +433,6 @@ class ClickSheetView(View):
 
         return JsonResponse({'message' : for_list}, status = 200)
     
- 
 class TotalQuantityView(View):
     def get(self, request):
         warehouse_code = request.GET.get('warehouse_code', None)
