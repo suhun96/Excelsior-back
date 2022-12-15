@@ -8,5 +8,6 @@ urlpatterns = [
     path('sheet-list', SheetListView.as_view()),  # 쿼리 파라미터 type으로 필터링 가능('inbound', 'outbound)
     path('sheet-detail', ClickSheetView.as_view()), #  쿼리 파라미터 sheet_id 필요합니다
     path('quantity', TotalQuantityView.as_view()),
-    path('price', PriceCheckView.as_view())
+    path('price', PriceCheckView.as_view()),
+    path('serial-check', SerialCodeCheckView.as_view())
 ]
