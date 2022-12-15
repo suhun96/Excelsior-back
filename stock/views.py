@@ -180,7 +180,7 @@ class NomalStockView(View):
                             })
 
                     self.price_checker(input_data)
-                    telegram_bot()
+                    telegram_bot(new_sheet_id)
 
                     return JsonResponse({'message' : '입고 성공'}, status = 200)
 
@@ -334,7 +334,6 @@ class QunatityByWarehouseView(View):
 
         return JsonResponse({'message' : list_A})
 
-
 class SheetListView(View):
     def get(self, request):
         type = request.GET.get('type', None)
@@ -405,7 +404,7 @@ class ClickSheetView(View):
                     'product_code'          : product.product_code,
                     'product_name'          : product.name,
                     'product_group_name'    : ProductGroup.objects.get(code = product.productgroup_code).name,
-                    'barcode'       : product.barcode,
+                    'barcode'               : product.barcode,
                     'unit_price'            : composition['unit_price'],
                     'quantity'              : composition['quantity'],
                     'total_quantity'        : total['total_quantity__sum'],
@@ -419,7 +418,7 @@ class ClickSheetView(View):
                     'product_code'          : product.product_code,
                     'product_name'          : product.name,
                     'product_group_name'    : ProductGroup.objects.get(code = product.productgroup_code).name,
-                    'barcode'       : product.barcode,
+                    'barcode'               : product.barcode,
                     'company_name'          : Company.objects.get(code = product.company_code).name,
                     'unit_price'            : composition['unit_price'],
                     'quantity'              : composition['quantity'],
@@ -434,7 +433,6 @@ class ClickSheetView(View):
 
         return JsonResponse({'message' : for_list}, status = 200)
     
- 
 class TotalQuantityView(View):
     def get(self, request):
         warehouse_code = request.GET.get('warehouse_code', None)
@@ -495,3 +493,22 @@ class PriceCheckView(View):
 
         
         return JsonResponse({'message' : f'{price}'}, status = 200)
+
+class SerialCodeCheckView(View):
+    def get(self, request):
+        serial_code = request.GET.get('serial_code')
+
+        SHEET = []
+        if SerialAction.objects.filter(serial = serial_code).exists():
+            GET = SerialAction.objects.get(serial = serial_code)
+            
+            if not GET.create == '':
+                GET_Sheet =Sheet.objects.get(id = GET.create)
+                DICT = {
+                    'user' : GET_Sheet.user 
+                }
+                SHEET.append(DICT)
+                
+
+            
+        return JsonResponse({'message' : f'ok'}, status = 200)
