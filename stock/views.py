@@ -481,18 +481,26 @@ class PriceCheckView(View):
     def post(self, request):
         input_data = request.POST
         
-        company_code = input_data['company_code']
-        product_id   = Product.objects.get(product_code = input_data['product_code']).id
-        type         = input_data['type']
+        try:
+            company_code = input_data['company_code']
+            product_id   = Product.objects.get(product_code = input_data['product_code']).id
+            print(product_id)
+            type         = input_data['type']
+            
+            if type == 'inbound':
+                price = ProductPrice.objects.get(company_code = company_code, product_id = product_id).inbound_price
+            
+            if type == 'outbound':
+                price = ProductPrice.objects.get(company_code = company_code, product_id = product_id).outbound_price
+            
+            return JsonResponse({'message' : f'{price}'}, status = 200)
         
-        if type == 'inbound':
-            price = ProductPrice.objects.get(company_code = company_code, product_id = product_id).inbound_price
+        except ProductPrice.DoesNotExist:
+            return JsonResponse({'message' : '잘못된 요청을 보내셨습니다.1'}, status = 403)
         
-        if type == 'outbound':
-            price = ProductPrice.objects.get(company_code = company_code, product_id = product_id).outbound_price
-
+        except Product.DoesNotExist:
+            return JsonResponse({'message' : '잘못된 요청을 보내셨습니다.2'}, status = 403)
         
-        return JsonResponse({'message' : f'{price}'}, status = 200)
 
 class SerialCodeCheckView(View):
     def get(self, request):
@@ -505,10 +513,10 @@ class SerialCodeCheckView(View):
             if not GET.create == '':
                 GET_Sheet =Sheet.objects.get(id = GET.create)
                 DICT = {
-                    'user' : GET_Sheet.user 
+                    'user_name' : User.objects.get(id = GET_Sheet.user_id).name 
                 }
                 SHEET.append(DICT)
                 
 
             
-        return JsonResponse({'message' : f'ok'}, status = 200)
+        return JsonResponse({'message' : SHEET}, status = 200)
