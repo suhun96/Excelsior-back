@@ -75,29 +75,47 @@ class NomalStockView(View):
 
                 for product in input_products:
                     product_code = product['product_code']
+                    product_id   = Product.objects.get(product_code =product['product_code']).id
 
                     if Product.objects.filter(product_code = product_code).exists() == False:
                         raise Exception({'message' : f'{product_code}는 존재하지 않습니다.'}) 
-                        
-                    quantity        = product['quantity']
-                    warehouse_code  = product['warehouse_code']
-                    product_id      = Product.objects.get(product_code =product['product_code']).id
-                    unit_price      = product['price']
-                    location        = product['location']
 
                     new_sheet_composition = SheetComposition.objects.create(
                         sheet_id        = new_sheet.id,
                         product_id      = product_id,
-                        quantity        = quantity, 
-                        warehouse_code  = warehouse_code,
-                        location        = location,
-                        unit_price      = unit_price,
+                        quantity        = product['quantity'], 
+                        warehouse_code  = product['warehouse_code'],
+                        location        = product['location'],
+                        unit_price      = product['price'],
                     )
+
+                    if 'serial_code' in product:
+                        for serial_code in product['serial_code']:
+                            # 입/출고 구성품의 serial_code 연결
+                            SerialInSheetComposition.objects.create(
+                                sheet_composition = new_sheet_composition,
+                                serial_code = serial_code
+                            )
+                            
+                            # serial 추적
+                            if SerialAction.objects.filter(serial = serial_code).exists():
+                                actions = SerialAction.objects.get(serial = serial_code).actions
+                                
+                                actions = actions + f',{new_sheet.id}'
+                                
+                                SerialAction.objects.filter(serial = serial_code).update(actions = actions)
+                            
+                            else:
+                                SerialAction.objects.create(
+                                    serial = serial_code,
+                                    product_id = product_id,
+                                    actions = new_sheet.id
+                                )
 
             return new_sheet
         except:
             raise Exception({'message' : 'sheet를 생성하는중 에러가 발생했습니다.'})
-                
+
     def create_serial_code(self, composition, new_sheet_id):
         now = datetime.now()
         year    = str(now.year)
@@ -153,8 +171,7 @@ class NomalStockView(View):
                     for composition in compositions:
                         product_id     = composition.get('product')
                         warehouse_code = composition.get('warehouse_code')
-                        quantity       = composition.get('quantity')
-                        # unit_price     = composition.get('unit_price') 
+                        quantity       = composition.get('quantity') 
                         
                         stock = StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id)
                         
@@ -196,7 +213,6 @@ class NomalStockView(View):
                         product_id     = composition.get('product')
                         warehouse_code = composition.get('warehouse_code')
                         quantity       = composition.get('quantity')
-                        # unit_price     = composition.get('unit_price') 
                         
                         stock = StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id)
                         
@@ -219,6 +235,7 @@ class NomalStockView(View):
                                 
                                 'total_quantity' : stock_quantity,
                             })
+                        
                     self.price_checker(input_data)
                     telegram_bot(new_sheet_id)
                     
@@ -230,7 +247,6 @@ class NomalStockView(View):
                     product_id     = generated_composition.product.id
                     warehouse_code = generated_composition.warehouse_code
                     quantity       = generated_composition.quantity
-                    # unit_price     = composition.get('unit_price') 
 
 
                     # 재고 있는지 확인
@@ -312,7 +328,6 @@ class NomalStockView(View):
         except KeyError:
             return JsonResponse({'message' : 'keyerror'}, status = 403)
 
-
 class QunatityByWarehouseView(View):
     def get(self, request):
         
@@ -392,12 +407,19 @@ class ClickSheetView(View):
         if not sheet_id:
             return JsonResponse({'message' : 'sheet id 가 입력되지 않았습니다.'}, status = 200)
 
-        compositions = SheetComposition.objects.filter(sheet_id = sheet_id).values()
+        compositions = SheetComposition.objects.filter(sheet_id = sheet_id).prefetch_related('serialinsheetcomposition_set')
 
         for_list = []
         for composition in compositions:
-            product = Product.objects.get(id = composition['product_id'])
+            product = Product.objects.get(id = composition.product_id)
             total = QuantityByWarehouse.objects.filter(product_id = product.id).aggregate(Sum('total_quantity'))
+
+            serial_codes = SerialInSheetComposition.objects.filter(sheet_composition = composition).values('serial_code')
+
+            list_serial_code = []
+            
+            for object in serial_codes:
+                list_serial_code.append(object.get('serial_code'))
 
             if product.company_code == "" :
                 dict = {
@@ -405,13 +427,14 @@ class ClickSheetView(View):
                     'product_name'          : product.name,
                     'product_group_name'    : ProductGroup.objects.get(code = product.productgroup_code).name,
                     'barcode'               : product.barcode,
-                    'unit_price'            : composition['unit_price'],
-                    'quantity'              : composition['quantity'],
+                    'unit_price'            : composition.unit_price,
+                    'quantity'              : composition.quantity,
                     'total_quantity'        : total['total_quantity__sum'],
-                    'warehouse_name'        : Warehouse.objects.get(code = composition['warehouse_code']).name,
-                    'partial_quantity'      : QuantityByWarehouse.objects.get(warehouse_code = composition['warehouse_code'], product_id = product.id).total_quantity,
-                    'location'              : composition['location'],
-                    'etc'                   : composition['etc']   
+                    'warehouse_name'        : Warehouse.objects.get(code = composition.warehouse_code).name,
+                    'partial_quantity'      : QuantityByWarehouse.objects.get(warehouse_code = composition.warehouse_code, product_id = product.id).total_quantity,
+                    'location'              : composition.location,
+                    'serial_codes'          : list_serial_code,
+                    'etc'                   : composition.etc   
                 } 
             else:
                 dict = {
@@ -420,13 +443,14 @@ class ClickSheetView(View):
                     'product_group_name'    : ProductGroup.objects.get(code = product.productgroup_code).name,
                     'barcode'               : product.barcode,
                     'company_name'          : Company.objects.get(code = product.company_code).name,
-                    'unit_price'            : composition['unit_price'],
-                    'quantity'              : composition['quantity'],
+                    'unit_price'            : composition.unit_price,
+                    'quantity'              : composition.quantity,
                     'total_quantity'        : total['total_quantity__sum'],
-                    'warehouse_name'        : Warehouse.objects.get(code = composition['warehouse_code']).name,
-                    'partial_quantity'      : QuantityByWarehouse.objects.get(warehouse_code = composition['warehouse_code'], product_id = product.id).total_quantity,
-                    'location'              : composition['location'],
-                    'etc'                   : composition['etc']   
+                    'warehouse_name'        : Warehouse.objects.get(code = composition.warehouse_code).name,
+                    'partial_quantity'      : QuantityByWarehouse.objects.get(warehouse_code = composition.warehouse_code, product_id = product.id).total_quantity,
+                    'location'              : composition.location,
+                    'serial_codes'          : list_serial_code,
+                    'etc'                   : composition.etc   
                 }
 
             for_list.append(dict)
@@ -492,31 +516,154 @@ class PriceCheckView(View):
             
             if type == 'outbound':
                 price = ProductPrice.objects.get(company_code = company_code, product_id = product_id).outbound_price
-            
+        
             return JsonResponse({'message' : f'{price}'}, status = 200)
         
+        
+        except Product.DoesNotExist:    
+            return JsonResponse({'message' : '잘못된 요청을 보내셨습니다.2'}, status = 403)
         except ProductPrice.DoesNotExist:
             return JsonResponse({'message' : '잘못된 요청을 보내셨습니다.1'}, status = 403)
         
-        except Product.DoesNotExist:
-            return JsonResponse({'message' : '잘못된 요청을 보내셨습니다.2'}, status = 403)
-        
-
 class SerialCodeCheckView(View):
-    def get(self, request):
-        serial_code = request.GET.get('serial_code')
+    def serial_tracker(self, serial_code):
+        serial_actions = SerialAction.objects.get(serial = serial_code).actions
+        sheets = serial_actions.split(',')
+        
+        last_sheet = max(sheets)
 
-        SHEET = []
-        if SerialAction.objects.filter(serial = serial_code).exists():
-            GET = SerialAction.objects.get(serial = serial_code)
+        sheet = Sheet.objects.get(id = last_sheet)
+
+        return sheet
+
+    def print_sheet(self, sheet):
+        sheet_compositions = SheetComposition.objects.filter(sheet_id = sheet.id)
+        
+        products = []
+        
+        for composition in sheet_compositions:
+            product = Product.objects.get(id = composition.product_id)
+            total = QuantityByWarehouse.objects.filter(product_id = product.id).aggregate(Sum('total_quantity'))
+
+            serial_codes = SerialInSheetComposition.objects.filter(sheet_composition = composition).values('serial_code')
+
+            list_serial_code = []
             
-            if not GET.create == '':
-                GET_Sheet =Sheet.objects.get(id = GET.create)
-                DICT = {
-                    'user_name' : User.objects.get(id = GET_Sheet.user_id).name 
+            for object in serial_codes:
+                list_serial_code.append(object.get('serial_code'))
+
+            if product.company_code == "" :
+                dict = {
+                    'product_code'          : product.product_code,
+                    'product_name'          : product.name,
+                    'product_group_name'    : ProductGroup.objects.get(code = product.productgroup_code).name,
+                    'barcode'               : product.barcode,
+                    'unit_price'            : composition.unit_price,
+                    'quantity'              : composition.quantity,
+                    'total_quantity'        : total['total_quantity__sum'],
+                    'warehouse_name'        : Warehouse.objects.get(code = composition.warehouse_code).name,
+                    'partial_quantity'      : QuantityByWarehouse.objects.get(warehouse_code = composition.warehouse_code, product_id = product.id).total_quantity,
+                    'location'              : composition.location,
+                    'serial_codes'          : list_serial_code,
+                    'etc'                   : composition.etc   
+                } 
+            else:
+                dict = {
+                    'product_code'          : product.product_code,
+                    'product_name'          : product.name,
+                    'product_group_name'    : ProductGroup.objects.get(code = product.productgroup_code).name,
+                    'barcode'               : product.barcode,
+                    'company_name'          : Company.objects.get(code = product.company_code).name,
+                    'unit_price'            : composition.unit_price,
+                    'quantity'              : composition.quantity,
+                    'total_quantity'        : total['total_quantity__sum'],
+                    'warehouse_name'        : Warehouse.objects.get(code = composition.warehouse_code).name,
+                    'partial_quantity'      : QuantityByWarehouse.objects.get(warehouse_code = composition.warehouse_code, product_id = product.id).total_quantity,
+                    'location'              : composition.location,
+                    'serial_codes'          : list_serial_code,
+                    'etc'                   : composition.etc   
                 }
-                SHEET.append(DICT)
-                
 
+            products.append(dict)
+        
+        result = {
+            'user' : sheet.user.name,
+            'type' : sheet.type,
+            'company_name' : Company.objects.get(code = sheet.company_code).name,
+            'etc'  : sheet.etc,
+            # 'created_at'  : sheet.created_at,
+            'products'  : [products]
+        }
+        
+        return result
+
+    def get(self, request):
+        serial_code  = request.GET.get('serial_code')
+        process_type = request.GET.get('process_type')
+
+        
+        if process_type == 'inbound':
+            if not SerialAction.objects.filter(serial = serial_code).exists():
+                return JsonResponse({'message' : '입고 처리가 가능합니다.'}, status = 200)
             
-        return JsonResponse({'message' : SHEET}, status = 200)
+            else:
+                sheet = self.serial_tracker(serial_code)
+                sheet_type  = sheet.type
+                
+                if sheet_type == 'inbound':
+                    result = self.print_sheet(sheet)
+                    return JsonResponse({'message': '보유하고 있는 시리얼 입니다.', 'result': result}, status = 403)
+
+                if sheet_type == 'create':
+                    result = self.print_sheet(sheet)
+                    return JsonResponse({'message': '보유하고 있는 시리얼 입니다.', 'result': result}, status = 403)
+        
+                else:
+                    return JsonResponse({'message' : '입고 처리가 가능합니다.'}, status = 200)
+
+        if process_type == 'outbound':
+            if not SerialAction.objects.filter(serial = serial_code).exists():
+                return JsonResponse({'message' : '존재하지 않는 시리얼입니다.'}, status = 403)
+
+            else:
+                sheet = self.serial_tracker(serial_code)
+                sheet_type  = sheet.type
+
+                if sheet_type == "inbound":
+                    return JsonResponse({'message' : '출고 처리가 가능합니다.'}, status = 200)
+
+                if sheet_type == "create":
+                    return JsonResponse({'message' : '출고 처리가 가능합니다.'}, status = 200)
+
+                if sheet_type == "outbound":
+                    result = self.print_sheet(sheet)
+                    return JsonResponse({'message': '이미 출고된 시리얼 입니다.', 'result': result }, status = 403)
+
+class SerialActionHistoryView(View):
+    def print_sheet(self, sheets):
+        sheet_list = []
+
+        for id in sheets:
+            sheet = Sheet.objects.get(id = id)
+            dic_sheet = {
+                'id'            : sheet.id,
+                'user_name'     : sheet.user.name,         
+                'type'          : sheet.type,   
+                'company_name'  : Company.objects.get(code = sheet.company_code).name,       
+                'etc'           : sheet.etc,          
+                'created_at'    : sheet.created_at         
+            }
+
+            sheet_list.append(dic_sheet)
+
+        return sheet_list
+
+    def get(self, request):
+        serial_code = request.GET.get("serial_code", None)
+
+        actions = SerialAction.objects.get(serial = serial_code).actions
+        sheets = actions.split(",")
+        
+        sheet_list = self.print_sheet(sheets)
+
+        return JsonResponse({'message': sheet_list}, status = 200)
