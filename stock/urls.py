@@ -9,5 +9,6 @@ urlpatterns = [
     path('sheet-detail', ClickSheetView.as_view()), #  쿼리 파라미터 sheet_id 필요합니다
     path('quantity', TotalQuantityView.as_view()),
     path('price', PriceCheckView.as_view()),
-    path('serial-check', SerialCodeCheckView.as_view())
+    path('serial-check', SerialCodeCheckView.as_view()),
+    path('serial-tracking', SerialActionHistoryView.as_view())
 ]

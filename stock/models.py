@@ -23,11 +23,18 @@ class SheetComposition(models.Model):
     unit_price = models.IntegerField(default = 0)
     quantity   = models.IntegerField(default = 0)
     warehouse_code = models.CharField(max_length = 20)
-    location   = models.CharField(max_length = 300)
+    location   = models.CharField(max_length = 300) 
     etc        = models.CharField(max_length = 300)
 
     class Meta:
         db_table = 'sheet_composition'
+
+class SerialInSheetComposition(models.Model):
+    sheet_composition = models.ForeignKey(SheetComposition, on_delete= models.CASCADE)
+    serial_code = models.CharField(max_length= 100)
+
+    class Meta:
+        db_table = 'serial_in_sheet_composition'
 
 class StockByWarehouse(models.Model):
     sheet = models.ForeignKey(Sheet, on_delete = models.CASCADE)
@@ -40,10 +47,8 @@ class StockByWarehouse(models.Model):
 
 class SerialAction(models.Model):
     serial   = models.CharField(max_length=100)
-    create   = models.CharField(max_length= 20)
-    outbound = models.CharField(max_length= 20)
-    transfer = models.CharField(max_length= 20)
-    compose  = models.CharField(max_length= 20)
+    product  = models.ForeignKey(Product, on_delete= models.CASCADE)
+    actions  = models.CharField(max_length=1000)
 
     class Meta:
         db_table = 'serial_action'
