@@ -265,6 +265,6 @@ class UserMyInfoView(View):
         except:
             return JsonResponse({'message' : "예외 사항 발생"}, status = 403)
 
-class HealthCheckView(View):
-    def health(request):
-        return JsonResponse({"message" : "Hello world"}, status =200)
+# class HealthCheckView(View):
+#     def health(request):
+#         return JsonResponse({"message" : "Hello world"}, status =200)
