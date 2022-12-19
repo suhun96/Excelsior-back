@@ -18,7 +18,7 @@ from django.urls    import path, include
 from users.views    import *
 
 urlpatterns = [
-    path('health', include('health_check.urls')),
+    path('health', HealthCheckView.health),
     path('user/', include('users.urls')),
     path('product/', include('products.urls')),  
     path('warehouse/', include('locations.urls')),
