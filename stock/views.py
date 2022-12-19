@@ -523,7 +523,7 @@ class PriceCheckView(View):
         except Product.DoesNotExist:    
             return JsonResponse({'message' : '잘못된 요청을 보내셨습니다.2'}, status = 403)
         except ProductPrice.DoesNotExist:
-            return JsonResponse({'message' : '0' }, status = 403)
+            return JsonResponse({'message' : '0' }, status = 200)
         
 class SerialCodeCheckView(View):
     def serial_tracker(self, serial_code):
