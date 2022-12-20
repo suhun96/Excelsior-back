@@ -677,6 +677,7 @@ class StockTotalView(View):
         
         type            = request.GET.get('type', None)
         company_code    = request.GET.get('company_code', None)
+
         warehouse_code  = request.GET.get('warehouse_code', None)
 
         q = Q()
@@ -706,15 +707,16 @@ class StockTotalView(View):
                     if not company_code:
                         price = 0
                     else:
-                        check_price = ProductPrice.objects.filter(company_code = company_code, product_id = product.id)
-                        price = check_price['inbound_price']
+                        check_price = ProductPrice.objects.get(company_code = company_code, product_id = product.id)
+                        price = check_price.inbound_price
 
                 if type == 'outbound':
                     if not company_code:
                         price = 0
                     else:
-                        check_price = ProductPrice.objects.filter(company_code = company_code, product_id = product.id)
-                        price = check_price['outbound_price']
+                        check_price = ProductPrice.objects.get(company_code = company_code, product_id = product.id)
+                        price = check_price.outbound_price
+                
                 if not warehouse_code:
                     dict = {
                         'product_name'      : product.name,
