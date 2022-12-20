@@ -707,7 +707,7 @@ class StockTotalView(View):
             dict = {
                 'product_name'      : target_product.name,
                 'product_code'      : target_product.product_code,
-                'warehouse_name'    : Warehouse.objects.get(code =target_product.warehouse_code ).name
+                'warehouse_name'    : Warehouse.objects.get(code =target_product.warehouse_code ).name,
                 'warehouse_code'    : target_product.warehouse_code,
                 'location'          : target_product.location,
                 'status'            : target_product.status,
