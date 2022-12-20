@@ -705,13 +705,15 @@ class StockTotalView(View):
             compay_name = ''
                 
             dict = {
-                'product_name'  : target_product.name,
-                'product_code'  : target_product.product_code,
-                'company_name'  : compay_name,
-                'keyword'       : target_product.keyword,
-                'latest_price'  : price,
-                'warehouse_quantity' : quantity,
-                'total_quantity': total_quantity
+                'product_name'      : target_product.name,
+                'product_code'      : target_product.product_code,
+                'warehouse_name'    : Warehouse.objects.get(code =target_product.warehouse_code ).name
+                'warehouse_code'    : target_product.warehouse_code,
+                'location'          : target_product.location,
+                'status'            : target_product.status,
+                'latest_price'      : price,
+                'partial_quantity'  : quantity,
+                'total_quantity'    : total_quantity
             }
 
             return JsonResponse({'message' : dict})
