@@ -667,3 +667,61 @@ class SerialActionHistoryView(View):
         sheet_list = self.print_sheet(sheets)
 
         return JsonResponse({'message': sheet_list}, status = 200)
+
+class StockTotalView(View):
+    def post(self, request):
+        product_code = request.POST['product_code']
+        company_code = request.POST['company_code']
+        warehouse_code = request.POST['warehouse_code']
+        type = request.POST['warehouse_code']
+
+        target_product = Product.objects.get(product_code = product_code)
+        quantity = QuantityByWarehouse.objects.get(product_id =target_product.id, warehouse_code = warehouse_code).total_quantity    
+        
+
+        try:
+            list_A = QuantityByWarehouse.objects.filter(product_id = target_product.id)
+            
+            total_quantity = 0
+            for obj in list_A:
+                total_quantity += obj.total_quantity
+
+            price = 0
+            if type == 'inbound':
+                check_price = ProductPrice.objects.filter(company_code = company_code, product_id = target_product.id)
+                if check_price.exists() == False:
+                    price = 0
+                price = check_price['inbound_price']
+
+            if type == 'outbound':
+                check_price = ProductPrice.objects.filter(company_code = company_code, product_id = target_product.id)
+                if check_price.exists() == False:
+                    price = 0
+                price = check_price['outbound_price']
+                
+            compay_name = Company.objects.get(code = target_product.company_code).name
+        
+        except Company.MultipleObjectsReturned:
+            compay_name = ''
+                
+            dict = {
+                'product_name'  : target_product.name,
+                'product_code'  : target_product.product_code,
+                'company_name'  : compay_name,
+                'keyword'       : target_product.keyword,
+                'latest_price'  : price,
+                'warehouse_quantity' : quantity,
+                'total_quantity': total_quantity
+            }
+
+            return JsonResponse({'message' : dict})
+        
+        
+
+        except Product.DoesNotExist:    
+            return JsonResponse({'message' : '잘못된 요청을 보내셨습니다.2'}, status = 403)
+        except ProductPrice.DoesNotExist:
+            return JsonResponse({'message' : '0' }, status = 403)
+
+
+        
