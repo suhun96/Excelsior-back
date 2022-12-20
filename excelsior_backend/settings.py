@@ -45,12 +45,14 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'health_check',
+    # 'drf_yasg',
+    'rest_framework',
     'corsheaders',
     'users',
     'products',
     'locations',
     'companies',
-    'stock'
+    'stock',
 ]
 
 MIDDLEWARE = [

@@ -669,54 +669,78 @@ class SerialActionHistoryView(View):
         return JsonResponse({'message': sheet_list}, status = 200)
 
 class StockTotalView(View):
-    def post(self, request):
-        product_code = request.POST['product_code']
-        company_code = request.POST['company_code']
-        warehouse_code = request.POST['warehouse_code']
-        type = request.POST['warehouse_code']
-
-        target_product = Product.objects.get(product_code = product_code)
-        quantity = QuantityByWarehouse.objects.get(product_id =target_product.id, warehouse_code = warehouse_code).total_quantity    
+    def get(self, request):
+        product_name    = request.GET.get('product_name', None)
+        product_code    = request.GET.get('product_code', None)
+        keyword         = request.GET.get('keyword', None)
+        barcode         = request.GET.get('barcode', None)
         
+        type            = request.GET.get('type', None)
+        company_code    = request.GET.get('company_code', None)
+        warehouse_code  = request.GET.get('warehouse_code', None)
+
+        q = Q()
+        if product_name:
+            q &= Q(name__icontains = product_name)
+        if product_code:
+            q &= Q(product_code__icontains = product_code)
+        if barcode:
+            q &= Q(barcode__icontains = barcode)
+        if keyword:
+            q &= Q(keyword__icontains = keyword)
+
+        target_products = Product.objects.filter(q)
+
+        result = []
 
         try:
-            list_A = QuantityByWarehouse.objects.filter(product_id = target_product.id)
+            for product in target_products:
+                list_A = QuantityByWarehouse.objects.filter(product_id = product.id)
+                
+                total_quantity = 0
+                for obj in list_A:
+                    total_quantity += obj.total_quantity
+
+                price = 0
+                if type == 'inbound':
+                    if not company_code:
+                        price = 0
+                    else:
+                        check_price = ProductPrice.objects.filter(company_code = company_code, product_id = product.id)
+                        price = check_price['inbound_price']
+
+                if type == 'outbound':
+                    if not company_code:
+                        price = 0
+                    else:
+                        check_price = ProductPrice.objects.filter(company_code = company_code, product_id = product.id)
+                        price = check_price['outbound_price']
+                if not warehouse_code:
+                    dict = {
+                        'product_name'      : product.name,
+                        'product_code'      : product.product_code,
+                        'location'          : product.location,
+                        'total_quantity'    : total_quantity,
+                        'latest_price'      : price,
+                        'status'            : product.status
+                    }
+                else:
+                    partial_quantity = QuantityByWarehouse.objects.get(product_id =product.id, warehouse_code = warehouse_code).total_quantity        
+                    
+                    dict = {
+                        'product_name'      : product.name,
+                        'product_code'      : product.product_code,
+                        'warehouse_name'    : Warehouse.objects.get(code =product.warehouse_code).name,
+                        'warehouse_code'    : product.warehouse_code,
+                        'location'          : product.location,
+                        'status'            : product.status,
+                        'latest_price'      : price,
+                        'partial_quantity'  : partial_quantity,
+                        'total_quantity'    : total_quantity
+                    }
+                result.append(dict)
             
-            total_quantity = 0
-            for obj in list_A:
-                total_quantity += obj.total_quantity
-
-            price = 0
-            if type == 'inbound':
-                check_price = ProductPrice.objects.filter(company_code = company_code, product_id = target_product.id)
-                if check_price.exists() == False:
-                    price = 0
-                price = check_price['inbound_price']
-
-            if type == 'outbound':
-                check_price = ProductPrice.objects.filter(company_code = company_code, product_id = target_product.id)
-                if check_price.exists() == False:
-                    price = 0
-                price = check_price['outbound_price']
-                
-            compay_name = Company.objects.get(code = target_product.company_code).name
-        
-        except Company.MultipleObjectsReturned:
-            compay_name = ''
-                
-            dict = {
-                'product_name'      : target_product.name,
-                'product_code'      : target_product.product_code,
-                'warehouse_name'    : Warehouse.objects.get(code =target_product.warehouse_code ).name
-                'warehouse_code'    : target_product.warehouse_code,
-                'location'          : target_product.location,
-                'status'            : target_product.status,
-                'latest_price'      : price,
-                'partial_quantity'  : quantity,
-                'total_quantity'    : total_quantity
-            }
-
-            return JsonResponse({'message' : dict})
+            return JsonResponse({'message' : result})
         
         
 
@@ -724,6 +748,4 @@ class StockTotalView(View):
             return JsonResponse({'message' : '잘못된 요청을 보내셨습니다.2'}, status = 403)
         except ProductPrice.DoesNotExist:
             return JsonResponse({'message' : '0' }, status = 403)
-
-
         
