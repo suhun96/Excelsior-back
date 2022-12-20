@@ -11,5 +11,5 @@ urlpatterns = [
     path('price', PriceCheckView.as_view()),
     path('serial-check', SerialCodeCheckView.as_view()),
     path('serial-tracking', SerialActionHistoryView.as_view()),
-    path('check-tt', StockTotalView.as_view())
+    path('stock-info', StockTotalView.as_view())
 ]
