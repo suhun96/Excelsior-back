@@ -12,8 +12,12 @@ from datetime           import datetime, timedelta
 from users.models       import *
 from users.decorator    import jwt_decoder
 
+# Swagger
+from drf_yasg.utils     import swagger_auto_schema
+
 # View
 class SignUpView(View):
+    @swagger_auto_schema
     def post(self, request):
         data = request.POST
 
