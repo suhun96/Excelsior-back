@@ -22,20 +22,20 @@ class Company(models.Model): # managers 확인 하세요!
     class Meta:
         db_table = 'companies'
 
-# class CustomTitle(models.Model):
-#     title  = models.CharField(max_length= 300, blank= False)
-#     status = models.BooleanField(default= True)
+class CustomTitle(models.Model):
+    title  = models.CharField(max_length= 300, blank= False)
+    status = models.BooleanField(default= True)
 
-#     class Meta:
-#         db_table = 'company_custom_title' 
+    class Meta:
+        db_table = 'company_custom_title' 
 
-# class CustomValue(models.Model):
-#     custom_title = models.ForeignKey(CustomTitle, on_delete= models.CASCADE)
-#     product      = models.ForeignKey(Product, on_delete= models.CASCADE)
-#     value        = models.CharField(max_length= 1000)
+class CustomValue(models.Model):
+    custom_title = models.ForeignKey(CustomTitle, on_delete= models.CASCADE)
+    product      = models.ForeignKey(Product, on_delete= models.CASCADE)
+    value        = models.CharField(max_length= 1000)
 
-#     class Meta:
-#         db_table = 'company_custom_value' 
+    class Meta:
+        db_table = 'company_custom_value' 
 
 class CompanyPhonebook(models.Model):
     company = models.ForeignKey('Company', on_delete= models.CASCADE)
