@@ -198,18 +198,16 @@ class CustomTitleCreateView(View):
 class CustomTitleModifyView(View):
     def post(self, request):
         id      = request.POST['custom_title_id']
-
+        print(request.POST)
         UPDATE_SET = {}
 
         for key, value in request.POST.items():
             if key == 'title':
                 UPDATE_SET.update({key : value})
             
-            if key == 'status' and value =='True':
-                UPDATE_SET.update({key : True})
-            
-            if key == 'status' and value =='False':
-                UPDATE_SET.update({key : True})
+            if key == 'status':
+                UPDATE_SET.update({key : value})
+    
         try:
             CustomTitle.objects.filter(id = id).update(**UPDATE_SET)
             
@@ -224,13 +222,16 @@ class CustomValueListView(View):
         company_id = request.GET.get('company_id')
 
         Use_Titles = CustomTitle.objects.filter(status = True).values_list('id', flat= True)
-
+        print(Use_Titles)
         result = []
         for title_id in Use_Titles:
-            value = CustomValue.objects.get(company_id = company_id, custom_title_id = title_id).value
-            dict = {}
-            dict.update({title_id : value})
-            result.append(dict)
+            try:
+                value = CustomValue.objects.get(company_id = company_id, custom_title_id = title_id).value
+                dict = {}
+                dict.update({title_id : value})
+                result.append(dict)
+            except CustomValue.DoesNotExist:
+                pass
 
         return JsonResponse({'message' : result}, status = 200)
 
