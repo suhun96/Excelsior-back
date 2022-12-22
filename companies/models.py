@@ -31,7 +31,7 @@ class CustomTitle(models.Model):
 
 class CustomValue(models.Model):
     custom_title = models.ForeignKey(CustomTitle, on_delete= models.CASCADE)
-    product      = models.ForeignKey(Product, on_delete= models.CASCADE)
+    company      = models.ForeignKey(Company, on_delete= models.CASCADE)
     value        = models.CharField(max_length= 1000)
 
     class Meta:
