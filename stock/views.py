@@ -527,7 +527,7 @@ class PriceCheckView(View):
         
 class SerialCodeCheckView(View):
     def serial_product_code_checker(self, serial_code):
-        product_id = SerialAction.objects.get(serial = serial_code).product
+        product_id = SerialAction.objects.get(serial = serial_code).product.id
 
         product_code = Product.objects.get(id = product_id).product_code
         return product_code
@@ -636,11 +636,11 @@ class SerialCodeCheckView(View):
                 sheet_type  = sheet.type
 
                 if sheet_type == "inbound":
-                    product_code = self.serial_product_code_checker
+                    product_code = self.serial_product_code_checker(serial_code)
                     return JsonResponse({'message' : '출고 처리가 가능합니다.' , 'product_code' : product_code}, status = 200)
 
                 if sheet_type == "create":
-                    product_code = self.serial_product_code_checker
+                    product_code = self.serial_product_code_checker(serial_code)
                     return JsonResponse({'message' : '출고 처리가 가능합니다.', 'product_code' : product_code}, status = 200)
 
                 if sheet_type == "outbound":
