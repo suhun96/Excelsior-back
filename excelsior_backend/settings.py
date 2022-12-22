@@ -46,7 +46,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'health_check',
     # 'drf_yasg',
-    'rest_framework',
+    # 'rest_framework',
     'corsheaders',
     'users',
     'products',
