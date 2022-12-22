@@ -82,15 +82,61 @@ class CompanyView(View):
         
                 
                 new_company = Company.objects.create(**CREATE_SET)
-                # 전화번호부 5개 생성
-                for i in range(1,6):
-                    CompanyPhonebook.objects.create(company_id = new_company.id)
 
                 check_created = list(Company.objects.filter(id = new_company.id).values())
 
             return JsonResponse({'message' : check_created}, status = 200)
         except KeyError:
             return JsonResponse({'message' : 'KEY ERROR'}, status = 403)
+
+class CreateCompanyPhonebookView(View):
+    def post(self, request):
+        company_id = request.POST['company_id']
+
+        CREATE_SET = {'company_id' : company_id}
+
+        for key, value in request.POST.items():
+            if key == 'name':
+                CREATE_SET.update({key : value})
+            if key == 'mobile':
+                CREATE_SET.update({key : value})
+            if key == 'email':
+                CREATE_SET.update({key : value})
+
+        new_company_phonebook = CompanyPhonebook.objects.create(**CREATE_SET)
+
+        return JsonResponse({'message' : '새로운 연락처가 등록되었습니다.'}, status = 200)
+
+class ModifyCompanyPhonebookView(View):
+    def post(self, request):
+        id = request.POST['company_phonebook_id']
+
+        UPDATE_SET = {}
+
+        for key, value in request.POST.items():
+            if key == 'name':
+                UPDATE_SET.update({key : value})
+            if key == 'mobile':
+                UPDATE_SET.update({key : value})
+            if key == 'email':
+                UPDATE_SET.update({key : value})
+
+        update_company_phonebook = CompanyPhonebook.objects.filter(id = id).update(**UPDATE_SET)
+
+        return JsonResponse({'message' : '새로운 연락처가 등록되었습니다.'}, status = 200)
+
+class InquireCompanyPhonebookView(View):
+    def get(self, request):
+        company_id = request.GET.get('company_id')
+
+        check = list(CompanyPhonebook.objects.filter(company_id = company_id).values(
+            'id',
+            'name',
+            'mobile',
+            'email'
+        ))
+
+        return JsonResponse({'message' : check}, status = 200)
 
 class CompanyModifyView(View):
     @jwt_decoder
@@ -126,32 +172,6 @@ class CompanyModifyView(View):
         except:
             return JsonResponse({'message' : "예외 사항이 발생했습니다."}, status = 403)
 
-class CompanyPhonebookView(View):
-    def get(self, request):
-        company_id = request.GET.get('company_id')
-
-        check = list(CompanyPhonebook.objects.filter(company_id = company_id).values(
-            'id',
-            'name',
-            'mobile',
-            'email'
-        ))
-
-        return JsonResponse({'message' : check}, status = 200)
-    @jwt_decoder
-    def post(self, request):
-        input_data = request.POST
-
-        if Company.objects.filter(id = input_data['company_id']).exists() == False:
-            return JsonResponse({'message' : '존재하지 않는 회사입니다. 확인해주세요'}, status = 403)
-
-        CompanyPhonebook.objects.filter(id = input_data['id'], company_id = input_data['company_id']).update(
-            name = input_data['name'],
-            mobile = input_data['mobile'],
-            email = input_data['email']
-        )
-
-        return JsonResponse({'test' : 'check'}, status = 200)
 
 class CompnayStatusView(View):
     @jwt_decoder
