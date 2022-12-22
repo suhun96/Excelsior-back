@@ -718,34 +718,41 @@ class StockTotalView(View):
                         price = check_price.outbound_price
                 
                 if not warehouse_code:
-                    dict = {
-                        'product_name'      : product.name,
-                        'product_code'      : product.product_code,
-                        'location'          : product.location,
-                        'total_quantity'    : total_quantity,
-                        'latest_price'      : price,
-                        'status'            : product.status
-                    }
-                else:
-                    partial_quantity = QuantityByWarehouse.objects.get(product_id =product.id, warehouse_code = warehouse_code).total_quantity        
-                    
+                    try:
+                        partial_quantity = QuantityByWarehouse.objects.get(product_id = product.id, warehouse_code = product.warehouse_code).total_quantity
+                    except QuantityByWarehouse.DoesNotExist:
+                        partial_quantity = 0
                     dict = {
                         'product_name'      : product.name,
                         'product_code'      : product.product_code,
                         'warehouse_name'    : Warehouse.objects.get(code =product.warehouse_code).name,
                         'warehouse_code'    : product.warehouse_code,
                         'location'          : product.location,
-                        'status'            : product.status,
-                        'latest_price'      : price,
                         'partial_quantity'  : partial_quantity,
-                        'total_quantity'    : total_quantity
+                        'total_quantity'    : total_quantity,
+                        'latest_price'      : price,
+                        'status'            : product.status
+                    }
+                else:
+                    try:
+                        partial_quantity = QuantityByWarehouse.objects.get(product_id = product.id, warehouse_code = product.warehouse_code).total_quantity
+                    except QuantityByWarehouse.DoesNotExist:
+                        partial_quantity = 0
+                    
+                    dict = {
+                        'product_name'      : product.name,
+                        'product_code'      : product.product_code,
+                        'warehouse_name'    : Warehouse.objects.get(code = warehouse_code).name,
+                        'warehouse_code'    : warehouse_code,
+                        'location'          : product.location,
+                        'partial_quantity'  : partial_quantity,
+                        'total_quantity'    : total_quantity,
+                        'latest_price'      : price,
+                        'status'            : product.status
                     }
                 result.append(dict)
             
             return JsonResponse({'message' : result})
-        
-        
-
         except Product.DoesNotExist:    
             return JsonResponse({'message' : '잘못된 요청을 보내셨습니다.2'}, status = 403)
         except ProductPrice.DoesNotExist:

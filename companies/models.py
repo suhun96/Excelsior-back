@@ -1,4 +1,5 @@
 from django.db import models
+from products.models import *
 
 class Company(models.Model): # managers 확인 하세요!
     name         = models.CharField(max_length = 60, blank = False)
@@ -21,21 +22,20 @@ class Company(models.Model): # managers 확인 하세요!
     class Meta:
         db_table = 'companies'
 
-class CompanyEtcTitle(models.Model):
-    title  = models.CharField(max_length=100, blank = False)
-    status = models.BooleanField(default = False)
+# class CustomTitle(models.Model):
+#     title  = models.CharField(max_length= 300, blank= False)
+#     status = models.BooleanField(default= True)
 
-    class Meta:
-        db_table = 'company_etc_title'
+#     class Meta:
+#         db_table = 'company_custom_title' 
 
-class CompanyEtcDesc(models.Model):
-    company = models.ForeignKey('Company', on_delete= models.CASCADE)
-    company_etc_title = models.ForeignKey('CompanyEtcTitle', on_delete= models.CASCADE)
-    contents = models.CharField(max_length = 700) 
-    
-    class Meta:
-        db_table = 'company_etc_desc'
+# class CustomValue(models.Model):
+#     custom_title = models.ForeignKey(CustomTitle, on_delete= models.CASCADE)
+#     product      = models.ForeignKey(Product, on_delete= models.CASCADE)
+#     value        = models.CharField(max_length= 1000)
 
+#     class Meta:
+#         db_table = 'company_custom_value' 
 
 class CompanyPhonebook(models.Model):
     company = models.ForeignKey('Company', on_delete= models.CASCADE)
