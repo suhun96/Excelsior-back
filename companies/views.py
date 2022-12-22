@@ -179,6 +179,8 @@ class CompnayStatusView(View):
         except Exception:
             return JsonResponse({'message' : '예외 사항이 발생해서 트랜잭션을 중지했습니다.'}, status = 403)
 
+# -------------------------------------------------------------------------------------------------------------#
+
 class CustomTitleCreateView(View):
     def post(self, request):
         title   = request.POST['title']
@@ -217,16 +219,31 @@ class CustomTitleModifyView(View):
         except KeyError:
             return JsonResponse({'message' : 'KeyError'}, status = 403)  
 
+class CustomValueListView(View):
+    def get(self, request):
+        company_id = request.GET.get('company_id')
+
+        Use_Titles = CustomTitle.objects.filter(status = True).values_list('id', flat= True)
+
+        result = []
+        for title_id in Use_Titles:
+            value = CustomValue.objects.get(company_id = company_id, custom_title_id = title_id).value
+            dict = {}
+            dict.update({title_id : value})
+            result.append(dict)
+
+        return JsonResponse({'message' : result}, status = 200)
+
 class CustomValueCreateView(View):
     def post(self, request):
         custom_title_id = request.POST['title_id']
-        product_id      = request.POST['product_id']
+        company_id      = request.POST['company_id']
         value           = request.POST['value']
 
         try:
             new_custom_value = CustomValue.objects.create(
                 custom_title_id = custom_title_id,
-                product_id = product_id,
+                company_id = company_id,
                 value = value
             )
             return JsonResponse({'message' : 'cusutom value 생성 성공'}, status = 200)
