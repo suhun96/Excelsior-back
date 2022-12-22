@@ -126,83 +126,6 @@ class CompanyModifyView(View):
         except:
             return JsonResponse({'message' : "예외 사항이 발생했습니다."}, status = 403)
 
-class CompanyEtcTitleView(View):
-    @jwt_decoder
-    def post(self, request):
-        input_data = request.POST
-        company_etc_id = input_data.get('company_etc_id', None)
-        
-        try:
-            with transaction.atomic():
-                UPDATE_SET = {}
-
-                for key, value in input_data.items():
-                    if key == 'company_etc_title':
-                        UPDATE_SET.update({'title' : value})
-                    
-                    if key == 'status':
-                        if value == 'False':
-                            UPDATE_SET.update({'status': False})
-                        elif value == 'True':
-                            UPDATE_SET.update({'status': True})
-                
-                CompanyEtcTitle.objects.filter(id = company_etc_id).update(**UPDATE_SET)
-            return JsonResponse({'message' : 'updated'}, status = 200)
-        except Exception:
-            return JsonResponse({'message' : '예외 사항 발생'}, status = 403)
-
-    def get(self, request):
-        # 권한 설정
-        title_list = list(CompanyEtcTitle.objects.all().values('id','title','status')) 
-
-        return JsonResponse({'message' : title_list}, status = 200)   
-
-class CompanyEtcDescView(View):
-    @jwt_decoder
-    def post(self, request):
-        input_data = request.POST
-        
-        # 필수 입력 정보 확인
-        if not 'company_id' in input_data:
-            return JsonResponse({'message' : '수정할 회사가 입력되지 않았습니다'}, status = 403)
-
-        if not 'title_id' in input_data:
-            return JsonResponse({'message' : '수정할 제목이 선택되지 않았습니다.'}, status = 403)
-
-        # 거래처 확인
-        if not Company.objects.filter(id = input_data['company_id']).exists():
-            return JsonResponse({'message' : '존재하지 않는 회사입니다.'}, status = 403)
-
-        try:
-            with transaction.atomic():        
-                # 이미 등록된 정보가 있는지 확인
-                obj , created = CompanyEtcDesc.objects.update_or_create(company_id = input_data['company_id'], company_etc_title_id = input_data['title_id'],
-                defaults={
-                    'company_id' : input_data['company_id'],
-                    'company_etc_title_id' : input_data['title_id'],
-                    'contents' : input_data['contents']
-                })
-                
-            if created == False:
-                return JsonResponse({'message' : '기존의 비고란 내용을 수정 했습니다.'}, status = 200)
-            else:
-                return JsonResponse({'message' : '새로운 비고란 내용을 생성 했습니다.'}, status = 200)
-        except:
-            return JsonResponse({'message' : '예외 사항이 발생했습니다.'}, status = 200)
-    
-    def get(self, request):
-
-        filter_options = {
-            'company_id' : 'company_id__exact',
-            'company_code' : 'comp_code__icontains'
-        }        
-
-        filter_set = { filter_options.get(key) : value for (key, value) in request.GET.items() if filter_options.get(key) }
-        
-        result = list(CompanyEtcDesc.objects.filter(**filter_set).values())
-        
-        return JsonResponse({'message' : result}, status = 200)
-
 class CompanyPhonebookView(View):
     def get(self, request):
         company_id = request.GET.get('company_id')
@@ -255,3 +178,75 @@ class CompnayStatusView(View):
 
         except Exception:
             return JsonResponse({'message' : '예외 사항이 발생해서 트랜잭션을 중지했습니다.'}, status = 403)
+
+class CustomTitleCreateView(View):
+    def post(self, request):
+        title   = request.POST['title']
+
+        try:
+            new_custom_title = CustomTitle.objects.create(
+                title = title,
+                status = True
+            )
+        
+            return JsonResponse({'message' : 'cusutom title 생성 성공'}, status = 200)
+        except KeyError:
+            return JsonResponse({'message' : '잘못된 key 값을 입력하셨습니다.'}, status = 403)
+
+class CustomTitleModifyView(View):
+    def post(self, request):
+        id      = request.POST['custom_title_id']
+
+        UPDATE_SET = {}
+
+        for key, value in request.POST.items():
+            if key == 'title':
+                UPDATE_SET.update({key : value})
+            
+            if key == 'status' and value =='True':
+                UPDATE_SET.update({key : True})
+            
+            if key == 'status' and value =='False':
+                UPDATE_SET.update({key : True})
+        try:
+            CustomTitle.objects.filter(id = id).update(**UPDATE_SET)
+            
+            return JsonResponse({'message' : '커스텀 타이틀 수정을 성공했습니다.'}, status = 200)
+        except CustomTitle.DoesNotExist:
+            return JsonResponse({'message' : f'title id를 확인해주세요. {id}'}, status = 403)
+        except KeyError:
+            return JsonResponse({'message' : 'KeyError'}, status = 403)  
+
+class CustomValueCreateView(View):
+    def post(self, request):
+        custom_title_id = request.POST['title_id']
+        product_id      = request.POST['product_id']
+        value           = request.POST['value']
+
+        try:
+            new_custom_value = CustomValue.objects.create(
+                custom_title_id = custom_title_id,
+                product_id = product_id,
+                value = value
+            )
+            return JsonResponse({'message' : 'cusutom value 생성 성공'}, status = 200)
+        except KeyError:
+            return JsonResponse({'message' : '잘못된 key 값을 입력하셨습니다.'}, status = 200)
+
+class CustomValueModifyView(View):
+    def post(self, request):
+        id = request.POST['custom_value_id']
+        UPDATE_SET = {}
+        
+        for key, value in request.POST.items():
+            if key == 'value':
+                UPDATE_SET.update({key : value})
+        
+        try:
+            CustomValue.objects.filter(id = id).update(**UPDATE_SET)
+
+            return JsonResponse({'message' : '커스텀 밸류 수정을 성공했습니다.'}, status = 200)
+        except CustomValue.DoesNotExist:
+            return JsonResponse({'message' : f'value id를 확인해주세요. {id}'}, status = 403)
+        except KeyError:
+            return JsonResponse({'message' : 'KeyError'}, status = 403)  
