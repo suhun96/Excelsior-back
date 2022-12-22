@@ -18,7 +18,7 @@ class ProductEtcTitle(models.Model):
     status = models.BooleanField(default = False)
 
     class Meta:
-        db_table = 'product_etc_title'
+        db_table = 'product_custom_title'
 
 class ProductEtcDesc(models.Model):
     product   = models.ForeignKey('Product', on_delete= models.CASCADE)
@@ -26,7 +26,7 @@ class ProductEtcDesc(models.Model):
     contents  = models.CharField(max_length = 700) 
     
     class Meta:
-        db_table = 'product_etc_desc'
+        db_table = 'product_custom_desc'
 # -------------------------------------------------------------------------- #
 
 # Depth 1

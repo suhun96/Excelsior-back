@@ -198,7 +198,7 @@ class CustomTitleCreateView(View):
 class CustomTitleModifyView(View):
     def post(self, request):
         id      = request.POST['custom_title_id']
-        print(request.POST)
+        
         UPDATE_SET = {}
 
         for key, value in request.POST.items():
@@ -222,7 +222,7 @@ class CustomValueListView(View):
         company_id = request.GET.get('company_id')
 
         Use_Titles = CustomTitle.objects.filter(status = True).values_list('id', flat= True)
-        print(Use_Titles)
+        
         result = []
         for title_id in Use_Titles:
             try:
