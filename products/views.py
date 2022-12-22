@@ -504,86 +504,95 @@ class ModifyProductInfoView(View):
         except:
             return JsonResponse({'message' : '예외 사항 발생'}, status = 403)
 
-class ProductEtcTitleView(View):
-    @jwt_decoder
+#------------------------------------------------------------------------------------------------------#
+
+class CreateProductEtcTitleView(View):
     def post(self, request):
-        input_data = request.POST
-        etc_title_id = input_data.get('etc_title_id', None)
-
-        if not etc_title_id:
-            return JsonResponse({'message': "수정에 필요한 비고란 제목 id값이 들어오지 않았습니다."}, status = 403)
-        
-        with transaction.atomic():
-            UPDATE_SET = {}
-
-            for key, value in input_data.items():
-                if key == 'title':
-                    UPDATE_SET.update({key : value})
-                if key == 'status':
-                    if value == 'false':
-                        UPDATE_SET.update({'status': False})
-                    elif value == 'true':
-                        UPDATE_SET.update({'status': True})
-
-            ProductEtcTitle.objects.filter(id = etc_title_id).update(**UPDATE_SET)
-            return JsonResponse({'message' : 'updated'}, status = 200)
-        
-
-    def get(self, request):
-        # 권한 설정
-        title_list = list(ProductEtcTitle.objects.all().values()) 
-
-        return JsonResponse({'message' : title_list}, status = 200)
-
-class ProductEtcDescView(View):
-    @jwt_decoder
-    def post(self, request):
-        input_data = request.POST
-        product_id = input_data.get('product_id', None)
-        etc_title_id = input_data.get('etc_title_id', None)
-        contents = input_data.get('contents', None)
-        # 필수 입력 정보 확인
-        if not product_id:
-            return JsonResponse({'message' : '수정할 제품 id가 입력되지 않았습니다'}, status = 403)
-
-        if not etc_title_id:
-            return JsonResponse({'message' : '비고란 id가 입력되지 않았습니다.'}, status = 403)
-
-        if not contents:
-            return JsonResponse({'message' : '비고에 들어갈 내용이 입력되지 않았습니다.'}, status = 403)
-
-        # 제품 확인
-        if not Product.objects.filter(id = product_id).exists():
-            return JsonResponse({'message' : '존재하지 않는 제품입니다. '}, status = 403)
+        title   = request.POST['title']
 
         try:
-            with transaction.atomic():        
-                # 이미 등록된 정보가 있는지 확인
-                obj , created = ProductEtcDesc.objects.update_or_create(product_id = product_id, etc_title_id = etc_title_id,
-                defaults={
-                    'product_id' : product_id,
-                    'etc_title_id' :etc_title_id,
-                    'contents' : contents
-                })
-                
-            if created == False:
-                return JsonResponse({'message' : '기존의 비고란 내용을 수정 했습니다.'}, status = 200)
-            else:
-                return JsonResponse({'message' : '새로운 비고란 내용을 생성 했습니다.'}, status = 200)
-        except:
-            return JsonResponse({'message' : '예외 사항이 발생했습니다.'}, status = 200)
+            new_custom_title = ProductEtcTitle.objects.create(
+                title = title,
+                status = True
+            )
+        
+            return JsonResponse({'message' : 'product etc title 생성 성공'}, status = 200)
+        except KeyError:
+            return JsonResponse({'message' : '잘못된 key 값을 입력하셨습니다.'}, status = 403)
+
+class ModifyProductEtcTitleView(View):
+    def post(self, request):
+        id      = request.POST['product_title_id']
+        
+        UPDATE_SET = {}
+
+        for key, value in request.POST.items():
+            if key == 'title':
+                UPDATE_SET.update({key : value})
+            
+            if key == 'status':
+                UPDATE_SET.update({key : value})
     
+        try:
+            ProductEtcTitle.objects.filter(id = id).update(**UPDATE_SET)
+            
+            return JsonResponse({'message' : 'product etc title 수정을 성공했습니다.'}, status = 200)
+        except ProductEtcTitle.DoesNotExist:
+            return JsonResponse({'message' : f'title id를 확인해주세요. {id}'}, status = 403)
+        except KeyError:
+            return JsonResponse({'message' : 'KeyError'}, status = 403)  
+
+class InquireProductEtcDescView(View):
     def get(self, request):
-
-        filter_options = {
-            'product_id' : 'product_id__exact',
-        }        
-
-        filter_set = { filter_options.get(key) : value for (key, value) in request.GET.items() if filter_options.get(key) }
+        product_id = request.GET.get('product_id')
+        Use_Titles = ProductEtcTitle.objects.filter(status = True).values_list('id', flat= True)
+        result = []
         
-        result = list(ProductEtcDesc.objects.filter(**filter_set).values())
-        
+        for title_id in Use_Titles:
+            try:
+                contents = ProductEtcDesc.objects.get(product_id = product_id, etc_title_id = title_id).contents
+                dict = {}
+                dict.update({title_id : contents})
+                result.append(dict)
+            except CustomValue.DoesNotExist:
+                pass
+
         return JsonResponse({'message' : result}, status = 200)
+
+class CreateProductEtcDescView(View):
+    def post(self, request):
+        etc_title_id    = request.POST['title_id']
+        product_id      = request.POST['product_id']
+        desc            = request.POST['desc']
+
+        try:
+            new_custom_value = ProductEtcDesc.objects.create(
+                product_id = product_id,
+                etc_title_id = etc_title_id,
+                contents = desc
+            )
+            return JsonResponse({'message' : 'product etc desc 생성 성공'}, status = 200)
+        except KeyError:
+            return JsonResponse({'message' : '잘못된 key 값을 입력하셨습니다.'}, status = 200)
+
+class ModifyProductEtcDescView(View):
+    def post(self, request):
+        id = request.POST['etc_desc_id']
+        UPDATE_SET = {}
+        
+        for key, value in request.POST.items():
+            if key == 'desc':
+                UPDATE_SET.update({'contents' : value})
+        
+        try:
+            ProductEtcDesc.objects.filter(id = id).update(**UPDATE_SET)
+
+            return JsonResponse({'message' : '커스텀 밸류 수정을 성공했습니다.'}, status = 200)
+        except ProductEtcDesc.DoesNotExist:
+            return JsonResponse({'message' : f'value id를 확인해주세요. {id}'}, status = 403)
+        except KeyError:
+            return JsonResponse({'message' : 'KeyError'}, status = 403) 
+
 ###########################################################################################################
 
 class SetInfoView(View):
