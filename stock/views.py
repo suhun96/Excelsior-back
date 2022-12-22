@@ -718,8 +718,10 @@ class StockTotalView(View):
                         price = check_price.outbound_price
                 
                 if not warehouse_code:
-                    partial_quantity = QuantityByWarehouse.objects.get(product_id = product.id, warehouse_code = product.warehouse_code).total_quantity
-
+                    try:
+                        partial_quantity = QuantityByWarehouse.objects.get(product_id = product.id, warehouse_code = product.warehouse_code).total_quantity
+                    except QuantityByWarehouse.DoesNotExist:
+                        partial_quantity = 0
                     dict = {
                         'product_name'      : product.name,
                         'product_code'      : product.product_code,
@@ -732,7 +734,10 @@ class StockTotalView(View):
                         'status'            : product.status
                     }
                 else:
-                    partial_quantity = QuantityByWarehouse.objects.get(product_id =product.id, warehouse_code = warehouse_code).total_quantity        
+                    try:
+                        partial_quantity = QuantityByWarehouse.objects.get(product_id = product.id, warehouse_code = product.warehouse_code).total_quantity
+                    except QuantityByWarehouse.DoesNotExist:
+                        partial_quantity = 0
                     
                     dict = {
                         'product_name'      : product.name,
