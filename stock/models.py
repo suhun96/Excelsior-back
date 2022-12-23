@@ -76,3 +76,20 @@ class ProductPrice(models.Model):
 
     class Meta:
         db_table = 'inventory_price'
+
+# class SheetType(models.Model):
+#     name = models.CharField(max_length= 200)
+
+#     class Meta:
+#         db_table = 'sheet_type'
+
+# class ProductOrder(models.Model):
+#     serial_code     = models.CharField()
+#     product_order   = models.CharField()
+#     manager_name    = models.CharField()
+#     manager_fab     = models.CharField()
+#     division        = models.CharField
+#     date = models.DateField()
+    
+#     class Meta:
+#         db_table 

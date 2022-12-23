@@ -72,7 +72,6 @@ class WarehouseInfoView(View):
 
         return JsonResponse({'message' : warehouse_list}, status = 200)
 
-
 class WarehouseStatusView(View):
     @jwt_decoder
     def post(self, request):

@@ -1,6 +1,7 @@
 import json, re
 
-from datetime           import datetime
+import datetime
+
 from django.views       import View
 from django.http        import JsonResponse
 from django.db          import transaction
@@ -99,11 +100,13 @@ class NomalStockView(View):
                             
                             # serial 추적
                             if SerialAction.objects.filter(serial = serial_code).exists():
+                                # 12월 23일 중단점
+                                # if SerialAction.objects.filter(serial_code).count() > 1:
+                                    # raise Exception({'messgae' : f'{product_code}는 존재하지 않습니다.'})    
+                                
                                 actions = SerialAction.objects.get(serial = serial_code).actions
-                                
                                 actions = actions + f',{new_sheet.id}'
-                                
-                                SerialAction.objects.filter(serial = serial_code).update(actions = actions)
+                                Update_serial_action = SerialAction.objects.filter(serial = serial_code).update(actions = actions)
                             
                             else:
                                 SerialAction.objects.create(
@@ -352,26 +355,42 @@ class QunatityByWarehouseView(View):
 class SheetListView(View):
     def get(self, request):
         type = request.GET.get('type', None)
+        name = request.GET.get('user_name', None)
+        company_name = request.GET.get('company_name', None)
+        date_start = request.GET.get('date_start', None)
+        date_end   = request.GET.get('date_end')
+        warehouse_code = request.GET.get('warehouse_code', None)
+        product_code = request.GET.get('product_code')
 
-        q = Q()
+        if not date_start:
+            return JsonResponse({'message' : "기준 시작 날짜 설정 오류"}, status = 403)
+        if not date_end:
+            return JsonResponse({'message' : "기준 종료 날짜 설정 오류"}, status = 403)
+
+        q = Q(created_at__range = (date_start, date_end))
+
         if type:
             q &= Q(type__icontains = type)
+        if name:
+            user_id = User.objects.get(name = name).id
+            q &= Q(user__icontains = user_id)
+        if company_name:
+            company_code = Company.objects.get(name = company_name).code
+            q &= Q(company_code__icotains = company_code)
+            
+
 
         
-        sheets = Sheet.objects.filter(q).values(
-            'id',
-            'user',
-            'type',
-            'company_code',
-            'etc',
-            'created_at'
-        ).order_by('created_at')
+        sheet_ids = Sheet.objects.filter(q).values_list('id', flat= True).order_by('created_at')
+
+        
 
         for_list = []
-        for sheet in sheets:
-            id           = sheet['id']
-            user_name    = User.objects.get(id = sheet['user']).name
-            type         = sheet['type']
+        for sheet_id in sheet_ids:
+            sheet = Sheet.objects.get(id = sheet_id)
+            id           = sheet.id
+            user_name    = User.objects.get(id = sheet.user.id).name
+            type         = sheet.type
             # type 체인지
             if type == 'inbound':
                 type = '입고'
@@ -382,19 +401,76 @@ class SheetListView(View):
             elif type == 'used':
                 type = '소모'
 
-            company_name = Company.objects.get(code = sheet['company_code']).name
-            etc          = sheet['etc']
-            created_at   = sheet['created_at']
+            company_name = Company.objects.get(code = sheet.company_code).name
+            etc          = sheet.etc
+            created_at   = sheet.created_at
             
-            dict = {
-                'id'        :  id,       
-                'type'      : type,
-                'user'      : user_name,
-                'created_at'    : created_at,
-                'company_name'  : company_name,
-                'etc'       : etc
-            }
+            q2 = Q()
+
+            if warehouse_code:
+                q &= Q(warehouse_code__icontains = warehouse_code)
+            if product_code:
+                product_id = Product.objects.get(product_code = product_code).id
+                q &= Q(product_code__exact = product_id)
+
+
+            compositions = SheetComposition.objects.filter(q2)
+            for composition in compositions:
+                product = Product.objects.get(id = composition.product_id)
+                
+                total = QuantityByWarehouse.objects.filter(product_id = product.id).aggregate(Sum('total_quantity'))
+
+                serial_codes = SerialInSheetComposition.objects.filter(sheet_composition = composition).values('serial_code')
+
+                list_serial_code = []
             
+                for object in serial_codes:
+                    list_serial_code.append(object.get('serial_code'))
+
+                if product.company_code == "" :
+                    dict = {
+                        'sheet_id'              : id,
+                        'user_name'             : user_name,
+                        'type'                  : type,
+                        'company_name'          : company_name,
+                        'etc'                   : etc,
+                        'created_at'            : created_at,
+                        'product_code'          : product.product_code,
+                        'product_name'          : product.name,
+                        'product_group_name'    : ProductGroup.objects.get(code = product.productgroup_code).name,
+                        'barcode'               : product.barcode,
+                        'unit_price'            : composition.unit_price,
+                        'quantity'              : composition.quantity,
+                        'total_quantity'        : total['total_quantity__sum'],
+                        'warehouse_name'        : Warehouse.objects.get(code = composition.warehouse_code).name,
+                        'partial_quantity'      : QuantityByWarehouse.objects.get(warehouse_code = composition.warehouse_code, product_id = product.id).total_quantity,
+                        'location'              : composition.location,
+                        'serial_codes'          : list_serial_code,
+                        'etc'                   : composition.etc   
+                    } 
+                else:
+                    dict = {
+                        'sheet_id'              : id,
+                        'user_name'             : user_name,
+                        'type'                  : type,
+                        'company_name'          : company_name,
+                        'etc'                   : etc,
+                        'created_at'            : created_at,
+                        'product_code'          : product.product_code,
+                        'product_name'          : product.name,
+                        'product_group_name'    : ProductGroup.objects.get(code = product.productgroup_code).name,
+                        'barcode'               : product.barcode,
+                        'company_name'          : Company.objects.get(code = product.company_code).name,
+                        'unit_price'            : composition.unit_price,
+                        'quantity'              : composition.quantity,
+                        'total_quantity'        : total['total_quantity__sum'],
+                        'warehouse_name'        : Warehouse.objects.get(code = composition.warehouse_code).name,
+                        'partial_quantity'      : QuantityByWarehouse.objects.get(warehouse_code = composition.warehouse_code, product_id = product.id).total_quantity,
+                        'location'              : composition.location,
+                        'serial_codes'          : list_serial_code,
+                        'etc'                   : composition.etc   
+                    }
+
             for_list.append(dict)
 
 
@@ -765,4 +841,21 @@ class StockTotalView(View):
             return JsonResponse({'message' : '잘못된 요청을 보내셨습니다.2'}, status = 403)
         except ProductPrice.DoesNotExist:
             return JsonResponse({'message' : '0' }, status = 403)
-        
+
+
+#------------------------------------------------------------------------------------#
+# class CreateSheetTypeView(View):
+#     def post(self, request):
+#         name = request.POST['name']
+
+#         SheetType.objects.create(name = name)
+
+#         return JsonResponse({'message' : 'sheet type 생성 성공'}, status = 200)
+
+# class DeleteSheetTypeView(View):
+#     def post(self, request):
+#         id = request.POST['sheet_type_id']
+
+#         SheetType.objects.delete(id = id)
+
+#         return JsonResponse({'message' : 'sheet type 생성 성공'}, status = 200)
