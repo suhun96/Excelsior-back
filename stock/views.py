@@ -378,7 +378,7 @@ class SheetListView(View):
             elif stock_type == 'used':
                 stock_type = '소모'
             elif stock_type == 'new':
-                stock_type = '소모'
+                stock_type = '등록'
 
 
             company_name = Company.objects.get(code = sheet['company_code']).name
