@@ -354,23 +354,93 @@ class QunatityByWarehouseView(View):
 
 class SheetListView(View):
     def get(self, request):
-        type = request.GET.get('type', None)
-        name = request.GET.get('user_name', None)
-        company_name = request.GET.get('company_name', None)
-        date_start = request.GET.get('date_start', None)
-        date_end   = request.GET.get('date_end')
-        warehouse_code = request.GET.get('warehouse_code', None)
-        product_code = request.GET.get('product_code')
+        stock_type = request.GET.get('type', None)
 
+        q = Q()
+        if stock_type:
+            q &= Q(type__icontains = stock_type)
+
+        
+        sheets = Sheet.objects.filter(q).values(
+            'id',
+            'user',
+            'type',
+            'company_code',
+            'etc',
+            'created_at'
+        ).order_by('created_at')
+
+        for_list = []
+        for sheet in sheets:
+            id           = sheet['id']
+            user_name    = User.objects.get(id = sheet['user']).name
+            stock_type   = sheet['type']
+            # type 체인지
+            if stock_type == 'inbound':
+                stock_type = '입고'
+            elif stock_type == 'outbound':
+                stock_type = '출고'
+            elif stock_type == 'generate':
+                stock_type = '세트 생산'
+            elif stock_type == 'used':
+                stock_type = '소모'
+
+            company_name = Company.objects.get(code = sheet['company_code']).name
+            etc          = sheet['etc']
+            created_at   = sheet['created_at']
+            
+            dict = {
+                'id'        :  id,       
+                'type'      : stock_type,
+                'user'      : user_name,
+                'created_at'    : created_at,
+                'company_name'  : company_name,
+                'etc'       : etc
+            }
+            
+            for_list.append(dict)
+
+
+        return JsonResponse({'message' : for_list}, status = 200)
+
+class InfoSheetListView(View):
+    def generate_document_num(self, sheet_id, created_at):
+        year  = created_at.year
+        month = created_at.month
+        day   = created_at.day
+        sheet = Sheet.objects.get(id = sheet_id)
+        stock_type = sheet.type
+        sheet_id   = sheet.id
+        
+        # 타입 변환기.
+        if stock_type == 'inbound':
+            stock_type = "입고"
+        if stock_type == "outbound":
+            stock_type = "출고"
+
+        document_num = f"{year}/{month}/{day}-{stock_type}-{sheet_id}"
+    
+        return document_num
+
+    def get(self, request):
+        name = request.GET.get('user_name', None)
+        stock_type = request.GET.get('type', None)
+        date_start = request.GET.get('date_start', None)
+        date_end   = request.GET.get('date_end', None)
+        company_name = request.GET.get('company_name', None)
+        product_code = request.GET.get('product_code')
+        warehouse_code = request.GET.get('warehouse_code', None)
+        
         if not date_start:
             return JsonResponse({'message' : "기준 시작 날짜 설정 오류"}, status = 403)
         if not date_end:
             return JsonResponse({'message' : "기준 종료 날짜 설정 오류"}, status = 403)
-
+        
+        # Sheet 필터링
         q = Q(created_at__range = (date_start, date_end))
 
-        if type:
-            q &= Q(type__icontains = type)
+        if stock_type:
+            q &= Q(type__icontains = stock_type)
         if name:
             user_id = User.objects.get(name = name).id
             q &= Q(user__icontains = user_id)
@@ -378,32 +448,30 @@ class SheetListView(View):
             company_code = Company.objects.get(name = company_name).code
             q &= Q(company_code__icotains = company_code)
             
-
-
-        
         sheet_ids = Sheet.objects.filter(q).values_list('id', flat= True).order_by('created_at')
-
-        
 
         for_list = []
         for sheet_id in sheet_ids:
             sheet = Sheet.objects.get(id = sheet_id)
             user_name    = User.objects.get(id = sheet.user.id).name
-            type         = sheet.type
+            stock_type   = sheet.type
             # type 체인지
-            if type == 'inbound':
-                type = '입고'
-            elif type == 'outbound':
-                type = '출고'
-            elif type == 'generate':
-                type = '세트 생산'
-            elif type == 'used':
-                type = '소모'
+            if stock_type == 'inbound':
+                stock_type = '입고'
+            elif stock_type == 'outbound':
+                stock_type = '출고'
+            elif stock_type == 'generate':
+                stock_type = '세트 생산'
+            elif stock_type == 'used':
+                stock_type = '소모'
+
+            document_num = self.generate_document_num(sheet.id, sheet.created_at)
 
             company_name = Company.objects.get(code = sheet.company_code).name
             etc          = sheet.etc
             created_at   = sheet.created_at
             
+            # Sheet composition(detail) 필터링
             q2 = Q(sheet_id = sheet_id)
 
             if warehouse_code:
@@ -418,7 +486,15 @@ class SheetListView(View):
             for composition in compositions:
                 product = Product.objects.get(id = composition.product_id)
                 
-                total = QuantityByWarehouse.objects.filter(product_id = product.id).aggregate(Sum('total_quantity'))
+                try: 
+                    total = QuantityByWarehouse.objects.filter(product_id = product.id).aggregate(Sum('total_quantity'))
+                except QuantityByWarehouse.DoesNotExist:
+                    total = 0
+                
+                try:  
+                    partial_quantity = QuantityByWarehouse.objects.get(warehouse_code = composition.warehouse_code, product_id = product.id).total_quantity,
+                except QuantityByWarehouse.DoesNotExist:
+                    partial_quantity = 0
 
                 serial_codes = SerialInSheetComposition.objects.filter(sheet_composition = composition.id).values('serial_code')
                 
@@ -429,9 +505,9 @@ class SheetListView(View):
 
                 if product.company_code == "" :
                     dict = {
-                        'sheet_id'              : sheet_id,
+                        'document_num'          : document_num,
                         'user_name'             : user_name,
-                        'type'                  : type,
+                        'type'                  : stock_type,
                         'company_name'          : company_name,
                         'etc'                   : etc,
                         'created_at'            : created_at,
@@ -443,16 +519,18 @@ class SheetListView(View):
                         'quantity'              : composition.quantity,
                         'total_quantity'        : total['total_quantity__sum'],
                         'warehouse_name'        : Warehouse.objects.get(code = composition.warehouse_code).name,
-                        'partial_quantity'      : QuantityByWarehouse.objects.get(warehouse_code = composition.warehouse_code, product_id = product.id).total_quantity,
+                        'partial_quantity'      : partial_quantity,
                         'location'              : composition.location,
                         'serial_codes'          : list_serial_code,
                         'etc'                   : composition.etc   
-                    } 
+                    }
+                    for_list.append(dict) 
+                
                 else:
                     dict = {
-                        'sheet_id'              : sheet_id,
+                        'document_num'          : document_num,
                         'user_name'             : user_name,
-                        'type'                  : type,
+                        'type'                  : stock_type,
                         'company_name'          : company_name,
                         'etc'                   : etc,
                         'created_at'            : created_at,
@@ -465,13 +543,12 @@ class SheetListView(View):
                         'quantity'              : composition.quantity,
                         'total_quantity'        : total['total_quantity__sum'],
                         'warehouse_name'        : Warehouse.objects.get(code = composition.warehouse_code).name,
-                        'partial_quantity'      : QuantityByWarehouse.objects.get(warehouse_code = composition.warehouse_code, product_id = product.id).total_quantity,
+                        'partial_quantity'      : partial_quantity,
                         'location'              : composition.location,
                         'serial_codes'          : list_serial_code,
                         'etc'                   : composition.etc   
                     }
-
-            for_list.append(dict)
+                    for_list.append(dict)
 
 
         return JsonResponse({'message' : for_list}, status = 200)
