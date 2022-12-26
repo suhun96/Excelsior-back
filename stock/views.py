@@ -413,6 +413,8 @@ class InfoSheetListView(View):
             stock_type = "입고"
         if stock_type == "outbound":
             stock_type = "출고"
+        if stock_type == 'new':
+                stock_type = '등록'
 
         document_num = f"{year}/{month}/{day}-{stock_type}-{sheet_id}"
     
