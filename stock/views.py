@@ -444,15 +444,10 @@ class InfoSheetListView(View):
             q &= Q(user_id__exact = user_id)
         if company_name:
             company_code = Company.objects.get(name = company_name).code
-<<<<<<< HEAD
-            q &= Q(company_code__icontains = company_code)
-            
-=======
             # print(company_code)
             q &= Q(company_code = company_code)
         
         
->>>>>>> 71c221c6e539f12503e18a3d0554ac63ba0ed934
         sheet_ids = Sheet.objects.filter(q).values_list('id', flat= True).order_by('created_at')
 
         for_list = []
