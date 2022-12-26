@@ -427,7 +427,7 @@ class InfoSheetListView(View):
         date_end   = request.GET.get('date_end', None)
         company_name = request.GET.get('company_name', None)
         product_code = request.GET.get('product_code')
-        warehouse_code = request.GET.get('warehouse_code', None)
+        warehouse_code = request.GET.get('warehouse_name', None)
         
         if not date_start:
             return JsonResponse({'message' : "기준 시작 날짜 설정 오류"}, status = 403)
@@ -441,7 +441,7 @@ class InfoSheetListView(View):
             q &= Q(type__icontains = stock_type)
         if name:
             user_id = User.objects.get(name = name).id
-            q &= Q(user__icontains = user_id)
+            q &= Q(user_id__exact = user_id)
         if company_name:
             company_code = Company.objects.get(name = company_name).code
             q &= Q(company_code__icotains = company_code)
@@ -476,10 +476,11 @@ class InfoSheetListView(View):
             # Sheet composition(detail) 필터링
             q2 = Q(sheet_id = sheet_id)
 
-            if warehouse_code:
+            if warehouse_name:
+                warehouse_code = Warehouse.objects.get(name = warehouse_name).code
                 q &= Q(warehouse_code__icontains = warehouse_code)
-            if product_code:
-                product_id = Product.objects.get(product_code = product_code).id
+            if product_name:
+                product_id = Product.objects.get(name = product_name).id
                 q &= Q(product_id__exact = product_id)
 
 
