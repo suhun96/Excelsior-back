@@ -194,10 +194,7 @@ class NomalStockView(View):
                         QuantityByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id).update_or_create(
                             product_id = product_id,
                             warehouse_code = warehouse_code,
-                            defaults={
-                                
-                                'total_quantity' : stock_quantity,
-                            })
+                            defaults={'total_quantity' : stock_quantity})
 
                     self.price_checker(input_data)
                     telegram_bot(new_sheet_id)
@@ -234,10 +231,7 @@ class NomalStockView(View):
                         QuantityByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id).update_or_create(
                             product_id = product_id,
                             warehouse_code = warehouse_code,
-                            defaults={
-                                
-                                'total_quantity' : stock_quantity,
-                            })
+                            defaults={'total_quantity' : stock_quantity})
                         
                     self.price_checker(input_data)
                     telegram_bot(new_sheet_id)
@@ -316,8 +310,7 @@ class NomalStockView(View):
                             product_id = composition['composition_product_id'],
                             warehouse_code = warehouse_code,
                             defaults={
-                                
-                                'total_quantity' : stock_quantity,
+                                'total_quantity' : stock_quantity
                             })
                     
                     # serial code 생선
@@ -478,7 +471,7 @@ class InfoSheetListView(View):
                 q &= Q(warehouse_code__icontains = warehouse_code)
             if product_code:
                 product_id = Product.objects.get(product_code = product_code).id
-                q &= Q(product_code__exact = product_id)
+                q &= Q(product_id__exact = product_id)
 
 
             compositions = SheetComposition.objects.filter(q2)
@@ -510,7 +503,7 @@ class InfoSheetListView(View):
                         'type'                  : stock_type,
                         'company_name'          : company_name,
                         'etc'                   : etc,
-                        'created_at'            : created_at,
+                        'created_at'            : f"{created_at.date}/{created_at.time}",
                         'product_code'          : product.product_code,
                         'product_name'          : product.name,
                         'product_group_name'    : ProductGroup.objects.get(code = product.productgroup_code).name,
@@ -533,7 +526,7 @@ class InfoSheetListView(View):
                         'type'                  : stock_type,
                         'company_name'          : company_name,
                         'etc'                   : etc,
-                        'created_at'            : created_at,
+                        'created_at'            : f"{created_at.date}/{created_at.time}",
                         'product_code'          : product.product_code,
                         'product_name'          : product.name,
                         'product_group_name'    : ProductGroup.objects.get(code = product.productgroup_code).name,
