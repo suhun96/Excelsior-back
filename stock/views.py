@@ -444,8 +444,10 @@ class InfoSheetListView(View):
             q &= Q(user_id__exact = user_id)
         if company_name:
             company_code = Company.objects.get(name = company_name).code
-            q &= Q(company_code__icotains = company_code)
-            
+            # print(company_code)
+            q &= Q(company_code = company_code)
+        
+        
         sheet_ids = Sheet.objects.filter(q).values_list('id', flat= True).order_by('created_at')
 
         for_list = []
@@ -475,13 +477,13 @@ class InfoSheetListView(View):
             
             # Sheet composition(detail) 필터링
             q2 = Q(sheet_id = sheet_id)
-
+            
             if warehouse_name:
                 warehouse_code = Warehouse.objects.get(name = warehouse_name).code
-                q &= Q(warehouse_code__icontains = warehouse_code)
+                q2 &= Q(warehouse_code__icontains = warehouse_code)
             if product_name:
                 product_id = Product.objects.get(name = product_name).id
-                q &= Q(product_id__exact = product_id)
+                q2 &= Q(product_id = product_id)
 
 
             compositions = SheetComposition.objects.filter(q2)
@@ -512,6 +514,8 @@ class InfoSheetListView(View):
                 hour  = created_at.hour
                 minute   = created_at.minute
 
+
+
                 if product.company_code == "" :
                     dict = {
                         'document_num'          : document_num,
@@ -532,7 +536,7 @@ class InfoSheetListView(View):
                         'partial_quantity'      : partial_quantity,
                         'location'              : composition.location,
                         'serial_codes'          : list_serial_code,
-                        'etc'                   : composition.etc   
+                        'detail_etc'            : composition.etc   
                     }
                     for_list.append(dict) 
                 
@@ -549,7 +553,6 @@ class InfoSheetListView(View):
                         'product_name'          : product.name,
                         'product_group_name'    : ProductGroup.objects.get(code = product.productgroup_code).name,
                         'barcode'               : product.barcode,
-                        'company_name'          : Company.objects.get(code = product.company_code).name,
                         'unit_price'            : composition.unit_price,
                         'quantity'              : composition.quantity,
                         'total_quantity'        : total['total_quantity__sum'],
@@ -557,7 +560,7 @@ class InfoSheetListView(View):
                         'partial_quantity'      : partial_quantity,
                         'location'              : composition.location,
                         'serial_codes'          : list_serial_code,
-                        'etc'                   : composition.etc   
+                        'detail_etc'            : composition.etc   
                     }
                     for_list.append(dict)
 
