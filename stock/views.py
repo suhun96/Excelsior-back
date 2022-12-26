@@ -457,6 +457,11 @@ class InfoSheetListView(View):
                 stock_type = '세트 생산'
             elif stock_type == 'used':
                 stock_type = '소모'
+            elif stock_type == 'new':
+                stock_type = '등록'
+            elif stock_type == 'used':
+                stock_type = '소모'
+
 
             document_num = self.generate_document_num(sheet.id, sheet.created_at)
 
