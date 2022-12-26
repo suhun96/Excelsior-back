@@ -714,8 +714,9 @@ class SerialCodeCheckView(View):
         return sheet
 
     def print_sheet(self, sheet, serial_code):
-        product_id = SerialAction.objects.get(serial = serial_code)
-        sheet_composition = SheetComposition.objects.get(sheet_id = sheet.id, proudct_id = product_id)
+        product_id = SerialAction.objects.get(serial = serial_code).product.id
+        sheet_composition_id = SerialInSheetComposition.objects.get(serial_code = serial_code).sheet_composition_id
+        sheet_composition = SheetComposition.objects.get(id = sheet_composition_id, product_id = product_id)
         
         product = Product.objects.get(id = product_id)
         total = QuantityByWarehouse.objects.filter(product_id = product.id).aggregate(Sum('total_quantity'))
@@ -737,9 +738,9 @@ class SerialCodeCheckView(View):
         if product.company_code == "" :
             result = {
                 'document_num'          : document_num,
-                'user_name'             : sheet.user,
+                'user_name'             : sheet.user.name,
                 'type'                  : sheet.type,
-                'company_name'          : Company.objects.get(code = sheet.company_code),
+                'company_name'          : Company.objects.get(code = sheet.company_code).name,
                 'etc'                   : sheet.etc,
                 'created_at'            : sheet.created_at,
                 'product_code'          : product.product_code,
@@ -752,11 +753,11 @@ class SerialCodeCheckView(View):
                 'warehouse_name'        : Warehouse.objects.get(code = sheet_composition.warehouse_code).name,
                 'partial_quantity'      : partial_quantity,
                 'location'              : sheet_composition.location,
-                'serial_codes'          : SerialInSheetComposition.objects.get(sheet_composition_id = sheet_composition.id),
                 'etc'                   : sheet_composition.etc   
                 } 
         else:
             result = {
+                'document_num'          : document_num,
                 'user'                  : sheet.user.name,
                 'type'                  : sheet.type,
                 'company_name'          : Company.objects.get(code = sheet.company_code).name,
@@ -770,9 +771,8 @@ class SerialCodeCheckView(View):
                 'quantity'              : sheet_composition.quantity,
                 'total_quantity'        : total['total_quantity__sum'],
                 'warehouse_name'        : Warehouse.objects.get(code = sheet_composition.warehouse_code).name,
-                'partial_quantity'      : QuantityByWarehouse.objects.get(warehouse_code = sheet_composition.warehouse_code, product_id = product.id).total_quantity,
+                'partial_quantity'      : partial_quantity,
                 'location'              : sheet_composition.location,
-                'serial_codes'          : SerialInSheetComposition.objects.get(sheet_composition_id = sheet_composition.id),
                 'etc'                   : sheet_composition.etc   
             }
         
@@ -792,11 +792,11 @@ class SerialCodeCheckView(View):
                 sheet_type  = sheet.type
                 
                 if sheet_type == 'inbound':
-                    result = self.print_sheet(sheet)
+                    result = self.print_sheet(sheet, serial_code)
                     return JsonResponse({'message': '보유하고 있는 시리얼 입니다.', 'result': result}, status = 403)
 
                 if sheet_type == 'create':
-                    result = self.print_sheet(sheet)
+                    result = self.print_sheet(sheet, serial_code)
                     return JsonResponse({'message': '보유하고 있는 시리얼 입니다.', 'result': result}, status = 403)
         
                 else:
@@ -819,7 +819,7 @@ class SerialCodeCheckView(View):
                     return JsonResponse({'message' : '출고 처리가 가능합니다.', 'product_code' : product_code}, status = 200)
 
                 if sheet_type == "outbound":
-                    result = self.print_sheet(sheet)
+                    result = self.print_sheet(sheet, serial_code)
                     return JsonResponse({'message': '이미 출고된 시리얼 입니다.', 'result': result }, status = 403)
 
 class SerialActionHistoryView(View):
