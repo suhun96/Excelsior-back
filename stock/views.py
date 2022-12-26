@@ -426,8 +426,8 @@ class InfoSheetListView(View):
         date_start = request.GET.get('date_start', None)
         date_end   = request.GET.get('date_end', None)
         company_name = request.GET.get('company_name', None)
-        product_code = request.GET.get('product_code')
-        warehouse_code = request.GET.get('warehouse_name', None)
+        product_name = request.GET.get('product_name')
+        warehouse_name = request.GET.get('warehouse_name', None)
         
         if not date_start:
             return JsonResponse({'message' : "기준 시작 날짜 설정 오류"}, status = 403)
@@ -511,7 +511,7 @@ class InfoSheetListView(View):
                 day   = created_at.day
                 hour  = created_at.hour
                 minute   = created_at.minute
-                
+
                 if product.company_code == "" :
                     dict = {
                         'document_num'          : document_num,
