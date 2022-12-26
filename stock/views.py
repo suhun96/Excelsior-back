@@ -460,6 +460,10 @@ class InfoSheetListView(View):
                 stock_type = '세트 생산'
             elif stock_type == 'used':
                 stock_type = '소모'
+            elif stock_type == 'new':
+                stock_type = '등록'
+
+
 
             document_num = self.generate_document_num(sheet.id, sheet.created_at)
 
@@ -499,6 +503,12 @@ class InfoSheetListView(View):
                 for object in serial_codes:
                     list_serial_code.append(object.get('serial_code'))
 
+                year  = created_at.year
+                month = created_at.month
+                day   = created_at.day
+                hour  = created_at.hour
+                minute   = created_at.minute
+                
                 if product.company_code == "" :
                     dict = {
                         'document_num'          : document_num,
@@ -506,7 +516,7 @@ class InfoSheetListView(View):
                         'type'                  : stock_type,
                         'company_name'          : company_name,
                         'etc'                   : etc,
-                        'created_at'            : f"{created_at.date}/{created_at.time}",
+                        'created_at'            : f"{year}-{month}-{day}/{hour}:{minute}",
                         'product_code'          : product.product_code,
                         'product_name'          : product.name,
                         'product_group_name'    : ProductGroup.objects.get(code = product.productgroup_code).name,
@@ -529,7 +539,7 @@ class InfoSheetListView(View):
                         'type'                  : stock_type,
                         'company_name'          : company_name,
                         'etc'                   : etc,
-                        'created_at'            : f"{created_at.date}/{created_at.time}",
+                        'created_at'            : f"{year}-{month}-{day}/{hour}:{minute}",
                         'product_code'          : product.product_code,
                         'product_name'          : product.name,
                         'product_group_name'    : ProductGroup.objects.get(code = product.productgroup_code).name,
