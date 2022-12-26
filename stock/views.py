@@ -444,7 +444,7 @@ class InfoSheetListView(View):
             q &= Q(user_id__exact = user_id)
         if company_name:
             company_code = Company.objects.get(name = company_name).code
-            q &= Q(company_code__icotains = company_code)
+            q &= Q(company_code__icontains = company_code)
             
         sheet_ids = Sheet.objects.filter(q).values_list('id', flat= True).order_by('created_at')
 
