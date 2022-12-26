@@ -439,7 +439,6 @@ class InfoSheetListView(View):
         for_list = []
         for sheet_id in sheet_ids:
             sheet = Sheet.objects.get(id = sheet_id)
-            id           = sheet.id
             user_name    = User.objects.get(id = sheet.user.id).name
             type         = sheet.type
             # type 체인지
@@ -456,7 +455,7 @@ class InfoSheetListView(View):
             etc          = sheet.etc
             created_at   = sheet.created_at
             
-            q2 = Q()
+            q2 = Q(sheet_id = sheet_id)
 
             if warehouse_code:
                 q &= Q(warehouse_code__icontains = warehouse_code)
@@ -466,21 +465,22 @@ class InfoSheetListView(View):
 
 
             compositions = SheetComposition.objects.filter(q2)
+            
             for composition in compositions:
                 product = Product.objects.get(id = composition.product_id)
                 
                 total = QuantityByWarehouse.objects.filter(product_id = product.id).aggregate(Sum('total_quantity'))
 
-                serial_codes = SerialInSheetComposition.objects.filter(sheet_composition = composition).values('serial_code')
-
+                serial_codes = SerialInSheetComposition.objects.filter(sheet_composition = composition.id).values('serial_code')
+                
                 list_serial_code = []
-            
+
                 for object in serial_codes:
                     list_serial_code.append(object.get('serial_code'))
 
                 if product.company_code == "" :
                     dict = {
-                        'sheet_id'              : id,
+                        'sheet_id'              : sheet_id,
                         'user_name'             : user_name,
                         'type'                  : type,
                         'company_name'          : company_name,
@@ -501,7 +501,7 @@ class InfoSheetListView(View):
                     } 
                 else:
                     dict = {
-                        'sheet_id'              : id,
+                        'sheet_id'              : sheet_id,
                         'user_name'             : user_name,
                         'type'                  : type,
                         'company_name'          : company_name,
