@@ -355,6 +355,57 @@ class QunatityByWarehouseView(View):
 class SheetListView(View):
     def get(self, request):
         type = request.GET.get('type', None)
+
+        q = Q()
+        if type:
+            q &= Q(type__icontains = type)
+
+        
+        sheets = Sheet.objects.filter(q).values(
+            'id',
+            'user',
+            'type',
+            'company_code',
+            'etc',
+            'created_at'
+        ).order_by('created_at')
+
+        for_list = []
+        for sheet in sheets:
+            id           = sheet['id']
+            user_name    = User.objects.get(id = sheet['user']).name
+            type         = sheet['type']
+            # type 체인지
+            if type == 'inbound':
+                type = '입고'
+            elif type == 'outbound':
+                type = '출고'
+            elif type == 'generate':
+                type = '세트 생산'
+            elif type == 'used':
+                type = '소모'
+
+            company_name = Company.objects.get(code = sheet['company_code']).name
+            etc          = sheet['etc']
+            created_at   = sheet['created_at']
+            
+            dict = {
+                'id'        :  id,       
+                'type'      : type,
+                'user'      : user_name,
+                'created_at'    : created_at,
+                'company_name'  : company_name,
+                'etc'       : etc
+            }
+            
+            for_list.append(dict)
+
+
+        return JsonResponse({'message' : for_list}, status = 200)
+
+class InfoSheetListView(View):
+    def get(self, request):
+        type = request.GET.get('type', None)
         name = request.GET.get('user_name', None)
         company_name = request.GET.get('company_name', None)
         date_start = request.GET.get('date_start', None)
