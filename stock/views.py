@@ -679,6 +679,24 @@ class PriceCheckView(View):
             return JsonResponse({'message' : '0' }, status = 200)
         
 class SerialCodeCheckView(View):
+    def generate_document_num(self, sheet_id, created_at):
+        year  = created_at.year
+        month = created_at.month
+        day   = created_at.day
+        sheet = Sheet.objects.get(id = sheet_id)
+        stock_type = sheet.type
+        sheet_id   = sheet.id
+        
+        # 타입 변환기.
+        if stock_type == 'inbound':
+            stock_type = "입고"
+        if stock_type == "outbound":
+            stock_type = "출고"
+
+        document_num = f"{year}/{month}/{day}-{stock_type}-{sheet_id}"
+    
+        return document_num
+
     def serial_product_code_checker(self, serial_code):
         product_id = SerialAction.objects.get(serial = serial_code).product.id
 
@@ -695,64 +713,68 @@ class SerialCodeCheckView(View):
 
         return sheet
 
-    def print_sheet(self, sheet):
-        sheet_compositions = SheetComposition.objects.filter(sheet_id = sheet.id)
+    def print_sheet(self, sheet, serial_code):
+        product_id = SerialAction.objects.get(serial = serial_code)
+        sheet_composition = SheetComposition.objects.get(sheet_id = sheet.id, proudct_id = product_id)
         
-        products = []
-        
-        for composition in sheet_compositions:
-            product = Product.objects.get(id = composition.product_id)
+        product = Product.objects.get(id = product_id)
+        total = QuantityByWarehouse.objects.filter(product_id = product.id).aggregate(Sum('total_quantity'))
+
+        serial_code = SerialInSheetComposition.objects.filter(sheet_composition = sheet_composition.id).values('serial_code')
+
+        try: 
             total = QuantityByWarehouse.objects.filter(product_id = product.id).aggregate(Sum('total_quantity'))
-
-            serial_codes = SerialInSheetComposition.objects.filter(sheet_composition = composition).values('serial_code')
-
-            list_serial_code = []
-            
-            for object in serial_codes:
-                list_serial_code.append(object.get('serial_code'))
-
-            if product.company_code == "" :
-                dict = {
-                    'product_code'          : product.product_code,
-                    'product_name'          : product.name,
-                    'product_group_name'    : ProductGroup.objects.get(code = product.productgroup_code).name,
-                    'barcode'               : product.barcode,
-                    'unit_price'            : composition.unit_price,
-                    'quantity'              : composition.quantity,
-                    'total_quantity'        : total['total_quantity__sum'],
-                    'warehouse_name'        : Warehouse.objects.get(code = composition.warehouse_code).name,
-                    'partial_quantity'      : QuantityByWarehouse.objects.get(warehouse_code = composition.warehouse_code, product_id = product.id).total_quantity,
-                    'location'              : composition.location,
-                    'serial_codes'          : list_serial_code,
-                    'etc'                   : composition.etc   
-                } 
-            else:
-                dict = {
-                    'product_code'          : product.product_code,
-                    'product_name'          : product.name,
-                    'product_group_name'    : ProductGroup.objects.get(code = product.productgroup_code).name,
-                    'barcode'               : product.barcode,
-                    'company_name'          : Company.objects.get(code = product.company_code).name,
-                    'unit_price'            : composition.unit_price,
-                    'quantity'              : composition.quantity,
-                    'total_quantity'        : total['total_quantity__sum'],
-                    'warehouse_name'        : Warehouse.objects.get(code = composition.warehouse_code).name,
-                    'partial_quantity'      : QuantityByWarehouse.objects.get(warehouse_code = composition.warehouse_code, product_id = product.id).total_quantity,
-                    'location'              : composition.location,
-                    'serial_codes'          : list_serial_code,
-                    'etc'                   : composition.etc   
-                }
-
-            products.append(dict)
+        except QuantityByWarehouse.DoesNotExist:
+            total = 0
         
-        result = {
-            'user' : sheet.user.name,
-            'type' : sheet.type,
-            'company_name' : Company.objects.get(code = sheet.company_code).name,
-            'etc'  : sheet.etc,
-            # 'created_at'  : sheet.created_at,
-            'products'  : [products]
-        }
+        try:  
+            partial_quantity = QuantityByWarehouse.objects.get(warehouse_code = sheet_composition.warehouse_code, product_id = product.id).total_quantity,
+        except QuantityByWarehouse.DoesNotExist:
+            partial_quantity = 0
+
+
+        document_num = self.generate_document_num(sheet.id, sheet.created_at)
+        if product.company_code == "" :
+            result = {
+                'document_num'          : document_num,
+                'user_name'             : sheet.user,
+                'type'                  : sheet.type,
+                'company_name'          : Company.objects.get(code = sheet.company_code),
+                'etc'                   : sheet.etc,
+                'created_at'            : sheet.created_at,
+                'product_code'          : product.product_code,
+                'product_name'          : product.name,
+                'product_group_name'    : ProductGroup.objects.get(code = product.productgroup_code).name,
+                'barcode'               : product.barcode,
+                'unit_price'            : sheet_composition.unit_price,
+                'quantity'              : sheet_composition.quantity,
+                'total_quantity'        : total['total_quantity__sum'],
+                'warehouse_name'        : Warehouse.objects.get(code = sheet_composition.warehouse_code).name,
+                'partial_quantity'      : partial_quantity,
+                'location'              : sheet_composition.location,
+                'serial_codes'          : SerialInSheetComposition.objects.get(sheet_composition_id = sheet_composition.id),
+                'etc'                   : sheet_composition.etc   
+                } 
+        else:
+            result = {
+                'user'                  : sheet.user.name,
+                'type'                  : sheet.type,
+                'company_name'          : Company.objects.get(code = sheet.company_code).name,
+                'etc'                   : sheet.etc,
+                'product_code'          : product.product_code,
+                'product_name'          : product.name,
+                'product_group_name'    : ProductGroup.objects.get(code = product.productgroup_code).name,
+                'barcode'               : product.barcode,
+                'company_name'          : Company.objects.get(code = product.company_code).name,
+                'unit_price'            : sheet_composition.unit_price,
+                'quantity'              : sheet_composition.quantity,
+                'total_quantity'        : total['total_quantity__sum'],
+                'warehouse_name'        : Warehouse.objects.get(code = sheet_composition.warehouse_code).name,
+                'partial_quantity'      : QuantityByWarehouse.objects.get(warehouse_code = sheet_composition.warehouse_code, product_id = product.id).total_quantity,
+                'location'              : sheet_composition.location,
+                'serial_codes'          : SerialInSheetComposition.objects.get(sheet_composition_id = sheet_composition.id),
+                'etc'                   : sheet_composition.etc   
+            }
         
         return result
 
