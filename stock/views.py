@@ -421,12 +421,12 @@ class InfoSheetListView(View):
         return document_num
 
     def get(self, request):
-        name = request.GET.get('user_name', None)
-        stock_type = request.GET.get('type', None)
-        date_start = request.GET.get('date_start', None)
-        date_end   = request.GET.get('date_end', None)
-        company_name = request.GET.get('company_name', None)
-        product_name = request.GET.get('product_name')
+        name           = request.GET.get('user_name', None)
+        stock_type     = request.GET.get('type', None)
+        date_start     = request.GET.get('date_start', None)
+        date_end       = request.GET.get('date_end', None)
+        company_name   = request.GET.get('company_name', None)
+        product_name   = request.GET.get('product_name')
         warehouse_name = request.GET.get('warehouse_name', None)
         
         if not date_start:
