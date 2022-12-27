@@ -914,6 +914,13 @@ class StockTotalView(View):
         except ProductPrice.DoesNotExist:
             return JsonResponse({'message' : '0' }, status = 403)
 
+class TestView(View):
+    def get(self, request):
+        CHECK_LIST = Sheet.objects.select_related('sheet_composition').all()
+        
+        A = CHECK_LIST.warehouse_code
+        print(A)
+        return JsonResponse({'message': 'ok'})
 
 #------------------------------------------------------------------------------------#
 # class CreateSheetTypeView(View):
