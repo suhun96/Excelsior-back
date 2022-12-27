@@ -203,7 +203,7 @@ class CompnayStatusView(View):
 
 class CustomTitleListView(View):
     def get(self, request):
-        Title_list = list(CustomTitle.objects.filter(status = True).values())
+        Title_list = list(CustomTitle.objects.filter().values())
         
         
         return JsonResponse({'message' : Title_list}, status = 200)
