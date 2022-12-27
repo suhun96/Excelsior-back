@@ -279,9 +279,70 @@ class InsertSheetView(View):
             return JsonResponse({'message' : 'keyerror'}, status = 403)
 
 class ModifySheetView(View):
-    def post(sefl, request):
+    @jwt_decoder
+    def post(self, request):
+        modify_user = request.user
+        modify_data = json.loads(request.body)
         
-        return
+        sheet_id = modify_data.get('sheet_id')
+        try:
+            with transaction.atomic():
+                # sheet, sheet_detail log 작성
+                create_sheet_logs(sheet_id, modify_user)
+                # sheet_detail 롤백 [입고 = (-), 출고 = (+)]
+                rollback_quantity(sheet_id)
+                # sheet_detail 삭제
+                SheetComposition.objects.filter(sheet_id = sheet_id).delete()
+
+                # sheet 수정    
+                UPDATE_SET = {'user' : modify_user}
+
+                update_options = ['company_code', 'etc']
+
+                for key, value in modify_data.items():
+                    if key in update_options:
+                        UPDATE_SET.update({ key : value })
+
+                Sheet.objects.filter(id = sheet_id).update(**UPDATE_SET)
+                
+                # 수정된 sheet_detail 생성
+                products = modify_data['products']
+                create_sheet_detail(sheet_id, products)
+                # 수정된 sheet_detail 수량 반영
+                reflecte_modify_sheet_detail(sheet_id)
+                # 수정된 가격 반영
+                register_checker(modify_data)
+
+                return JsonResponse({'message' : '업데이트 내역을 확인해 주세요~!!'}, status = 200)
+        except:
+            return JsonResponse({'message' : "예외 사항이 발생했습니다."}, status = 403)
+
+class DeleteSheetView(View):
+    @jwt_decoder
+    def post(self, request):
+        delete_user = request.user
+        sheet_id = request.POST['sheet_id']
+        
+        try:
+            with transaction.atomic():
+                # sheet, sheet_detail log 작성
+                create_sheet_logs(sheet_id, delete_user)
+                # 롤백
+                rollback_quantity(sheet_id)
+                # Sheet_detail 삭제
+                SheetComposition.objects.filter(sheet_id = sheet_id).delete()
+                # type 변환
+                Sheet.objects.filter(id = sheet_id).update(type = "delete")
+
+                return JsonResponse({'message' : 'sheet 삭제 완료'}, status = 200)
+        except:
+            return JsonResponse({'message' : "예외 사항이 발생했습니다."}, status = 403)
+
+class InquireSheetLogView(View):
+    def get(self, request):
+        result = list(SheetLog.objects.all().values())
+
+        return JsonResponse({'message' : result}, status = 200)
 
 class QunatityByWarehouseView(View):
     def get(self, request):
@@ -477,6 +538,7 @@ class InfoSheetListView(View):
 
                 if product.company_code == "" :
                     dict = {
+                        'sheet_id'              : sheet_id,
                         'document_num'          : document_num,
                         'user_name'             : user_name,
                         'type'                  : stock_type,
@@ -501,6 +563,7 @@ class InfoSheetListView(View):
                 
                 else:
                     dict = {
+                        'sheet_id'              : sheet_id,
                         'document_num'          : document_num,
                         'user_name'             : user_name,
                         'type'                  : stock_type,
@@ -913,21 +976,3 @@ class StockTotalView(View):
             return JsonResponse({'message' : '잘못된 요청을 보내셨습니다.2'}, status = 403)
         except ProductPrice.DoesNotExist:
             return JsonResponse({'message' : '0' }, status = 403)
-
-
-#------------------------------------------------------------------------------------#
-# class CreateSheetTypeView(View):
-#     def post(self, request):
-#         name = request.POST['name']
-
-#         SheetType.objects.create(name = name)
-
-#         return JsonResponse({'message' : 'sheet type 생성 성공'}, status = 200)
-
-# class DeleteSheetTypeView(View):
-#     def post(self, request):
-#         id = request.POST['sheet_type_id']
-
-#         SheetType.objects.delete(id = id)
-
-#         return JsonResponse({'message' : 'sheet type 생성 성공'}, status = 200)

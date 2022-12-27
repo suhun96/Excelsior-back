@@ -12,10 +12,34 @@ class Sheet(models.Model):
     status     = models.BooleanField(default= True)
     etc        = models.CharField(max_length= 500)
     created_at = models.DateTimeField(auto_now_add= True)
-    updated_at = models.DateTimeField(auto_now_add= True)
+    updated_at = models.DateTimeField(auto_now= True)
 
     class Meta:
         db_table = 'sheet'
+
+class SheetLog(models.Model):
+    sheet_id     = models.IntegerField()
+    user_name    = models.CharField(max_length=50)
+    type         = models.CharField(max_length= 30)
+    company_code = models.CharField(max_length = 20)
+    status       = models.BooleanField(default= True)
+    etc          = models.CharField(max_length= 500)
+    created_at   = models.DateTimeField(auto_now_add= True)
+
+    class Meta:
+        db_table = 'sheet_logs'
+
+class SheetCompositionLog(models.Model):
+    sheet_log   = models.ForeignKey(SheetLog, on_delete= models.CASCADE, related_name= 'sheet_log')
+    product     = models.ForeignKey(Product, on_delete = models.CASCADE)
+    unit_price  = models.IntegerField(default = 0)
+    quantity    = models.IntegerField(default = 0)
+    warehouse_code = models.CharField(max_length = 20)
+    location    = models.CharField(max_length = 300) 
+    etc         = models.CharField(max_length = 300)
+
+    class Meta:
+        db_table = 'sheet_log_composition'
 
 class SheetComposition(models.Model):
     sheet      = models.ForeignKey(Sheet, on_delete = models.CASCADE)
@@ -27,7 +51,7 @@ class SheetComposition(models.Model):
     etc        = models.CharField(max_length = 300)
 
     class Meta:
-        db_table = 'sheet_composition'
+        db_table = 'sheet_detail'
 
 class SerialInSheetComposition(models.Model):
     sheet_composition = models.ForeignKey(SheetComposition, on_delete= models.CASCADE)
