@@ -201,6 +201,13 @@ class CompnayStatusView(View):
 
 # -------------------------------------------------------------------------------------------------------------#
 
+class CustomTitleListView(View):
+    def get(self, request):
+        Title_list = list(CustomTitle.objects.filter(status = True).values())
+        
+        
+        return JsonResponse({'message' : Title_list}, status = 200)
+        
 class CustomTitleCreateView(View):
     def post(self, request):
         title   = request.POST['title']
