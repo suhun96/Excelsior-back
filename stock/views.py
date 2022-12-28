@@ -491,7 +491,9 @@ class InfoSheetListView(View):
 
             document_num = self.generate_document_num(sheet.id, sheet.created_at)
 
-            company_name = Company.objects.get(code = sheet.company_code).name
+            sheet_company_name = Company.objects.get(code = sheet.company_code).name
+            sheet_company_code = Company.objects.get(code = sheet.company_code).code
+            
             etc          = sheet.etc
             created_at   = sheet.created_at
             
@@ -542,7 +544,8 @@ class InfoSheetListView(View):
                         'document_num'          : document_num,
                         'user_name'             : user_name,
                         'type'                  : stock_type,
-                        'company_name'          : company_name,
+                        'company_name'          : sheet_company_name,
+                        'company_code'    : sheet_company_code,
                         'etc'                   : etc,
                         'date'                  : f"{year}-{month}-{day}",
                         'time'                  : f"{hour}:{minute}",
@@ -567,7 +570,8 @@ class InfoSheetListView(View):
                         'document_num'          : document_num,
                         'user_name'             : user_name,
                         'type'                  : stock_type,
-                        'company_name'          : company_name,
+                        'company_name'          : sheet_company_name,
+                        'company_code'          : sheet_company_code,
                         'etc'                   : etc,
                         'date'                  : f"{year}-{month}-{day}",
                         'time'                  : f"{hour}:{minute}",
