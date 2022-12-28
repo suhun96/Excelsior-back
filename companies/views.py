@@ -138,6 +138,14 @@ class InquireCompanyPhonebookView(View):
 
         return JsonResponse({'message' : check}, status = 200)
 
+class DeleteCompanyPhonebookView(View):
+    def post(self, request):
+        company_phonebook_id = request.POST['id']
+
+        CompanyPhonebook.objects.filter(id = company_phonebook_id).delete()
+
+        return JsonResponse({'message' : '삭제성공'}, status = 200)
+
 class CompanyModifyView(View):
     @jwt_decoder
     def post(self, request):
@@ -203,7 +211,7 @@ class CompnayStatusView(View):
 
 class CustomTitleListView(View):
     def get(self, request):
-        Title_list = list(CustomTitle.objects.filter(status = True).values())
+        Title_list = list(CustomTitle.objects.filter().values())
         
         
         return JsonResponse({'message' : Title_list}, status = 200)
