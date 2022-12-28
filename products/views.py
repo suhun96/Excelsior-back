@@ -531,6 +531,10 @@ class ModifyProductEtcTitleView(View):
                 UPDATE_SET.update({key : value})
             
             if key == 'status':
+                if value == 'true':
+                    value = True
+                elif value == 'false':
+                    value = False
                 UPDATE_SET.update({key : value})
     
         try:
