@@ -121,7 +121,7 @@ class SerialCodeTitle(models.Model):
         db_table = 'serial_code_titles'
 
 class SerialCodeValue(models.Model):
-    title_id    = models.IntegerField()
+    title       = models.ForeignKey(SerialCodeTitle, on_delete= models.CASCADE)
     serial_code = models.ForeignKey(SerialCode, on_delete= models.CASCADE, related_name= 'serial_code_value')
     contents    = models.CharField(max_length= 200)
 

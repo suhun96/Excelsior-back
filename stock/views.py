@@ -192,9 +192,6 @@ class CreateSheetView(View):
             return JsonResponse({'message' : 'keyerror'}, status = 403)
 
 class ModifySheetView(View):
-    def delete_serial_code(self, sheet_id):
-        SerialCode.objects.filter(sheet_id= sheet_id).delete()
-
     def check_serial_code(self, sheet_id):
         if SerialCode.objects.filter(sheet_id= sheet_id).exists():
             return True
@@ -215,8 +212,6 @@ class ModifySheetView(View):
                 rollback_quantity(sheet_id)
                 # sheet_detail 삭제
                 SheetComposition.objects.filter(sheet_id = sheet_id).delete()
-                # sheet_id 값을 가진 serial_code 삭제
-                self.delete_serial_code(sheet_id)
 
                 # sheet 수정    
                 UPDATE_SET = {'user' : modify_user}
@@ -234,8 +229,7 @@ class ModifySheetView(View):
                 tartget_sheet.updated_at = datetime.now()
                 tartget_sheet.save()
                 # 수정된 sheet_detail 생성
-                products = modify_data['products']
-                create_sheet_detail(sheet_id, products)
+                modify_sheet_detail(sheet_id, modify_data['products'])
                 # 수정된 sheet_detail 수량 반영
                 reflecte_modify_sheet_detail(sheet_id)
                 # 수정된 가격 반영
@@ -880,20 +874,8 @@ class StockTotalView(View):
         except ProductPrice.DoesNotExist:
             return JsonResponse({'message' : '0' }, status = 403)
 
-# Serial Code
-class FilterSerialCodeView(View):
-    def post(self, request):
-        sheet_id = request.POST['sheet_id']
 
-        serial_codes = list(SerialCode.objects.filter(sheet_id = sheet_id).values())
-
-
-
-
-# class DeleteSerialCodeView(View):
-
-
-# Title
+# Serial Code - Title
 class CreateSerialCodeTitleView(View):
     def post(self, request):
         title = request.POST['title']
@@ -934,10 +916,11 @@ class InquireSerialCodeTitleView(View):
         Title_list = list(SerialCodeTitle.objects.filter(status = True).values())
 
         return JsonResponse({'message': Title_list})
-# Value
+
+# Serial Code - Value
 class CreateSerialCodeValueView(View):
     def post(self, request):
-        serial_code_title_id = request.POST['title']
+        serial_code_title_id = request.POST['title_id']
         serial_code_id       = request.POST['serial_code_id']
         contents             = request.POST['contents']
         
@@ -955,3 +938,23 @@ class CreateSerialCodeValueView(View):
                     return JsonResponse({'message' : '수정 성공'}, status = 200)
         except KeyError:
             return JsonResponse({'message' : '잘못된 key 값을 입력하셨습니다.'}, status = 403)
+
+class InquireSerialCodeValueView(View):
+    def get(self, request):
+        serial_code_ids = SerialCode.objects.all().values_list('id', flat= True)
+
+        list_A = []
+
+        for id in serial_code_ids:
+            things = SerialCodeValue.objects.filter(serial_code_id = id)
+            
+            dict_A = {thing.serial_code : dict_B}
+            
+            for thing in things:
+                dict_A.update({
+                    'title' : things.title.title,
+                    'contents' : things.contents
+                })
+                list_A.append(dict_A)
+
+        return JsonResponse({'message': list_A})

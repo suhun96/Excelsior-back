@@ -134,75 +134,6 @@ def create_sheet(input_data, user):
 #                 serial_code2 = serial_code1 + str(after_route).zfill(2) + numbering
 #                 SerialAction.objects.create(serial = serial_code2, create = new_sheet_id)
 
-# def create_insert_sheet(input_data, user):
-#         user = user
-#         input_data = input_data
-        
-#         input_user      = user.id
-#         input_type      = input_data.get('type', None)
-#         input_etc       = input_data.get('etc', None)
-#         input_company   = input_data.get('company_code', None)
-#         input_products  = input_data.get('products', None)
-#         input_date      = input_data.get('date', None)
-        
-#         try:
-#             with transaction.atomic():
-#                 insert_sheet = Sheet.objects.create(
-#                     user_id = input_user,
-#                     type = input_type,
-#                     company_code = input_company,
-#                     etc  = input_etc,
-#                     created_at = input_date
-#                 )
-
-#                 if not input_products:
-#                     raise Exception({'message' : '입,출고서에 제품을 비워 등록할 수 없습니다.'})
-                
-
-#                 for product in input_products:
-#                     product_code = product['product_code']
-#                     product_id   = Product.objects.get(product_code =product['product_code']).id
-
-#                     if Product.objects.filter(product_code = product_code).exists() == False:
-#                         raise Exception({'message' : f'{product_code}는 존재하지 않습니다.'}) 
-
-#                     insert_sheet_composition = SheetComposition.objects.create(
-#                         sheet_id        = insert_sheet.id,
-#                         product_id      = product_id,
-#                         quantity        = product['quantity'], 
-#                         warehouse_code  = product['warehouse_code'],
-#                         location        = product['location'],
-#                         unit_price      = product['price'],
-#                     )
-
-#                     if 'serial_code' in product:
-#                         for serial_code in product['serial_code']:
-#                             # 입/출고 구성품의 serial_code 연결
-#                             SerialInSheetComposition.objects.create(
-#                                 sheet_composition = insert_sheet_composition,
-#                                 serial_code = serial_code
-#                             )
-                            
-#                             # serial 추적
-#                             if SerialAction.objects.filter(serial = serial_code).exists():
-#                                 # 12월 23일 중단점
-#                                 # if SerialAction.objects.filter(serial_code).count() > 1:
-#                                     # raise Exception({'messgae' : f'{product_code}는 존재하지 않습니다.'})    
-                                
-#                                 actions = SerialAction.objects.get(serial = serial_code).actions
-#                                 actions = actions + f',{insert_sheet.id}'
-#                                 Update_serial_action = SerialAction.objects.filter(serial = serial_code).update(actions = actions)
-                            
-#                             else:
-#                                 SerialAction.objects.create(
-#                                     serial = serial_code,
-#                                     product_id = product_id,
-#                                     actions = insert_sheet.id
-#                                 )
-
-#             return insert_sheet
-#         except:
-#             raise Exception({'message' : 'sheet를 생성하는중 에러가 발생했습니다.'})
 
 def create_sheet_logs(sheet_id, modify_user):
         target_sheet = Sheet.objects.get(id = sheet_id)
@@ -247,18 +178,51 @@ def create_sheet_detail(sheet_id, products):
                     warehouse_code  = product['warehouse_code'],
                     location        = product['location'],
                     unit_price      = product['price'],
+                    etc             = product['etc']
                 )
-
                 if 'serial_code' in product:
-                        for serial_code in product['serial_code']:
-                            # 입/출고 구성품의 serial_code 연결
-                            SerialCode.objects.create(
-                                sheet_id = sheet_id,
-                                product_id = product_id,
-                                code = serial_code
-                            )
+                    for serial_code in product['serial_code']:
+                        # 입/출고 구성품의 serial_code 연결
+                        SerialCode.objects.create(
+                            sheet_id = sheet_id,
+                            product_id = product_id,
+                            code = serial_code
+                        )
         except:
             raise Exception({'message' : 'create_sheet_detail 사용하는중 에러가 발생했습니다.'})
+
+
+def modify_sheet_detail(sheet_id, products):
+    try:
+        for product in products:
+            product_code = product['product_code']
+            product_id   = Product.objects.get(product_code =product['product_code']).id
+
+            if Product.objects.filter(product_code = product_code).exists() == False:
+                raise Exception({'message' : f'{product_code}는 존재하지 않습니다.'}) 
+
+            modify_sheet_composition = SheetComposition.objects.create(
+                sheet_id        = sheet_id,
+                product_id      = product_id,
+                quantity        = product['quantity'], 
+                warehouse_code  = product['warehouse_code'],
+                location        = product['location'],
+                unit_price      = product['price'],
+                etc             = product['etc']
+            )
+            
+            if "modified" in product:
+                SerialCode.objects.filter(product_id = product_id, sheet_id = sheet_id).delete()
+                if 'serial_code' in product:
+                    for serial_code in product['serial_code']:
+                        # 입/출고 구성품의 serial_code 연결
+                        SerialCode.objects.create(
+                            sheet_id = sheet_id,
+                            product_id = product_id,
+                            code = serial_code
+                        )
+    except:
+        raise Exception({'message' : 'create_sheet_detail 사용하는중 에러가 발생했습니다.2'})
 
 def rollback_quantity(sheet_id):
         target_sheet = Sheet.objects.get(id = sheet_id)
