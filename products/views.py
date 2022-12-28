@@ -566,32 +566,18 @@ class CreateProductEtcDescView(View):
         desc            = request.POST['desc']
 
         try:
-            new_custom_value = ProductEtcDesc.objects.create(
+            new_custom_value, check  = ProductEtcDesc.objects.update_or_create(
                 product_id = product_id,
                 etc_title_id = etc_title_id,
-                contents = desc
-            )
-            return JsonResponse({'message' : 'product etc desc 생성 성공'}, status = 200)
+                defaults={
+                    'contents' : desc
+                })
+            if check == True:
+                return JsonResponse({'message' : '생성 성공'}, status = 200)
+            else:
+                return JsonResponse({'message' : '수정 성공'}, status = 200)
         except KeyError:
             return JsonResponse({'message' : '잘못된 key 값을 입력하셨습니다.'}, status = 200)
-
-class ModifyProductEtcDescView(View):
-    def post(self, request):
-        id = request.POST['etc_desc_id']
-        UPDATE_SET = {}
-        
-        for key, value in request.POST.items():
-            if key == 'desc':
-                UPDATE_SET.update({'contents' : value})
-        
-        try:
-            ProductEtcDesc.objects.filter(id = id).update(**UPDATE_SET)
-
-            return JsonResponse({'message' : '커스텀 밸류 수정을 성공했습니다.'}, status = 200)
-        except ProductEtcDesc.DoesNotExist:
-            return JsonResponse({'message' : f'value id를 확인해주세요. {id}'}, status = 403)
-        except KeyError:
-            return JsonResponse({'message' : 'KeyError'}, status = 403) 
 
 ###########################################################################################################
 
