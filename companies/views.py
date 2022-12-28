@@ -233,6 +233,10 @@ class CustomTitleModifyView(View):
                 UPDATE_SET.update({key : value})
             
             if key == 'status':
+                if value == 'true':
+                    value = True
+                elif value == 'false':
+                    value = False
                 UPDATE_SET.update({key : value})
     
         try:
@@ -269,29 +273,14 @@ class CustomValueCreateView(View):
         value           = request.POST['value']
 
         try:
-            new_custom_value = CustomValue.objects.create(
+            obj, check = CustomValue.objects.update_or_create(
                 custom_title_id = custom_title_id,
                 company_id = company_id,
-                value = value
-            )
-            return JsonResponse({'message' : 'cusutom value 생성 성공'}, status = 200)
+                defaults={ 'value' : value}
+                )
+            if check == True:
+                return JsonResponse({'message' : 'cusutom value 생성 성공'}, status = 200)
+            else:
+                return JsonResponse({'message' : 'cusutom value 수정 성공'}, status = 200)
         except KeyError:
             return JsonResponse({'message' : '잘못된 key 값을 입력하셨습니다.'}, status = 200)
-
-class CustomValueModifyView(View):
-    def post(self, request):
-        id = request.POST['custom_value_id']
-        UPDATE_SET = {}
-        
-        for key, value in request.POST.items():
-            if key == 'value':
-                UPDATE_SET.update({key : value})
-        
-        try:
-            CustomValue.objects.filter(id = id).update(**UPDATE_SET)
-
-            return JsonResponse({'message' : '커스텀 밸류 수정을 성공했습니다.'}, status = 200)
-        except CustomValue.DoesNotExist:
-            return JsonResponse({'message' : f'value id를 확인해주세요. {id}'}, status = 403)
-        except KeyError:
-            return JsonResponse({'message' : 'KeyError'}, status = 403)  

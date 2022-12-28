@@ -9,5 +9,4 @@ urlpatterns = [
     path('title-modify', CustomTitleModifyView.as_view()),
     path('value-create', CustomValueCreateView.as_view()),
     path('value-list', CustomValueListView.as_view()),
-    path('value-modify', CustomValueModifyView.as_view())
 ]

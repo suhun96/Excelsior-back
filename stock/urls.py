@@ -13,7 +13,7 @@ urlpatterns = [
     path('serial-check', SerialCodeCheckView.as_view()),
     path('serial-tracking', SerialActionHistoryView.as_view()),
     path('stock-info', StockTotalView.as_view()),
-    path('sheet-modify', ModifySheetView.as_view()),
-    path('sheet-delete', DeleteSheetView.as_view()),
-    path('sheet-log-list', InquireSheetLogView.as_view()),
+    path('sheet-modify', ModifySheetView.as_view()), # POST
+    path('sheet-delete', DeleteSheetView.as_view()), # POST 
+    path('sheet-log-list', InquireSheetLogView.as_view()), # GET
 ]
