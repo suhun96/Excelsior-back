@@ -1,4 +1,5 @@
-from django.db import models
+from datetime   import datetime
+from django.db  import models
 
 from users.models import *
 from products.models import *
@@ -11,6 +12,7 @@ class Sheet(models.Model):
     company_code = models.CharField(max_length = 20)
     status     = models.BooleanField(default= True)
     etc        = models.CharField(max_length= 500)
+    date       = models.DateField(default= datetime.now())
     created_at = models.DateTimeField(auto_now_add= True)
     updated_at = models.DateTimeField(auto_now= True)
 

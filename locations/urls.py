@@ -3,8 +3,8 @@ from django.urls import path
 from locations.views import *
 
 urlpatterns = [
-    # path('property', CreateWarehousePropertyView.as_view()),
-    # path('type', CreateWarehouseTypeView.as_view()),
+    path('property', CreateWarehousePropertyView.as_view()),
+    path('type', CreateWarehouseTypeView.as_view()),
     path('info',WarehouseInfoView.as_view()),
     path('status', WarehouseStatusView.as_view()),
     path('main', SetMainWarehouseView.as_view())
