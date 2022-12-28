@@ -7,4 +7,6 @@ urlpatterns = [
     path('list', InquireCompanyPhonebookView.as_view()),
     path('register', CreateCompanyPhonebookView.as_view()),
     path('modify', ModifyCompanyPhonebookView.as_view()),
+    path('delete', DeleteCompanyPhonebookView.as_view()),
+    
 ]
