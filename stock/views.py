@@ -451,7 +451,7 @@ class InfoSheetListView(View):
                 except QuantityByWarehouse.DoesNotExist:
                     partial_quantity = 0
 
-                serial_codes = SerialCode.objects.filter(sheet_id = sheet_id, product_id = product.id).values_list('serial_code', flat=True)
+                serial_codes = SerialCode.objects.filter(sheet_id = sheet_id, product_id = product.id).values_list('code', flat=True)
                 
                 list_serial_code = []
 
@@ -484,6 +484,7 @@ class InfoSheetListView(View):
                         'price'            : composition.unit_price,
                         'quantity'              : composition.quantity,
                         'total_quantity'        : total['total_quantity__sum'],
+                        'warehouse_code'        : composition.warehouse_code,
                         'warehouse_name'        : Warehouse.objects.get(code = composition.warehouse_code).name,
                         'partial_quantity'      : partial_quantity,
                         'location'              : composition.location,
@@ -510,6 +511,7 @@ class InfoSheetListView(View):
                         'price'            : composition.unit_price,
                         'quantity'              : composition.quantity,
                         'total_quantity'        : total['total_quantity__sum'],
+                        'warehouse_code'        : composition.warehouse_code,
                         'warehouse_name'        : Warehouse.objects.get(code = composition.warehouse_code).name,
                         'partial_quantity'      : partial_quantity,
                         'location'              : composition.location,

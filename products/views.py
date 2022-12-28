@@ -97,9 +97,15 @@ class ModifyProductGroupView(View):
             with transaction.atomic():
                 UPDATE_SET = {}
 
-                update_options = ['name', 'etc']
+                update_options = ['etc']
 
                 for key, value in input_data.items():
+                    if key == 'name':
+                        if ProductGroup.objects.filter(name = value).exists():
+                            return JsonResponse({'message' : 'The product name is already registered.'}, status = 403)
+                        else:
+                            UPDATE_SET.update({ key : value })
+
                     if key in update_options:
                         UPDATE_SET.update({ key : value })
                     

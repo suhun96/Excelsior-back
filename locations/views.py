@@ -19,6 +19,35 @@ class CreateWarehousePropertyView(View):
         property_list = list(WarehouseProperty.objects.all().values())
 
         return JsonResponse({'message' : property_list }, status = 200)
+
+class ModifyWarehousePropertyView(View):
+    def post(self, request):
+        modify_data = request.POST
+
+        if WarehouseProperty.objects.filter(contents = modify_data['contents']).exists():
+            return JsonResponse({'message' : '이미 존재하는 Property입니다.' }, status = 403)
+        
+        try:
+            with transaction.atomic():
+                UPDATE_SET = {}
+
+                update_options = ['contents']
+                
+                if key == 'status':
+                    if value == 'true':
+                        value = True
+                    elif value == 'false':
+                        value = False
+                    UPDATE_SET.update({key : value})
+
+                if key in update_options:
+                    UPDATE_SET.update({ key : value })
+                    
+                ProductGroup.objects.filter(id = group_id).update(**UPDATE_SET)
+                return JsonResponse({'message' : '업데이트 내역을 확인해 주세요~!!'}, status = 200)
+        except:
+            return JsonResponse({'message' : "예외 사항이 발생했습니다."}, status = 403)
+
         
 class CreateWarehouseTypeView(View):
     def post(self, request):
