@@ -84,6 +84,7 @@ def create_sheet(input_data, user):
                         warehouse_code  = product['warehouse_code'],
                         location        = product['location'],
                         unit_price      = product['price'],
+                        etc             = product['etc']
                     )
 
                     if 'serial_code' in product:
