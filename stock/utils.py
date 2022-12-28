@@ -51,6 +51,7 @@ def create_sheet(input_data, user):
 
         input_user =  user.id
         input_type = input_data.get('type', None)
+        input_date = input_data.get('date', None)
         input_etc  = input_data.get('etc', None)
         input_company = input_data.get('company_code', None)
         input_products = input_data.get('products', None)
@@ -61,6 +62,7 @@ def create_sheet(input_data, user):
                     user_id = input_user,
                     type = input_type,
                     company_code = input_company,
+                    date = input_date,
                     etc  = input_etc
                 )
 
