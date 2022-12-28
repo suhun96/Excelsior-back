@@ -545,7 +545,7 @@ class InfoSheetListView(View):
                         'user_name'             : user_name,
                         'type'                  : stock_type,
                         'company_name'          : sheet_company_name,
-                        'company_code'    : sheet_company_code,
+                        'company_code'          : sheet_company_code,
                         'etc'                   : etc,
                         'date'                  : f"{year}-{month}-{day}",
                         'time'                  : f"{hour}:{minute}",
