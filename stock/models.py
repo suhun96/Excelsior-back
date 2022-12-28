@@ -108,20 +108,20 @@ class ProductPrice(models.Model):
 class SerialCode(models.Model):
     sheet_id   = models.IntegerField()
     product_id = models.IntegerField()
-    code = models.CharField(max_length= 100)
+    code       = models.CharField(max_length= 100)
     
     class Meta:
         db_table = 'serial_codes'
 
 class SerialCodeTitle(models.Model):
-    title = models.CharField(max_length= 100)
+    title  = models.CharField(max_length= 100)
     status = models.BooleanField(default= True)
 
     class Meta:
         db_table = 'serial_code_titles'
 
 class SerialCodeValue(models.Model):
-    title_id = models.IntegerField()
+    title_id    = models.IntegerField()
     serial_code = models.ForeignKey(SerialCode, on_delete= models.CASCADE, related_name= 'serial_code_value')
     contents    = models.CharField(max_length= 200)
 
