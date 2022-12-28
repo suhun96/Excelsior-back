@@ -530,14 +530,14 @@ class ClickSheetView(View):
         if not sheet_id:
             return JsonResponse({'message' : 'sheet id 가 입력되지 않았습니다.'}, status = 200)
 
-        compositions = SheetComposition.objects.filter(sheet_id = sheet_id).prefetch_related('serialinsheetcomposition_set')
+        compositions = SheetComposition.objects.filter(sheet_id = sheet_id)
 
         for_list = []
         for composition in compositions:
             product = Product.objects.get(id = composition.product_id)
             total = QuantityByWarehouse.objects.filter(product_id = product.id).aggregate(Sum('total_quantity'))
 
-            serial_codes = SerialInSheetComposition.objects.filter(sheet_composition = composition).values('serial_code')
+            serial_codes = SerialCode.objects.filter(product_id = product.id).values('code')
 
             list_serial_code = []
             
