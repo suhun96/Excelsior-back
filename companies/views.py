@@ -259,7 +259,10 @@ class CustomValueListView(View):
             try:
                 value = CustomValue.objects.get(company_id = company_id, custom_title_id = title_id).value
                 dict = {}
-                dict.update({title_id : value})
+                dict.update({
+                    'title_id' : title_id,
+                    'contents' : value        
+                    })
                 result.append(dict)
             except CustomValue.DoesNotExist:
                 pass
