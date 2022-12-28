@@ -191,94 +191,13 @@ class CreateSheetView(View):
         except KeyError:
             return JsonResponse({'message' : 'keyerror'}, status = 403)
 
-class InsertSheetView(View):
-    def post(self, request):
-        input_data = json.loads(request.body)
-        user = request.user
-
-        insert_sheet = create_insert_sheet(input_data, user)
-        insert_sheet_id = insert_sheet.id
-
-        try:
-            with transaction.atomic():
-                if insert_sheet.type == 'inbound':
-                    compositions = SheetComposition.objects.filter(sheet_id = insert_sheet_id).values(
-                            'product',
-                            'unit_price',
-                            'quantity',
-                            'warehouse_code'
-                        )
-
-                    for composition in compositions:
-                        product_id     = composition.get('product')
-                        warehouse_code = composition.get('warehouse_code')
-                        quantity       = composition.get('quantity') 
-                        
-                        stock = StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id)
-                        
-                        if stock.exists():
-                            before_quantity = stock.last().stock_quantity
-                            stock_quantity  = before_quantity + int(quantity)
-                        else:
-                            stock_quantity  = int(quantity)
-
-                        StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id).create(
-                            sheet_id = insert_sheet_id,
-                            stock_quantity = stock_quantity,
-                            product_id = product_id,
-                            warehouse_code = warehouse_code )
-                        
-                        
-                        QuantityByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id).update_or_create(
-                            product_id = product_id,
-                            warehouse_code = warehouse_code,
-                            defaults={'total_quantity' : stock_quantity})
-
-                    register_checker(input_data)
-                    telegram_bot(insert_sheet_id)
-
-                    return JsonResponse({'message' : '입고 삽입 성공'}, status = 200)
-
-                if insert_sheet.type == 'outbound':
-                    compositions = SheetComposition.objects.filter(sheet_id = insert_sheet_id).values(
-                            'product',
-                            'unit_price',
-                            'quantity',
-                            'warehouse_code'
-                        )
-
-                    for composition in compositions:
-                        product_id     = composition.get('product')
-                        warehouse_code = composition.get('warehouse_code')
-                        quantity       = composition.get('quantity')
-                        
-                        stock = StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id)
-                        
-                        if stock.exists():
-                            before_quantity = stock.last().stock_quantity
-                            stock_quantity  = before_quantity - int(quantity)
-                        else:
-                            stock_quantity  = int(quantity)
-
-                        StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id).create(
-                            sheet_id = insert_sheet_id,
-                            stock_quantity = stock_quantity,
-                            product_id = product_id,
-                            warehouse_code = warehouse_code )
-                        
-                        QuantityByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id).update_or_create(
-                            product_id = product_id,
-                            warehouse_code = warehouse_code,
-                            defaults={'total_quantity' : stock_quantity})
-                        
-                    register_checker(input_data)
-                    telegram_bot(insert_sheet_id)
-                    
-                    return JsonResponse({'message' : '출고 삽입 성공'}, status = 200)
-        except KeyError:
-            return JsonResponse({'message' : 'keyerror'}, status = 403)
-
 class ModifySheetView(View):
+    def check_serial_code(self, sheet_id):
+        if SerialCode.objects.filter(sheet_id= sheet_id).exists():
+            return True
+        else:
+            return False
+
     @jwt_decoder
     def post(self, request):
         modify_user = request.user
@@ -307,17 +226,21 @@ class ModifySheetView(View):
 
                 # 업데이트 날짜 적용
                 tartget_sheet = Sheet.objects.get(id = sheet_id)
-                tartget_sheet.updated_at = datetime.datetime.now
+                tartget_sheet.updated_at = datetime.now()
                 tartget_sheet.save()
                 # 수정된 sheet_detail 생성
-                products = modify_data['products']
-                create_sheet_detail(sheet_id, products)
+                modify_sheet_detail(sheet_id, modify_data['products'])
                 # 수정된 sheet_detail 수량 반영
                 reflecte_modify_sheet_detail(sheet_id)
                 # 수정된 가격 반영
                 register_checker(modify_data)
 
-                return JsonResponse({'message' : '업데이트 내역을 확인해 주세요~!!'}, status = 200)
+                check_serial_code = self.check_serial_code(sheet_id) 
+                
+                if check_serial_code == True:
+                    return JsonResponse({'message' : 'serial code가 입력된 sheet 입니다. 업데이트 내역을 확인해 주세요.'}, status = 200)
+                else:
+                    return JsonResponse({'message' : '업데이트 내역을 확인해 주세요~!!'}, status = 200)
         except:
             return JsonResponse({'message' : "예외 사항이 발생했습니다."}, status = 403)
 
@@ -528,12 +451,12 @@ class InfoSheetListView(View):
                 except QuantityByWarehouse.DoesNotExist:
                     partial_quantity = 0
 
-                serial_codes = SerialInSheetComposition.objects.filter(sheet_composition = composition.id).values('serial_code')
+                serial_codes = SerialCode.objects.filter(sheet_id = sheet_id, product_id = product.id).values_list('serial_code', flat=True)
                 
                 list_serial_code = []
 
                 for object in serial_codes:
-                    list_serial_code.append(object.get('serial_code'))
+                    list_serial_code.append(object)
 
                 year  = created_at.year
                 month = created_at.month
@@ -743,43 +666,37 @@ class SerialCodeCheckView(View):
         return document_num
 
     def serial_product_code_checker(self, serial_code):
-        product_id = SerialAction.objects.get(serial = serial_code).product.id
+        product_id = SerialCode.objects.get(serial = serial_code).product_id
 
         product_code = Product.objects.get(id = product_id).product_code
         return product_code
 
     def serial_tracker(self, serial_code):
-        serial_actions = SerialAction.objects.get(serial = serial_code).actions
-        sheets = serial_actions.split(',')
-        
-        last_sheet = max(sheets)
+        sheet_id = SerialCode.objects.get(code = serial_code).sheet_id
 
-        sheet = Sheet.objects.get(id = last_sheet)
+        sheet = Sheet.objects.get(id = sheet_id )
 
         return sheet
 
     def print_sheet(self, sheet, serial_code):
-        product_id = SerialAction.objects.get(serial = serial_code).product.id
-        sheet_composition_id = SerialInSheetComposition.objects.get(serial_code = serial_code).sheet_composition_id
-        sheet_composition = SheetComposition.objects.get(id = sheet_composition_id, product_id = product_id)
+        product_id = SerialCode.objects.get(code = serial_code).product_id
+        
+        sheet_composition = SheetComposition.objects.get(sheet_id = sheet.id , product_id = product_id)
         
         product = Product.objects.get(id = product_id)
-        total = QuantityByWarehouse.objects.filter(product_id = product.id).aggregate(Sum('total_quantity'))
-
-        serial_code = SerialInSheetComposition.objects.filter(sheet_composition = sheet_composition.id).values('serial_code')
 
         try: 
             total = QuantityByWarehouse.objects.filter(product_id = product.id).aggregate(Sum('total_quantity'))
-        except QuantityByWarehouse.DoesNotExist:
-            total = 0
-        
-        try:  
+      
             partial_quantity = QuantityByWarehouse.objects.get(warehouse_code = sheet_composition.warehouse_code, product_id = product.id).total_quantity,
+        
         except QuantityByWarehouse.DoesNotExist:
             partial_quantity = 0
-
+        except QuantityByWarehouse.DoesNotExist:
+            total = 0
 
         document_num = self.generate_document_num(sheet.id, sheet.created_at)
+
         if product.company_code == "" :
             result = {
                 'document_num'          : document_num,
@@ -829,7 +746,7 @@ class SerialCodeCheckView(View):
 
         
         if process_type == 'inbound':
-            if not SerialAction.objects.filter(serial = serial_code).exists():
+            if not SerialCode.objects.filter(code = serial_code).exists():
                 return JsonResponse({'message' : '입고 처리가 가능합니다.'}, status = 200)
             
             else:
@@ -848,7 +765,7 @@ class SerialCodeCheckView(View):
                     return JsonResponse({'message' : '입고 처리가 가능합니다.'}, status = 200)
 
         if process_type == 'outbound':
-            if not SerialAction.objects.filter(serial = serial_code).exists():
+            if not SerialCode.objects.filter(serial = serial_code).exists():
                 return JsonResponse({'message' : '존재하지 않는 시리얼입니다.'}, status = 403)
 
             else:
@@ -866,35 +783,6 @@ class SerialCodeCheckView(View):
                 if sheet_type == "outbound":
                     result = self.print_sheet(sheet, serial_code)
                     return JsonResponse({'message': '이미 출고된 시리얼 입니다.', 'result': result }, status = 403)
-
-class SerialActionHistoryView(View):
-    def print_sheet(self, sheets):
-        sheet_list = []
-
-        for id in sheets:
-            sheet = Sheet.objects.get(id = id)
-            dic_sheet = {
-                'id'            : sheet.id,
-                'user_name'     : sheet.user.name,         
-                'type'          : sheet.type,   
-                'company_name'  : Company.objects.get(code = sheet.company_code).name,       
-                'etc'           : sheet.etc,          
-                'created_at'    : sheet.created_at         
-            }
-
-            sheet_list.append(dic_sheet)
-
-        return sheet_list
-
-    def get(self, request):
-        serial_code = request.GET.get("serial_code", None)
-
-        actions = SerialAction.objects.get(serial = serial_code).actions
-        sheets = actions.split(",")
-        
-        sheet_list = self.print_sheet(sheets)
-
-        return JsonResponse({'message': sheet_list}, status = 200)
 
 class StockTotalView(View):
     def get(self, request):
@@ -985,3 +873,88 @@ class StockTotalView(View):
             return JsonResponse({'message' : '잘못된 요청을 보내셨습니다.2'}, status = 403)
         except ProductPrice.DoesNotExist:
             return JsonResponse({'message' : '0' }, status = 403)
+
+
+# Serial Code - Title
+class CreateSerialCodeTitleView(View):
+    def post(self, request):
+        title = request.POST['title']
+
+        new_title = SerialCodeTitle.objects.create(title = title)
+
+        return JsonResponse({'message' : '새로운 title이 생성 되었습니다.'}, status = 200)
+
+class ModifySerialCodeTitleView(View):
+    def post(self, request):
+        title_id = request.POST['title_id']
+
+        UPDATE_SET = {}
+
+        for key, value in request.POST.item():
+            if key == 'title':
+                UPDATE_SET.update({key : value})
+            
+            if key == 'status':
+                if value == 'true':
+                    value = True
+                elif value == 'false':
+                    value = False
+                UPDATE_SET.update({key : value})
+        
+        try:
+            with transaction.atomic():
+                SerialCodeTitle.objects.filter(id = title_id).update(**UPDATE_SET)
+            return JsonResponse({'message' : '커스텀 타이틀 수정을 성공했습니다.'}, status = 200)
+        except SerialCodeTitle.DoesNotExist:
+            return JsonResponse({'message' : f'title id를 확인해주세요. {title_id}'}, status = 403)
+        except KeyError:
+            return JsonResponse({'message' : 'KeyError'}, status = 403)      
+
+class InquireSerialCodeTitleView(View):
+    def get(self, request):
+        
+        Title_list = list(SerialCodeTitle.objects.filter(status = True).values())
+
+        return JsonResponse({'message': Title_list})
+
+# Serial Code - Value
+class CreateSerialCodeValueView(View):
+    def post(self, request):
+        serial_code_title_id = request.POST['title_id']
+        serial_code_id       = request.POST['serial_code_id']
+        contents             = request.POST['contents']
+        
+        try:
+            with transaction.atomic():
+                obj, check = SerialCodeValue.objects.update_or_create(
+                    title_id       = serial_code_title_id,
+                    serial_code_id = serial_code_id,
+                    defaults= {
+                        'contents' : contents
+                    })
+                if check == True:
+                    return JsonResponse({'message' : '생성 성공'}, status = 200)
+                else:
+                    return JsonResponse({'message' : '수정 성공'}, status = 200)
+        except KeyError:
+            return JsonResponse({'message' : '잘못된 key 값을 입력하셨습니다.'}, status = 403)
+
+class InquireSerialCodeValueView(View):
+    def get(self, request):
+        serial_code_ids = SerialCode.objects.all().values_list('id', flat= True)
+
+        list_A = []
+
+        for id in serial_code_ids:
+            things = SerialCodeValue.objects.filter(serial_code_id = id)
+            
+            dict_A = {thing.serial_code : dict_B}
+            
+            for thing in things:
+                dict_A.update({
+                    'title' : things.title.title,
+                    'contents' : things.contents
+                })
+                list_A.append(dict_A)
+
+        return JsonResponse({'message': list_A})
