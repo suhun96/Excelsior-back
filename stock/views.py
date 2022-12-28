@@ -304,7 +304,11 @@ class ModifySheetView(View):
                         UPDATE_SET.update({ key : value })
 
                 Sheet.objects.filter(id = sheet_id).update(**UPDATE_SET)
-                
+
+                # 업데이트 날짜 적용
+                tartget_sheet = Sheet.objects.get(id = sheet_id)
+                tartget_sheet.updated_at = datetime.datetime.now
+                tartget_sheet.save()
                 # 수정된 sheet_detail 생성
                 products = modify_data['products']
                 create_sheet_detail(sheet_id, products)
@@ -380,8 +384,9 @@ class SheetListView(View):
             'type',
             'company_code',
             'etc',
+            'date'
             'created_at'
-        ).order_by('created_at')
+        ).order_by('date')
 
         for_list = []
         for sheet in sheets:
@@ -468,7 +473,7 @@ class InfoSheetListView(View):
             q &= Q(company_code = company_code)
         
         
-        sheet_ids = Sheet.objects.filter(q).values_list('id', flat= True).order_by('created_at')
+        sheet_ids = Sheet.objects.filter(q).values_list('id', flat= True).order_by('date')
 
         for_list = []
         for sheet_id in sheet_ids:
