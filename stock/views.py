@@ -425,10 +425,10 @@ class SheetListView(View):
         return JsonResponse({'message' : for_list}, status = 200)
 
 class InfoSheetListView(View):
-    def generate_document_num(self, sheet_id, created_at):
-        year  = created_at.year
-        month = created_at.month
-        day   = created_at.day
+    def generate_document_num(self, sheet_id, date):
+        year  = date.year
+        month = date.month
+        day   = date.day
         sheet = Sheet.objects.get(id = sheet_id)
         stock_type = sheet.type
         sheet_id   = sheet.id
@@ -494,7 +494,7 @@ class InfoSheetListView(View):
 
 
 
-            document_num = self.generate_document_num(sheet.id, sheet.created_at)
+            document_num = self.generate_document_num(sheet.id, sheet.date)
 
             sheet_company_name = Company.objects.get(code = sheet.company_code).name
             sheet_company_code = Company.objects.get(code = sheet.company_code).code
