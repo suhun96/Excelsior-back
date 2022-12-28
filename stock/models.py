@@ -55,13 +55,6 @@ class SheetComposition(models.Model):
     class Meta:
         db_table = 'sheet_detail'
 
-class SerialInSheetComposition(models.Model):
-    sheet_composition = models.ForeignKey(SheetComposition, on_delete= models.CASCADE)
-    serial_code = models.CharField(max_length= 100)
-
-    class Meta:
-        db_table = 'serial_in_sheet_composition'
-
 class StockByWarehouse(models.Model):
     sheet = models.ForeignKey(Sheet, on_delete = models.CASCADE)
     warehouse_code = models.CharField(max_length=20)
@@ -71,20 +64,27 @@ class StockByWarehouse(models.Model):
     class Meta:
         db_table = 'stock_by_warehouse'
 
-class SerialAction(models.Model):
-    serial   = models.CharField(max_length=100)
-    product  = models.ForeignKey(Product, on_delete= models.CASCADE)
-    actions  = models.CharField(max_length=1000)
+# class SerialInSheetComposition(models.Model):
+#     sheet_composition = models.ForeignKey(SheetComposition, on_delete= models.CASCADE)
+#     serial_code = models.CharField(max_length= 100)
 
-    class Meta:
-        db_table = 'serial_action'
+#     class Meta:
+#         db_table = 'serial_in_sheet_composition'
 
-class SerialComposeRecord(models.Model):
-    standard = models.ForeignKey(SerialAction, related_name = 'main', on_delete = models.CASCADE)
-    compose  = models.ForeignKey(SerialAction, related_name = 'composition', on_delete = models.CASCADE)    
+# class SerialAction(models.Model):
+#     serial   = models.CharField(max_length=100)
+#     product  = models.ForeignKey(Product, on_delete= models.CASCADE)
+#     actions  = models.CharField(max_length=1000)
 
-    class Meta:
-        db_table = 'serial_compose_record'
+#     class Meta:
+#         db_table = 'serial_action'
+
+# class SerialComposeRecord(models.Model):
+#     standard = models.ForeignKey(SerialAction, related_name = 'main', on_delete = models.CASCADE)
+#     compose  = models.ForeignKey(SerialAction, related_name = 'composition', on_delete = models.CASCADE)    
+
+#     class Meta:
+#         db_table = 'serial_compose_record'
 
 class QuantityByWarehouse(models.Model):
     warehouse_code = models.CharField(max_length=20)
@@ -103,19 +103,27 @@ class ProductPrice(models.Model):
     class Meta:
         db_table = 'inventory_price'
 
-# class SheetType(models.Model):
-#     name = models.CharField(max_length= 200)
+##############################################################################################################
 
-#     class Meta:
-#         db_table = 'sheet_type'
-
-# class ProductOrder(models.Model):
-#     serial_code     = models.CharField()
-#     product_order   = models.CharField()
-#     manager_name    = models.CharField()
-#     manager_fab     = models.CharField()
-#     division        = models.CharField
-#     date = models.DateField()
+class SerialCode(models.Model):
+    sheet_id   = models.IntegerField()
+    product_id = models.IntegerField()
+    code = models.CharField(max_length= 100)
     
-#     class Meta:
-#         db_table 
+    class Meta:
+        db_table = 'serial_codes'
+
+class SerialCodeTitle(models.Model):
+    title = models.CharField(max_length= 100)
+    status = models.BooleanField(default= True)
+
+    class Meta:
+        db_table = 'serial_code_titles'
+
+class SerialCodeValue(models.Model):
+    title_id = models.IntegerField()
+    serial_code = models.ForeignKey(SerialCode, on_delete= models.CASCADE, related_name= 'serial_code_value')
+    contents    = models.CharField(max_length= 200)
+
+    class Meta:
+        db_table = 'serial_code_values'

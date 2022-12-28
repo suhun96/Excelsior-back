@@ -867,34 +867,34 @@ class SerialCodeCheckView(View):
                     result = self.print_sheet(sheet, serial_code)
                     return JsonResponse({'message': '이미 출고된 시리얼 입니다.', 'result': result }, status = 403)
 
-class SerialActionHistoryView(View):
-    def print_sheet(self, sheets):
-        sheet_list = []
+# class SerialActionHistoryView(View):
+#     def print_sheet(self, sheets):
+#         sheet_list = []
 
-        for id in sheets:
-            sheet = Sheet.objects.get(id = id)
-            dic_sheet = {
-                'id'            : sheet.id,
-                'user_name'     : sheet.user.name,         
-                'type'          : sheet.type,   
-                'company_name'  : Company.objects.get(code = sheet.company_code).name,       
-                'etc'           : sheet.etc,          
-                'created_at'    : sheet.created_at         
-            }
+#         for id in sheets:
+#             sheet = Sheet.objects.get(id = id)
+#             dic_sheet = {
+#                 'id'            : sheet.id,
+#                 'user_name'     : sheet.user.name,         
+#                 'type'          : sheet.type,   
+#                 'company_name'  : Company.objects.get(code = sheet.company_code).name,       
+#                 'etc'           : sheet.etc,          
+#                 'created_at'    : sheet.created_at         
+#             }
 
-            sheet_list.append(dic_sheet)
+#             sheet_list.append(dic_sheet)
 
-        return sheet_list
+#         return sheet_list
 
-    def get(self, request):
-        serial_code = request.GET.get("serial_code", None)
+#     def get(self, request):
+#         serial_code = request.GET.get("serial_code", None)
 
-        actions = SerialAction.objects.get(serial = serial_code).actions
-        sheets = actions.split(",")
+#         actions = SerialAction.objects.get(serial = serial_code).actions
+#         sheets = actions.split(",")
         
-        sheet_list = self.print_sheet(sheets)
+#         sheet_list = self.print_sheet(sheets)
 
-        return JsonResponse({'message': sheet_list}, status = 200)
+#         return JsonResponse({'message': sheet_list}, status = 200)
 
 class StockTotalView(View):
     def get(self, request):
@@ -985,3 +985,68 @@ class StockTotalView(View):
             return JsonResponse({'message' : '잘못된 요청을 보내셨습니다.2'}, status = 403)
         except ProductPrice.DoesNotExist:
             return JsonResponse({'message' : '0' }, status = 403)
+
+
+# Serial Code 
+# Title
+class CreateSerialCodeTitleView(View):
+    def post(self, request):
+        title = request.POST['title']
+
+        new_title = SerialCodeTitle.objects.create(title = title)
+
+        return JsonResponse({'message' : '새로운 title이 생성 되었습니다.'}, status = 200)
+
+class ModifySerialCodeTitleView(View):
+    def post(self, request):
+        title_id = request.POST['title_id']
+
+        UPDATE_SET = {}
+
+        for key, value in request.POST.item():
+            if key == 'title':
+                UPDATE_SET.update({key : value})
+            
+            if key == 'status':
+                if value == 'true':
+                    value = True
+                elif value == 'false':
+                    value = False
+                UPDATE_SET.update({key : value})
+        
+        try:
+            with transaction.atomic():
+                SerialCodeTitle.objects.filter(id = title_id).update(**UPDATE_SET)
+            return JsonResponse({'message' : '커스텀 타이틀 수정을 성공했습니다.'}, status = 200)
+        except SerialCodeTitle.DoesNotExist:
+            return JsonResponse({'message' : f'title id를 확인해주세요. {title_id}'}, status = 403)
+        except KeyError:
+            return JsonResponse({'message' : 'KeyError'}, status = 403)      
+
+class InquireSerialCodeTitleView(View):
+    def get(self, request):
+        
+        Title_list = list(SerialCodeTitle.objects.filter(status = True).values())
+
+        return JsonResponse({'message': Title_list})
+# Value
+class CreateSerialCodeValueView(View):
+    def post(self, request):
+        serial_code_title_id = request.POST['title']
+        serial_code_id       = request.POST['serial_code_id']
+        contents             = request.POST['contents']
+        
+        try:
+            with transaction.atomic():
+                obj, check = SerialCodeValue.objects.update_or_create(
+                    title_id       = serial_code_title_id,
+                    serial_code_id = serial_code_id,
+                    defaults= {
+                        'contents' : contents
+                    })
+                if check == True:
+                    return JsonResponse({'message' : '생성 성공'}, status = 200)
+                else:
+                    return JsonResponse({'message' : '수정 성공'}, status = 200)
+        except KeyError:
+            return JsonResponse({'message' : '잘못된 key 값을 입력하셨습니다.'}, status = 403)

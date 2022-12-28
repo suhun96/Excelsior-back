@@ -286,4 +286,4 @@ class CustomValueCreateView(View):
             else:
                 return JsonResponse({'message' : 'cusutom value 수정 성공'}, status = 200)
         except KeyError:
-            return JsonResponse({'message' : '잘못된 key 값을 입력하셨습니다.'}, status = 200)
+            return JsonResponse({'message' : '잘못된 key 값을 입력하셨습니다.'}, status = 403)
