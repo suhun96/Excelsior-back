@@ -127,3 +127,15 @@ class SerialCodeValue(models.Model):
 
     class Meta:
         db_table = 'serial_code_values'
+
+############################################################################################################
+
+class MovingAverageMethod(models.Model):
+    product = models.ForeignKey(Product, on_delete= models.CASCADE)
+    average_price  = models.IntegerField()
+    custom_price   = models.IntegerField(null= True)
+    total_quantity = models.IntegerField()
+
+    class Meta:
+        db_table = 'moving_average_method'
+

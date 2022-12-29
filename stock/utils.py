@@ -191,7 +191,6 @@ def create_sheet_detail(sheet_id, products):
         except:
             raise Exception({'message' : 'create_sheet_detail 사용하는중 에러가 발생했습니다.'})
 
-
 def modify_sheet_detail(sheet_id, products):
     try:
         for product in products:
@@ -224,7 +223,7 @@ def modify_sheet_detail(sheet_id, products):
     except:
         raise Exception({'message' : 'create_sheet_detail 사용하는중 에러가 발생했습니다.2'})
 
-def rollback_quantity(sheet_id):
+def rollback_sheet_detail(sheet_id):
         target_sheet = Sheet.objects.get(id = sheet_id)
     
         try:
@@ -241,6 +240,7 @@ def rollback_quantity(sheet_id):
                         product_id     = detail.get('product')
                         warehouse_code = detail.get('warehouse_code')
                         quantity       = detail.get('quantity') 
+                        unit_price     = detail.get('unit_price')
                         
                         stock = StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id)
                         
@@ -254,6 +254,8 @@ def rollback_quantity(sheet_id):
                             product_id = product_id,
                             warehouse_code = warehouse_code )
                         
+                        mam_delete_sheet(product_id, unit_price, quantity, stock_quantity)
+
                         QuantityByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id).update_or_create(
                             product_id = product_id,
                             warehouse_code = warehouse_code,
@@ -271,6 +273,7 @@ def rollback_quantity(sheet_id):
                         product_id     = composition.get('product')
                         warehouse_code = composition.get('warehouse_code')
                         quantity       = composition.get('quantity')
+                        unit_price     = composition.get('unit_price')
                         
                         stock = StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id)
 
@@ -292,7 +295,7 @@ def rollback_quantity(sheet_id):
         except:
             raise Exception({'message' : 'rollback_quantity 사용하는중 에러가 발생했습니다.'})
 
-def reflecte_modify_sheet_detail(sheet_id):
+def reflecte_sheet_detail(sheet_id):
         target_sheet = Sheet.objects.get(id = sheet_id)
         try:
             with transaction.atomic():
@@ -307,7 +310,8 @@ def reflecte_modify_sheet_detail(sheet_id):
                     for composition in compositions:
                         product_id     = composition.get('product')
                         warehouse_code = composition.get('warehouse_code')
-                        quantity       = composition.get('quantity') 
+                        quantity       = composition.get('quantity')
+                        unit_price     = composition.get('unit_price') 
                         
                         stock = StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id)
                         
@@ -323,6 +327,7 @@ def reflecte_modify_sheet_detail(sheet_id):
                             product_id = product_id,
                             warehouse_code = warehouse_code )
                         
+                        mam_create_sheet(product_id, unit_price, quantity, stock_quantity)
                         
                         QuantityByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id).update_or_create(
                             product_id = product_id,
@@ -341,6 +346,7 @@ def reflecte_modify_sheet_detail(sheet_id):
                         product_id     = composition.get('product')
                         warehouse_code = composition.get('warehouse_code')
                         quantity       = composition.get('quantity')
+                        unit_price     = composition.get('unit_price')
                         
                         stock = StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id)
                         
@@ -362,3 +368,58 @@ def reflecte_modify_sheet_detail(sheet_id):
                             defaults={'total_quantity' : stock_quantity})
         except:
             raise Exception({'message' : 'reflecte_modify_sheet_detail 사용하는중 에러가 발생했습니다.'})
+
+def mam_create_sheet(product_id, unit_price, quantity, stock_quantity):
+    try:
+        total = QuantityByWarehouse.objects.filter(product_id = product_id).aggregate(Sum('total_quantity'))
+        total_quantity = total['total_quantity__sum']      
+
+    except QuantityByWarehouse.DoesNotExist:
+        total_quantity = unit_price
+
+    if not MovingAverageMethod.objects.filter(product_id = product_id).exists():
+        new_MAM = MovingAverageMethod.objects.create(
+            product_id = product_id,
+            average_price = unit_price,
+            total_quantity = total_quantity
+        )
+    else:
+        average_price = MovingAverageMethod.objects.get(product_id = product_id).average_price
+        mul_stock   = average_price * total_quantity
+        mul_inbound = unit_price * quantity
+
+        result1 = (mul_stock + mul_inbound) / (total_quantity + quantity)
+        round_result = round(result1, 6)
+        
+        new_MAM = MovingAverageMethod.objects.filter(product_id= product_id).update(
+            average_price = round_result,
+            total_quantity = stock_quantity
+        )
+
+def mam_delete_sheet(product_id, unit_price, quantity, stock_quantity):
+    try:
+        total = QuantityByWarehouse.objects.filter(product_id = product_id).aggregate(Sum('total_quantity'))
+        total_quantity = total['total_quantity__sum']      
+
+    except QuantityByWarehouse.DoesNotExist:
+        total_quantity = unit_price
+
+    if not MovingAverageMethod.objects.filter(product_id = product_id).exists():
+        new_MAM = MovingAverageMethod.objects.create(
+            product_id = product_id,
+            average_price = unit_price,
+            total_quantity = total_quantity
+        )
+    else:
+        average_price = MovingAverageMethod.objects.get(product_id = product_id).average_price
+        mul_stock   = average_price * total_quantity
+        mul_inbound = unit_price * quantity
+
+        
+        result1 = (mul_stock - mul_inbound) / (total_quantity - quantity)
+        round_result = round(result1, 6)
+
+        new_MAM = MovingAverageMethod.objects.filter(product_id= product_id).update(
+            average_price = round_result,
+            total_quantity = stock_quantity
+        )

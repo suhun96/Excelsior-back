@@ -42,7 +42,8 @@ class CreateSheetView(View):
                         product_id     = composition.get('product')
                         warehouse_code = composition.get('warehouse_code')
                         quantity       = composition.get('quantity') 
-                        
+                        unit_price     = composition.get('unit_price')
+
                         stock = StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id)
                         
                         if stock.exists():
@@ -57,11 +58,15 @@ class CreateSheetView(View):
                             product_id = product_id,
                             warehouse_code = warehouse_code )
                         
-                        
+                        # 여기서 계산한 총 수량과
+                        mam_create_sheet(product_id, unit_price, quantity, stock_quantity)
+
                         QuantityByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id).update_or_create(
                             product_id = product_id,
                             warehouse_code = warehouse_code,
                             defaults={'total_quantity' : stock_quantity})
+
+                        
 
                     register_checker(input_data)
                     telegram_bot(new_sheet_id)
@@ -140,7 +145,7 @@ class CreateSheetView(View):
 
                     # 소진 
                     used_sheet = Sheet.objects.create(
-                        user_id = 1,
+                        user_id = user,
                         type = 'used',
                         company_code = 'EX',
                         etc = f'Sheet_ID :{new_sheet_id} 세트 생산으로 인한 재고소진'
@@ -188,7 +193,7 @@ class CreateSheetView(View):
                         serial_code_list.append(serial_code['serial'])
                     
                     return JsonResponse({'message' : '생산 성공', 'serial_list' : serial_code_list}, status = 200)
-        except KeyError:
+        except Exception:
             return JsonResponse({'message' : 'keyerror'}, status = 403)
 
 class ModifySheetView(View):
@@ -209,7 +214,7 @@ class ModifySheetView(View):
                 # sheet, sheet_detail log 작성
                 create_sheet_logs(sheet_id, modify_user)
                 # sheet_detail 롤백 [입고 = (-), 출고 = (+)]
-                rollback_quantity(sheet_id)
+                rollback_sheet_detail(sheet_id)
                 # sheet_detail 삭제
                 SheetComposition.objects.filter(sheet_id = sheet_id).delete()
 
@@ -231,7 +236,7 @@ class ModifySheetView(View):
                 # 수정된 sheet_detail 생성
                 modify_sheet_detail(sheet_id, modify_data['products'])
                 # 수정된 sheet_detail 수량 반영
-                reflecte_modify_sheet_detail(sheet_id)
+                reflecte_sheet_detail(sheet_id)
                 # 수정된 가격 반영
                 register_checker(modify_data)
 
@@ -380,7 +385,7 @@ class InfoSheetListView(View):
             q &= Q(user_id__exact = user_id)
         if company_name:
             company_code = Company.objects.get(name = company_name).code
-            # print(company_code)
+            
             q &= Q(company_code = company_code)
         
         
@@ -391,9 +396,8 @@ class InfoSheetListView(View):
             sheet = Sheet.objects.get(id = sheet_id)
             user_name    = User.objects.get(id = sheet.user.id).name
             stock_type   = sheet.type
-        
-            document_num = self.generate_document_num(sheet.id, sheet.date)
 
+            document_num = self.generate_document_num(sheet.id, sheet.date)
             sheet_company_name = Company.objects.get(code = sheet.company_code).name
             sheet_company_code = Company.objects.get(code = sheet.company_code).code
             
@@ -436,8 +440,6 @@ class InfoSheetListView(View):
                 year    = sheet.date.year
                 month   = sheet.date.month
                 day     = sheet.date.day
-                hour    = created_at.hour
-                minute  = created_at.minute
 
 
 
@@ -451,12 +453,11 @@ class InfoSheetListView(View):
                         'company_code'          : sheet_company_code,
                         'etc'                   : etc,
                         'date'                  : f"{year}-{month}-{day}",
-                        'time'                  : f"{hour}:{minute}",
                         'product_code'          : product.product_code,
                         'product_name'          : product.name,
                         'product_group_name'    : ProductGroup.objects.get(code = product.productgroup_code).name,
                         'barcode'               : product.barcode,
-                        'price'            : composition.unit_price,
+                        'price'                 : composition.unit_price,
                         'quantity'              : composition.quantity,
                         'total_quantity'        : total['total_quantity__sum'],
                         'warehouse_code'        : composition.warehouse_code,
@@ -478,7 +479,6 @@ class InfoSheetListView(View):
                         'company_code'          : sheet_company_code,
                         'etc'                   : etc,
                         'date'                  : f"{year}-{month}-{day}",
-                        'time'                  : f"{hour}:{minute}",
                         'product_code'          : product.product_code,
                         'product_name'          : product.name,
                         'product_group_name'    : ProductGroup.objects.get(code = product.productgroup_code).name,
@@ -917,6 +917,7 @@ class CreateSerialCodeValueView(View):
         except KeyError:
             return JsonResponse({'message' : '잘못된 key 값을 입력하셨습니다.'}, status = 403)
 
+### 완성 못시킨 코드 ###
 class InquireSerialCodeValueView(View):
     def get(self, request):
         serial_code_ids = SerialCode.objects.all().values_list('id', flat= True)
@@ -936,3 +937,4 @@ class InquireSerialCodeValueView(View):
                 list_A.append(dict_A)
 
         return JsonResponse({'message': list_A})
+
