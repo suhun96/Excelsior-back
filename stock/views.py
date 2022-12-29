@@ -28,89 +28,89 @@ class CreateSheetView(View):
         new_sheet = create_sheet(input_data, user)
         new_sheet_id = new_sheet.id
 
-        # try:
-            # with transaction.atomic():
-        if new_sheet.type == 'inbound':
-            compositions = SheetComposition.objects.filter(sheet_id = new_sheet_id).values(
-                    'product',
-                    'unit_price',
-                    'quantity',
-                    'warehouse_code'
-                )
+        try:
+            with transaction.atomic():
+                if new_sheet.type == 'inbound':
+                    compositions = SheetComposition.objects.filter(sheet_id = new_sheet_id).values(
+                            'product',
+                            'unit_price',
+                            'quantity',
+                            'warehouse_code'
+                        )
 
-            for composition in compositions:
-                product_id     = composition.get('product')
-                warehouse_code = composition.get('warehouse_code')
-                quantity       = composition.get('quantity') 
-                unit_price     = composition.get('unit_price')
+                    for composition in compositions:
+                        product_id     = composition.get('product')
+                        warehouse_code = composition.get('warehouse_code')
+                        quantity       = composition.get('quantity') 
+                        unit_price     = composition.get('unit_price')
 
-                stock = StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id)
-                
-                if stock.exists():
-                    before_quantity = stock.last().stock_quantity
-                    stock_quantity  = before_quantity + int(quantity)
-                else:
-                    stock_quantity  = int(quantity)
+                        stock = StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id)
+                        
+                        if stock.exists():
+                            before_quantity = stock.last().stock_quantity
+                            stock_quantity  = before_quantity + int(quantity)
+                        else:
+                            stock_quantity  = int(quantity)
 
-                StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id).create(
-                    sheet_id = new_sheet_id,
-                    stock_quantity = stock_quantity,
-                    product_id = product_id,
-                    warehouse_code = warehouse_code )
-                
-                # 여기서 계산한 총 수량과
-                mam_create_sheet(product_id, unit_price, quantity, stock_quantity)
+                        StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id).create(
+                            sheet_id = new_sheet_id,
+                            stock_quantity = stock_quantity,
+                            product_id = product_id,
+                            warehouse_code = warehouse_code )
+                        
+                        # 여기서 계산한 총 수량과
+                        mam_create_sheet(product_id, unit_price, quantity, stock_quantity)
 
-                QuantityByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id).update_or_create(
-                    product_id = product_id,
-                    warehouse_code = warehouse_code,
-                    defaults={'total_quantity' : stock_quantity})
+                        QuantityByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id).update_or_create(
+                            product_id = product_id,
+                            warehouse_code = warehouse_code,
+                            defaults={'total_quantity' : stock_quantity})
 
-                
+                        
 
-            register_checker(input_data)
-            telegram_bot(new_sheet_id)
+                    register_checker(input_data)
+                    telegram_bot(new_sheet_id)
 
-            return JsonResponse({'message' : '입고 성공'}, status = 200)
+                    return JsonResponse({'message' : '입고 성공'}, status = 200)
 
-        if new_sheet.type == 'outbound':
-            compositions = SheetComposition.objects.filter(sheet_id = new_sheet_id).values(
-                    'product',
-                    'unit_price',
-                    'quantity',
-                    'warehouse_code'
-                )
+                if new_sheet.type == 'outbound':
+                    compositions = SheetComposition.objects.filter(sheet_id = new_sheet_id).values(
+                            'product',
+                            'unit_price',
+                            'quantity',
+                            'warehouse_code'
+                        )
 
-            for composition in compositions:
-                product_id     = composition.get('product')
-                warehouse_code = composition.get('warehouse_code')
-                quantity       = composition.get('quantity')
-                
-                stock = StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id)
-                
-                if stock.exists():
-                    before_quantity = stock.last().stock_quantity
-                    stock_quantity  = before_quantity - int(quantity)
-                else:
-                    stock_quantity  = int(quantity)
+                    for composition in compositions:
+                        product_id     = composition.get('product')
+                        warehouse_code = composition.get('warehouse_code')
+                        quantity       = composition.get('quantity')
+                        
+                        stock = StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id)
+                        
+                        if stock.exists():
+                            before_quantity = stock.last().stock_quantity
+                            stock_quantity  = before_quantity - int(quantity)
+                        else:
+                            stock_quantity  = int(quantity)
 
-                StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id).create(
-                    sheet_id = new_sheet_id,
-                    stock_quantity = stock_quantity,
-                    product_id = product_id,
-                    warehouse_code = warehouse_code )
-                
-                QuantityByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id).update_or_create(
-                    product_id = product_id,
-                    warehouse_code = warehouse_code,
-                    defaults={'total_quantity' : stock_quantity})
-                
-            register_checker(input_data)
-            telegram_bot(new_sheet_id)
-            
-            return JsonResponse({'message' : '출고 성공'}, status = 200)
+                        StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id).create(
+                            sheet_id = new_sheet_id,
+                            stock_quantity = stock_quantity,
+                            product_id = product_id,
+                            warehouse_code = warehouse_code )
+                        
+                        QuantityByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id).update_or_create(
+                            product_id = product_id,
+                            warehouse_code = warehouse_code,
+                            defaults={'total_quantity' : stock_quantity})
+                        
+                    register_checker(input_data)
+                    telegram_bot(new_sheet_id)
+                    
+                    return JsonResponse({'message' : '출고 성공'}, status = 200)
 
-        if new_sheet.type == 'generate':
+                if new_sheet.type == 'generate':
                     generated_composition = SheetComposition.objects.get(sheet_id = new_sheet_id)
 
                     product_id     = generated_composition.product.id
@@ -193,8 +193,8 @@ class CreateSheetView(View):
                         serial_code_list.append(serial_code['serial'])
                     
                     return JsonResponse({'message' : '생산 성공', 'serial_list' : serial_code_list}, status = 200)
-        # except Exception:
-        #     return JsonResponse({'message' : 'keyerror'}, status = 403)
+        except Exception:
+            return JsonResponse({'message' : 'keyerror'}, status = 403)
 
 class ModifySheetView(View):
     def check_serial_code(self, sheet_id):
@@ -214,7 +214,7 @@ class ModifySheetView(View):
                 # sheet, sheet_detail log 작성
                 create_sheet_logs(sheet_id, modify_user)
                 # sheet_detail 롤백 [입고 = (-), 출고 = (+)]
-                rollback_quantity(sheet_id)
+                rollback_sheet_detail(sheet_id)
                 # sheet_detail 삭제
                 SheetComposition.objects.filter(sheet_id = sheet_id).delete()
 
@@ -236,7 +236,7 @@ class ModifySheetView(View):
                 # 수정된 sheet_detail 생성
                 modify_sheet_detail(sheet_id, modify_data['products'])
                 # 수정된 sheet_detail 수량 반영
-                reflecte_modify_sheet_detail(sheet_id)
+                reflecte_sheet_detail(sheet_id)
                 # 수정된 가격 반영
                 register_checker(modify_data)
 
@@ -917,6 +917,7 @@ class CreateSerialCodeValueView(View):
         except KeyError:
             return JsonResponse({'message' : '잘못된 key 값을 입력하셨습니다.'}, status = 403)
 
+### 완성 못시킨 코드 ###
 class InquireSerialCodeValueView(View):
     def get(self, request):
         serial_code_ids = SerialCode.objects.all().values_list('id', flat= True)
@@ -937,46 +938,3 @@ class InquireSerialCodeValueView(View):
 
         return JsonResponse({'message': list_A})
 
-# 입고 가액 계산
-
-class MovingAverageMethodView(View):
-    def calculate_first_inbound(self, product_id, unit_price):
-        try: 
-            total = QuantityByWarehouse.objects.filter(product_id = product_id).aggregate(Sum('total_quantity'))
-            total_quantity = total['total_quantity']      
-        except QuantityByWarehouse.DoesNotExist:
-            total_quantity = 0
-        
-        first_inbound_action = MovingAverageMethod.objects.create(
-            product_id = product_id,
-            average_price = unit_price,
-            total_quantity = total_quantity
-        )
-
-    def calculate_nomal_inbound(self, product_id, unit_price, quantity):
-        try:
-            total = QuantityByWarehouse.objects.filter(product_id = product_id).aggregate(Sum('total_quantity'))
-            total_quantity = total['total_quantity']      
-        except QuantityByWarehouse.DoesNotExist:
-            total_quantity = 0
-
-        average_price = MovingAverageMethod.objects.get(product_id = product_id).average_price
-        
-        target_A = average_price * total_quantity   # 평균 가액
-        target_B = unit_price * quantity            # 새로 입고한 정보
-        
-        ADD_A_B = target_A + target_B
-        ADD_quantity = total_quantity + quantity
-
-        result1, result2 = divmod(ADD_A_B, ADD_quantity)
-
-        return result1
-
-    def check_exists(self, product_id, unit_price):
-        
-        # 처음 계산 실행
-        if not MovingAverageMethod.objects.filter(product_id = product_id).exists():
-            self.calculate_first_inbound(product_id, unit_price)
-        
-        else:
-            self.calculate_nomal_inbound(product_id, unit_price)
