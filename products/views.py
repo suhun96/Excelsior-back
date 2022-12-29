@@ -17,6 +17,7 @@ from stock.models       import *
 # decorator & utills 
 from users.decorator    import jwt_decoder
 from products.utils     import *
+from stock.utils        import *
 
 import telegram
 from my_settings        import TELEGRAM_TOKEN, CHAT_ID
@@ -124,6 +125,7 @@ class ProductInfoView(View):
         if not company_code:
             company_code = "AA"
         
+        price    = input_data.get('price', None)
         quantity = input_data.get('quantity', None)
         new_product_code = new_product.product_code
 
@@ -146,7 +148,7 @@ class ProductInfoView(View):
                         quantity        = quantity, 
                         warehouse_code  = Warehouse.objects.get(main = True).code,
                         location        = new_product.location,
-                        unit_price      = 0,
+                        unit_price      = price,
                     )
                     
                     stock = StockByWarehouse.objects.filter(warehouse_code = Warehouse.objects.get(main = True).code , product_id = new_product.id)
@@ -163,7 +165,8 @@ class ProductInfoView(View):
                         product_id = new_product.id,
                         warehouse_code = Warehouse.objects.get(main = True).code )
                     
-                    
+                    mam_create_sheet(new_product.id, price, quantity, stock_quantity)
+
                     QuantityByWarehouse.objects.filter(warehouse_code = Warehouse.objects.get(main = True).code, product_id = new_product.id).update_or_create(
                         product_id = new_product.id,
                         warehouse_code = Warehouse.objects.get(main = True).code,
@@ -187,7 +190,7 @@ class ProductInfoView(View):
                         quantity        = quantity, 
                         warehouse_code  = Warehouse.objects.get(main = True).code,
                         location        = new_product.location,
-                        unit_price      = 0,
+                        unit_price      = price,
                     )
                     
                     stock = StockByWarehouse.objects.filter(warehouse_code = Warehouse.objects.get(main = True).code , product_id = new_product.id)
@@ -204,6 +207,7 @@ class ProductInfoView(View):
                         product_id = new_product.id,
                         warehouse_code = Warehouse.objects.get(main = True).code )
                     
+                    mam_create_sheet(new_product.id, price, quantity, stock_quantity)
                     
                     QuantityByWarehouse.objects.filter(warehouse_code = Warehouse.objects.get(main = True).code, product_id = new_product.id).update_or_create(
                         product_id = new_product.id,
@@ -287,6 +291,7 @@ class ProductInfoView(View):
         return JsonResponse({'message' : result_list}, status = 200)
         # except KeyError:
         #     return JsonResponse({'message' : 'keyerror'}, status = 403)
+
     @jwt_decoder
     def post(self, request):
         user = request.user

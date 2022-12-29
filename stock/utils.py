@@ -362,3 +362,28 @@ def reflecte_modify_sheet_detail(sheet_id):
                             defaults={'total_quantity' : stock_quantity})
         except:
             raise Exception({'message' : 'reflecte_modify_sheet_detail 사용하는중 에러가 발생했습니다.'})
+
+def mam_create_sheet(product_id, unit_price, quantity, stock_quantity):
+    try:
+        total = QuantityByWarehouse.objects.filter(product_id = product_id).aggregate(Sum('total_quantity'))
+        total_quantity = total['total_quantity__sum']      
+
+    except QuantityByWarehouse.DoesNotExist:
+        total_quantity = unit_price
+
+    if not MovingAverageMethod.objects.filter(product_id = product_id).exists():
+        new_MAM = MovingAverageMethod.objects.create(
+            product_id = product_id,
+            average_price = unit_price,
+            total_quantity = total_quantity
+        )
+    else:
+        average_price = MovingAverageMethod.objects.get(product_id = product_id).average_price
+        mul_stock   = average_price * total_quantity
+        mul_inbound = unit_price * quantity
+
+        result1, result2 = divmod((mul_stock + mul_inbound), (total_quantity + quantity))
+        new_MAM = MovingAverageMethod.objects.filter(product_id= product_id).update(
+            average_price = result1,
+            total_quantity = stock_quantity
+        )

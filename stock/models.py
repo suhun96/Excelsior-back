@@ -133,7 +133,7 @@ class SerialCodeValue(models.Model):
 class MovingAverageMethod(models.Model):
     product = models.ForeignKey(Product, on_delete= models.CASCADE)
     average_price  = models.IntegerField()
-    custom_price   = models.IntegerField()
+    custom_price   = models.IntegerField(null= True)
     total_quantity = models.IntegerField()
 
     class Meta:
