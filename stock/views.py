@@ -216,7 +216,7 @@ class ModifySheetView(View):
                 # sheet 수정    
                 UPDATE_SET = {'user' : modify_user}
 
-                update_options = ['company_code', 'etc']
+                update_options = ['company_code', 'etc', 'date']
 
                 for key, value in modify_data.items():
                     if key in update_options:
@@ -458,11 +458,11 @@ class InfoSheetListView(View):
                 for object in serial_codes:
                     list_serial_code.append(object)
 
-                year  = created_at.year
-                month = created_at.month
-                day   = created_at.day
-                hour  = created_at.hour
-                minute   = created_at.minute
+                year    = sheet.date.year
+                month   = sheet.date.month
+                day     = sheet.date.day
+                hour    = created_at.hour
+                minute  = created_at.minute
 
 
 
@@ -537,14 +537,12 @@ class ClickSheetView(View):
             product = Product.objects.get(id = composition.product_id)
             total = QuantityByWarehouse.objects.filter(product_id = product.id).aggregate(Sum('total_quantity'))
 
-            serial_codes = SerialCode.objects.filter(product_id = product.id).values('code')
-
+            serial_codes = SerialCode.objects.filter(sheet_id = sheet_id ,product_id = product.id).values('code')
             list_serial_code = []
             
-            for object in serial_codes:
-                print(object)
-                list_serial_code.append(object.get('code'))
-                print(list_serial_code)
+            for obj in serial_codes:
+                list_serial_code.append(obj.get('code'))
+            
             if product.company_code == "" :
                 dict = {
                     'product_code'          : product.product_code,
