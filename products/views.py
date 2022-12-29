@@ -552,6 +552,13 @@ class ModifyProductEtcTitleView(View):
         except KeyError:
             return JsonResponse({'message' : 'KeyError'}, status = 403)  
 
+class InquireProductEtcTitleView(View):
+    def get(self, request):
+
+        Title_list = list(ProductEtcTitle.objects.all().values())
+
+        return JsonResponse({'message': Title_list}, status = 200)
+
 class InquireProductEtcDescView(View):
     def get(self, request):
         product_id = request.GET.get('product_id')

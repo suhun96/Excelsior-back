@@ -140,7 +140,7 @@ class CreateSheetView(View):
 
                     # 소진 
                     used_sheet = Sheet.objects.create(
-                        user_id = 1,
+                        user_id = user,
                         type = 'used',
                         company_code = 'EX',
                         etc = f'Sheet_ID :{new_sheet_id} 세트 생산으로 인한 재고소진'
@@ -316,18 +316,6 @@ class SheetListView(View):
             id           = sheet['id']
             user_name    = User.objects.get(id = sheet['user']).name
             stock_type   = sheet['type']
-            # type 체인지
-            if stock_type == 'inbound':
-                stock_type = '입고'
-            elif stock_type == 'outbound':
-                stock_type = '출고'
-            elif stock_type == 'generate':
-                stock_type = '세트 생산'
-            elif stock_type == 'used':
-                stock_type = '소모'
-            elif stock_type == 'new':
-                stock_type = '등록'
-
 
             company_name = Company.objects.get(code = sheet['company_code']).name
             etc          = sheet['etc']
@@ -392,7 +380,7 @@ class InfoSheetListView(View):
             q &= Q(user_id__exact = user_id)
         if company_name:
             company_code = Company.objects.get(name = company_name).code
-            # print(company_code)
+            
             q &= Q(company_code = company_code)
         
         
@@ -403,19 +391,6 @@ class InfoSheetListView(View):
             sheet = Sheet.objects.get(id = sheet_id)
             user_name    = User.objects.get(id = sheet.user.id).name
             stock_type   = sheet.type
-            # type 체인지
-            if stock_type == 'inbound':
-                stock_type = '입고'
-            elif stock_type == 'outbound':
-                stock_type = '출고'
-            elif stock_type == 'generate':
-                stock_type = '세트 생산'
-            elif stock_type == 'used':
-                stock_type = '소모'
-            elif stock_type == 'new':
-                stock_type = '등록'
-
-
 
             document_num = self.generate_document_num(sheet.id, sheet.date)
 
@@ -461,8 +436,6 @@ class InfoSheetListView(View):
                 year    = sheet.date.year
                 month   = sheet.date.month
                 day     = sheet.date.day
-                hour    = created_at.hour
-                minute  = created_at.minute
 
 
 
@@ -476,7 +449,6 @@ class InfoSheetListView(View):
                         'company_code'          : sheet_company_code,
                         'etc'                   : etc,
                         'date'                  : f"{year}-{month}-{day}",
-                        'time'                  : f"{hour}:{minute}",
                         'product_code'          : product.product_code,
                         'product_name'          : product.name,
                         'product_group_name'    : ProductGroup.objects.get(code = product.productgroup_code).name,
@@ -503,7 +475,6 @@ class InfoSheetListView(View):
                         'company_code'          : sheet_company_code,
                         'etc'                   : etc,
                         'date'                  : f"{year}-{month}-{day}",
-                        'time'                  : f"{hour}:{minute}",
                         'product_code'          : product.product_code,
                         'product_name'          : product.name,
                         'product_group_name'    : ProductGroup.objects.get(code = product.productgroup_code).name,
