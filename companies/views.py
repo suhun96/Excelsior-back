@@ -18,6 +18,10 @@ from products.utils     import *
 
 class CompanyView(View):
     def get(self, request):
+        offset = int(request.GET.get('offset'))
+        limit  = int(request.GET.get('limit'))
+
+        length = Company.objects.all().count()
         
         filter_options = {
             'name'     : 'name__icontains',
@@ -38,9 +42,10 @@ class CompanyView(View):
 
         filter_set = { filter_options.get(key) : value for (key, value) in request.GET.items() if filter_options.get(key) }
         
-        result = list(Company.objects.filter(**filter_set).values())
+        # result = list(Company.objects.filter(**filter_set).values())
+        result = list(Company.objects.filter(**filter_set).values()[offset : offset+limit])
 
-        return JsonResponse({'message' : result} , status = 200)
+        return JsonResponse({'message' : result, 'length': length} , status = 200)
 
     @jwt_decoder
     def post(self, request):

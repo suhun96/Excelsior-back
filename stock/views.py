@@ -145,7 +145,7 @@ class CreateSheetView(View):
 
                     # 소진 
                     used_sheet = Sheet.objects.create(
-                        user_id = user,
+                        user_id = user.id,
                         type = 'used',
                         company_code = 'EX',
                         etc = f'Sheet_ID :{new_sheet_id} 세트 생산으로 인한 재고소진'
@@ -187,10 +187,11 @@ class CreateSheetView(View):
                     
                     # serial code 생선
                     create_serial_code(generated_composition, new_sheet_id)
-                    serial_codes = SerialAction.objects.filter(create = new_sheet_id).values('serial')
+                    serial_codes = SerialCode.objects.filter(sheet_id = new_sheet_id).values_list('code', flat= True)
+                    
                     serial_code_list = []
                     for serial_code in serial_codes:
-                        serial_code_list.append(serial_code['serial'])
+                        serial_code_list.append(serial_code)
                     
                     return JsonResponse({'message' : '생산 성공', 'serial_list' : serial_code_list}, status = 200)
         except Exception:
@@ -299,6 +300,11 @@ class QunatityByWarehouseView(View):
 
 class SheetListView(View):
     def get(self, request):
+        offset = int(request.GET.get('offset'))
+        limit  = int(request.GET.get('limit'))
+
+        length = Sheet.objects.all().count()
+
         stock_type = request.GET.get('type', None)
 
         q = Q()
@@ -312,9 +318,9 @@ class SheetListView(View):
             'type',
             'company_code',
             'etc',
-            'date'
+            'date',
             'created_at'
-        ).order_by('date')
+        ).order_by('date')[offset : offset+limit]
 
         for_list = []
         for sheet in sheets:
@@ -338,7 +344,7 @@ class SheetListView(View):
             for_list.append(dict)
 
 
-        return JsonResponse({'message' : for_list}, status = 200)
+        return JsonResponse({'message' : for_list, 'length': length}, status = 200)
 
 class InfoSheetListView(View):
     def generate_document_num(self, sheet_id, date):
@@ -362,6 +368,11 @@ class InfoSheetListView(View):
         return document_num
 
     def get(self, request):
+        offset = int(request.GET.get('offset'))
+        limit  = int(request.GET.get('limit'))
+
+        length = Sheet.objects.all().count()
+
         name           = request.GET.get('user_name', None)
         stock_type     = request.GET.get('type', None)
         date_start     = request.GET.get('date_start', None)
@@ -389,7 +400,7 @@ class InfoSheetListView(View):
             q &= Q(company_code = company_code)
         
         
-        sheet_ids = Sheet.objects.filter(q).values_list('id', flat= True).order_by('date')
+        sheet_ids = Sheet.objects.filter(q).values_list('id', flat= True).order_by('date')[offset : offset+limit]
 
         for_list = []
         for sheet_id in sheet_ids:
@@ -483,7 +494,7 @@ class InfoSheetListView(View):
                         'product_name'          : product.name,
                         'product_group_name'    : ProductGroup.objects.get(code = product.productgroup_code).name,
                         'barcode'               : product.barcode,
-                        'price'            : composition.unit_price,
+                        'price'                 : composition.unit_price,
                         'quantity'              : composition.quantity,
                         'total_quantity'        : total['total_quantity__sum'],
                         'warehouse_code'        : composition.warehouse_code,
@@ -496,7 +507,7 @@ class InfoSheetListView(View):
                     for_list.append(dict)
 
 
-        return JsonResponse({'message' : for_list}, status = 200)
+        return JsonResponse({'message' : for_list, 'length': length}, status = 200)
 
 class ClickSheetView(View):
     def get(self, request):
@@ -941,3 +952,36 @@ class InquireSerialCodeValueView(View):
 # 평균가액
 
 # class InquireS
+
+class CheckSetProductView(View):
+    def post(self, request):
+        set_product_code = request.POST['set_product_code']
+        warehouse_code   = request.POST['warehouse_code']
+
+        set_proudct_info = Product.objects.get(product_code = set_product_code)
+        
+        component_ids = ProductComposition.objects.filter(set_product_id = set_proudct_info.id).values_list('composition_product', flat= True)
+        
+        dict_B = {}
+
+        for id in component_ids:
+            product_info = Product.objects.get(id = id)
+            quantity = QuantityByWarehouse.objects.get(warehouse_code = warehouse_code, product_id = product_info.id).total_quantity
+            dict_B.update({
+                'product_code' : product_info.product_code,
+                'name'         : product_info.name,
+                'quantity'     : quantity
+            })
+        
+        dict = {
+            'company_code'  : set_proudct_info.company_code,
+            'company_name'  : Company.objects.get(code = set_proudct_info.company_code).name,
+            'product_code'  : set_proudct_info.product_code,
+            'name'          : set_proudct_info.name,
+            'warehouse_name': Warehouse.objects.get(code = set_proudct_info.warehouse_code).name,
+            'location'      : set_proudct_info.location,
+            'barcode'       : set_proudct_info.barcode,
+            'products'      : [dict_B]
+        }
+
+        return JsonResponse({'message' : dict}, status = 200)

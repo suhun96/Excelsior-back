@@ -100,39 +100,38 @@ def create_sheet(input_data, user):
         except:
             raise Exception({'message' : 'sheet를 생성하는중 에러가 발생했습니다.'})
 
-# def create_serial_code(composition, new_sheet_id):
-#         now = datetime.now()
-#         year    = str(now.year)
-#         month   = str(now.month).zfill(2)
-#         day     = str(now.day).zfill(2)
-#         today = year[2:4] + month + day
+def create_serial_code(composition, new_sheet_id):
+        now = datetime.now()
+        year    = str(now.year)
+        month   = str(now.month).zfill(2)
+        day     = str(now.day).zfill(2)
+        today = year[2:4] + month + day
 
-#         product_id      = composition.product.id
-#         quantity        = composition.quantity
+        product_id      = composition.product.id
+        quantity        = composition.quantity
 
-#         product_code = Product.objects.get(id = product_id).product_code
+        product_code = Product.objects.get(id = product_id).product_code
         
-#         serial_code1 = product_code + today
+        serial_code1 = product_code + today
 
-       
-#         if not SerialAction.objects.filter(serial__icontains = serial_code1).exists():
-#             for i in range(quantity):
-#                 route = '01'
-#                 numbering = str(i + 1).zfill(3)
-#                 serial_code2 = serial_code1 + route + numbering   
-#                 SerialAction.objects.create(serial = serial_code2, create = new_sheet_id)
-#         else:
-#             last_serial = SerialAction.objects.filter(serial__icontains = serial_code1).latest('id').serial
+        if not SerialCode.objects.filter(code__icontains = serial_code1).exists():
+            for i in range(quantity):
+                route = '01'
+                numbering = str(i + 1).zfill(3)
+                serial_code2 = serial_code1 + route + numbering   
+                SerialCode.objects.create(code = serial_code2, sheet_id = new_sheet_id, product_id = product_id)
+        else:
+            last_serial = SerialCode.objects.filter(code__icontains = serial_code1).latest('id').code
             
-#             before_route = last_serial.replace(serial_code1, "")
-#             before_route = before_route[:2]
+            before_route = last_serial.replace(serial_code1, "")
+            before_route = before_route[:2]
             
-#             after_route = int(before_route) + 1
+            after_route = int(before_route) + 1
             
-#             for i  in range(quantity):
-#                 numbering = str(i + 1).zfill(3)
-#                 serial_code2 = serial_code1 + str(after_route).zfill(2) + numbering
-#                 SerialAction.objects.create(serial = serial_code2, create = new_sheet_id)
+            for i  in range(quantity):
+                numbering = str(i + 1).zfill(3)
+                serial_code2 = serial_code1 + str(after_route).zfill(2) + numbering
+                SerialCode.objects.create(code = serial_code2, sheet_id = new_sheet_id, product_id = product_id)
 
 
 def create_sheet_logs(sheet_id, modify_user):

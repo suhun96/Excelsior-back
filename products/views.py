@@ -27,7 +27,11 @@ class ProductGroupView(View):
     def get(self, request):
         name = request.GET.get('name')
         code = request.GET.get('code')
-        
+        offset = int(request.GET.get('offset'))
+        limit  = int(request.GET.get('limit'))
+
+        length = ProductGroup.objects.all().count()
+
         try:
             q = Q()
             if name:
@@ -35,9 +39,10 @@ class ProductGroupView(View):
             if code:
                 q &= Q(code__icontains = code)
             
-            result = list(ProductGroup.objects.filter(q).values())
+            # result = list(ProductGroup.objects.filter(q).values())
+            result = list(ProductGroup.objects.filter(q)[offset : offset+limit].values())
         
-            return JsonResponse({'message' : result}, status = 200)
+            return JsonResponse({'message' : result, 'length': length}, status = 200)
         except:
             return JsonResponse({'message' : '예외 상황 발생'}, status = 403)
             
@@ -220,6 +225,12 @@ class ProductInfoView(View):
             raise Exception({'message' : 'sheet를 생성하는중 에러가 발생했습니다.'})
 
     def get(self, request):
+        offset = int(request.GET.get('offset'))
+        limit  = int(request.GET.get('limit'))
+
+        length = Product.objects.all().count()
+
+
         name                = request.GET.get('name', None)
         keyword             = request.GET.get('keyword', None)
         productgroup_code   = request.GET.get('product_group_code', None)
@@ -242,7 +253,7 @@ class ProductInfoView(View):
             q &= Q(barcode__icontains = barcode)
 
         result_list = []
-        products = Product.objects.filter(q).values()
+        products = Product.objects.filter(q)[offset : offset+limit].values()
         
         for product in products:
             if product['company_code']== '':
@@ -288,7 +299,7 @@ class ProductInfoView(View):
                 result_list.append(dict_t)
 
 
-        return JsonResponse({'message' : result_list}, status = 200)
+        return JsonResponse({'message' : result_list, 'length': length}, status = 200)
         # except KeyError:
         #     return JsonResponse({'message' : 'keyerror'}, status = 403)
 
