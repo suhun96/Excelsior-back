@@ -544,7 +544,7 @@ class ClickSheetView(View):
             for object in serial_codes:
                 print(object)
                 list_serial_code.append(object.get('code'))
-
+                print(list_serial_code)
             if product.company_code == "" :
                 dict = {
                     'product_code'          : product.product_code,

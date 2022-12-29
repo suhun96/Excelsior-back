@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import path, include
 
 from stock.views import * 
 
@@ -12,7 +12,10 @@ urlpatterns = [
     path('price', PriceCheckView.as_view()),
     path('serial-check', SerialCodeCheckView.as_view()),
     path('stock-info', StockTotalView.as_view()),
+    
     path('sheet-modify', ModifySheetView.as_view()), # POST
     path('sheet-delete', DeleteSheetView.as_view()), # POST 
     path('sheet-log-list', InquireSheetLogView.as_view()), # GET
+
+    path('serial/', include('stock.urls_serial_code'))
 ]
