@@ -57,6 +57,7 @@ class CreateSheetView(View):
                             product_id = product_id,
                             warehouse_code = warehouse_code )
                         
+                        # 여기서 
                         
                         QuantityByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id).update_or_create(
                             product_id = product_id,
@@ -453,7 +454,7 @@ class InfoSheetListView(View):
                         'product_name'          : product.name,
                         'product_group_name'    : ProductGroup.objects.get(code = product.productgroup_code).name,
                         'barcode'               : product.barcode,
-                        'price'            : composition.unit_price,
+                        'price'                 : composition.unit_price,
                         'quantity'              : composition.quantity,
                         'total_quantity'        : total['total_quantity__sum'],
                         'warehouse_code'        : composition.warehouse_code,
@@ -932,3 +933,47 @@ class InquireSerialCodeValueView(View):
                 list_A.append(dict_A)
 
         return JsonResponse({'message': list_A})
+
+# 입고 가액 계산
+
+class MovingAverageMethodView(View):
+    def calculate_first_inbound(self, product_id, unit_price):
+        try: 
+            total = QuantityByWarehouse.objects.filter(product_id = product_id).aggregate(Sum('total_quantity'))
+            total_quantity = total['total_quantity']      
+        except QuantityByWarehouse.DoesNotExist:
+            total_quantity = 0
+        
+        first_inbound_action = MovingAverageMethod.objects.create(
+            product_id = product_id,
+            average_price = unit_price,
+            total_quantity = total_quantity
+        )
+
+    def calculate_nomal_inbound(self, product_id, unit_price, quantity):
+        try:
+            total = QuantityByWarehouse.objects.filter(product_id = product_id).aggregate(Sum('total_quantity'))
+            total_quantity = total['total_quantity']      
+        except QuantityByWarehouse.DoesNotExist:
+            total_quantity = 0
+
+        average_price = MovingAverageMethod.objects.get(product_id = product_id).average_price
+        
+        target_A = average_price * total_quantity   # 평균 가액
+        target_B = unit_price * quantity            # 새로 입고한 정보
+        
+        ADD_A_B = target_A + target_B
+        ADD_quantity = total_quantity + quantity
+
+        result1, result2 = divmod(ADD_A_B, ADD_quantity)
+
+        return result1
+
+    def check_exists(self, product_id, unit_price):
+        
+        # 처음 계산 실행
+        if not MovingAverageMethod.objects.filter(product_id = product_id).exists():
+            self.calculate_first_inbound(product_id, unit_price)
+        
+        else:
+            self.calculate_nomal_inbound(product_id, unit_price)
