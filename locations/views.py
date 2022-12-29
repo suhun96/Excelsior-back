@@ -22,6 +22,7 @@ class CreateWarehousePropertyView(View):
 
 class ModifyWarehousePropertyView(View):
     def post(self, request):
+        warehouse_property_id = request.POST['id']
         modify_data = request.POST
 
         if WarehouseProperty.objects.filter(contents = modify_data['contents']).exists():
@@ -33,22 +34,31 @@ class ModifyWarehousePropertyView(View):
 
                 update_options = ['contents']
                 
-                if key == 'status':
-                    if value == 'true':
-                        value = True
-                    elif value == 'false':
-                        value = False
-                    UPDATE_SET.update({key : value})
+                for key, value in modify_data.items():
+                    if key == 'status':
+                        if value == 'true':
+                            value = True
+                        elif value == 'false':
+                            value = False
+                        UPDATE_SET.update({key : value})
 
-                if key in update_options:
-                    UPDATE_SET.update({ key : value })
+                    if key in update_options:
+                        UPDATE_SET.update({ key : value })
                     
-                ProductGroup.objects.filter(id = group_id).update(**UPDATE_SET)
+                WarehouseProperty.objects.filter(id = warehouse_property_id).update(**UPDATE_SET)
                 return JsonResponse({'message' : '업데이트 내역을 확인해 주세요~!!'}, status = 200)
         except:
             return JsonResponse({'message' : "예외 사항이 발생했습니다."}, status = 403)
 
-        
+class DeleteWarehousePropertyView(View):
+    def post(self, request):
+        warehouse_property_id = request.POST['id']
+
+        WarehouseProperty.objects.get(id = warehouse_property_id).delete()
+        return JsonResponse({'message' : '삭제를 성공했습니다.'}, status = 200)
+
+########################################################################################################
+    
 class CreateWarehouseTypeView(View):
     def post(self, request):
         input_data = request.POST
@@ -62,6 +72,44 @@ class CreateWarehouseTypeView(View):
         type_list = list(WarehouseType.objects.all().values())
 
         return JsonResponse({'message' : type_list }, status = 200)
+
+class ModifyWarehouseTypeView(View):
+    def post(self, request):
+        warehouse_type_id = request.POST['id']
+        modify_data = request.POST
+
+        if WarehouseType.objects.filter(contents = modify_data['contents']).exists():
+            return JsonResponse({'message' : '이미 존재하는 Property입니다.' }, status = 403)
+        
+        try:
+            with transaction.atomic():
+                UPDATE_SET = {}
+
+                update_options = ['contents']
+                
+                for key, value in modify_data.items():
+                    if key == 'status':
+                        if value == 'true':
+                            value = True
+                        elif value == 'false':
+                            value = False
+                        UPDATE_SET.update({key : value})
+
+                    if key in update_options:
+                        UPDATE_SET.update({ key : value })
+                    
+                WarehouseType.objects.filter(id = warehouse_type_id).update(**UPDATE_SET)
+                return JsonResponse({'message' : '업데이트 내역을 확인해 주세요~!!'}, status = 200)
+        except:
+            return JsonResponse({'message' : "예외 사항이 발생했습니다."}, status = 403)
+
+class DeleteWarehouseTypeView(View):
+    def post(self, request):
+        warehouse_type_id = request.POST['id']
+
+        WarehouseType.objects.get(id = warehouse_type_id).delete()
+        return JsonResponse({'message' : '삭제를 성공했습니다.'}, status = 200)
+    
 
 class WarehouseInfoView(View):
     @jwt_decoder
