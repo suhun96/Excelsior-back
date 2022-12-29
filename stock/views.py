@@ -394,7 +394,6 @@ class InfoSheetListView(View):
             stock_type   = sheet.type
 
             document_num = self.generate_document_num(sheet.id, sheet.date)
-
             sheet_company_name = Company.objects.get(code = sheet.company_code).name
             sheet_company_code = Company.objects.get(code = sheet.company_code).code
             
