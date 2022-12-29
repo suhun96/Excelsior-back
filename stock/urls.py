@@ -17,5 +17,7 @@ urlpatterns = [
     path('sheet-delete', DeleteSheetView.as_view()), # POST 
     path('sheet-log-list', InquireSheetLogView.as_view()), # GET
 
-    path('serial/', include('stock.urls_serial_code'))
+    path('serial/', include('stock.urls_serial_code')),
+
+    path('check-set', CheckSetProductView.as_view()),
 ]

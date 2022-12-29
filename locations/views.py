@@ -146,6 +146,11 @@ class WarehouseInfoView(View):
 
 
     def get(self, request):
+        offset = int(request.GET.get('offset'))
+        limit  = int(request.GET.get('limit'))
+
+        length = Warehouse.objects.all().count()
+
         name = request.GET.get('name')
         code = request.GET.get('code')
         
@@ -156,9 +161,9 @@ class WarehouseInfoView(View):
             q &= Q(code__icontains = code)
     
 
-        warehouse_list = list(Warehouse.objects.filter(q).values())
+        warehouse_list = list(Warehouse.objects.filter(q)[offset : offset+limit].values())
 
-        return JsonResponse({'message' : warehouse_list}, status = 200)
+        return JsonResponse({'message' : warehouse_list, 'length': length}, status = 200)
 
 class WarehouseStatusView(View):
     @jwt_decoder
