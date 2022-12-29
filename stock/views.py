@@ -316,18 +316,6 @@ class SheetListView(View):
             id           = sheet['id']
             user_name    = User.objects.get(id = sheet['user']).name
             stock_type   = sheet['type']
-            # type 체인지
-            if stock_type == 'inbound':
-                stock_type = '입고'
-            elif stock_type == 'outbound':
-                stock_type = '출고'
-            elif stock_type == 'generate':
-                stock_type = '세트 생산'
-            elif stock_type == 'used':
-                stock_type = '소모'
-            elif stock_type == 'new':
-                stock_type = '등록'
-
 
             company_name = Company.objects.get(code = sheet['company_code']).name
             etc          = sheet['etc']
@@ -403,20 +391,7 @@ class InfoSheetListView(View):
             sheet = Sheet.objects.get(id = sheet_id)
             user_name    = User.objects.get(id = sheet.user.id).name
             stock_type   = sheet.type
-            # type 체인지
-            if stock_type == 'inbound':
-                stock_type = '입고'
-            elif stock_type == 'outbound':
-                stock_type = '출고'
-            elif stock_type == 'generate':
-                stock_type = '세트 생산'
-            elif stock_type == 'used':
-                stock_type = '소모'
-            elif stock_type == 'new':
-                stock_type = '등록'
-
-
-
+        
             document_num = self.generate_document_num(sheet.id, sheet.date)
 
             sheet_company_name = Company.objects.get(code = sheet.company_code).name
