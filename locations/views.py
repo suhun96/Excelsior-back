@@ -3,6 +3,7 @@ from django.views       import View
 from django.http        import JsonResponse
 from django.db          import transaction
 from locations.models   import *
+from django.db.models   import Q , Sum
 
 from users.decorator    import jwt_decoder
 
@@ -145,7 +146,17 @@ class WarehouseInfoView(View):
 
 
     def get(self, request):
-        warehouse_list = list(Warehouse.objects.all().values())
+        name = request.GET.get('name')
+        code = request.GET.get('code')
+        
+        q = Q()
+        if name:
+            q &= Q(name__icontains = name)
+        if code:
+            q &= Q(code__icontains = code)
+    
+
+        warehouse_list = list(Warehouse.objects.filter(q).values())
 
         return JsonResponse({'message' : warehouse_list}, status = 200)
 

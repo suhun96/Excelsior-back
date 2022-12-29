@@ -938,3 +938,6 @@ class InquireSerialCodeValueView(View):
 
         return JsonResponse({'message': list_A})
 
+# 평균가액
+
+# class InquireS
