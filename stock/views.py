@@ -537,13 +537,13 @@ class ClickSheetView(View):
             product = Product.objects.get(id = composition.product_id)
             total = QuantityByWarehouse.objects.filter(product_id = product.id).aggregate(Sum('total_quantity'))
 
-            serial_codes = SerialCode.objects.filter(product_id = product.id).values('code')
-
+            serial_codes = SerialCode.objects.filter(sheet_id = sheet_id ,product_id = product.id).values('code')
+            print(serial_codes)
             list_serial_code = []
             
-            for object in serial_codes:
-                print(object)
-                list_serial_code.append(object.get('code'))
+            for obj in serial_codes:
+                print(obj)
+                list_serial_code.append(obj.get('code'))
 
             if product.company_code == "" :
                 dict = {
