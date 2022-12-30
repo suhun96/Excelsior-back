@@ -128,7 +128,7 @@ class ProductInfoView(View):
         company_code = input_data.get('company_code', None)
 
         if not company_code:
-            company_code = "AA"
+            company_code = ""
         
         price    = input_data.get('price', None)
         quantity = input_data.get('quantity', None)
@@ -219,7 +219,7 @@ class ProductInfoView(View):
                         product_id = new_product.id,
                         warehouse_code = Warehouse.objects.get(main = True).code,
                         defaults={
-                            'total_quantity' : stock_quantity,
+                            'total_quantity' : stock_quantity
                         })
         except:
             raise Exception({'message' : 'sheet를 생성하는중 에러가 발생했습니다.'})
