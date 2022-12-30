@@ -71,7 +71,7 @@ class CreateSheetView(View):
                     register_checker(input_data)
                     telegram_bot(new_sheet_id)
 
-                    return JsonResponse({'message' : '입고 성공'}, status = 200)
+                    return JsonResponse({'message' : '입고 성공', 'sheet_id' : new_sheet_id}, status = 200)
 
                 if new_sheet.type == 'outbound':
                     compositions = SheetComposition.objects.filter(sheet_id = new_sheet_id).values(
@@ -193,7 +193,7 @@ class CreateSheetView(View):
                     for serial_code in serial_codes:
                         serial_code_list.append(serial_code)
                     
-                    return JsonResponse({'message' : '생산 성공', 'serial_list' : serial_code_list}, status = 200)
+                    return JsonResponse({'message' : '생산 성공','sheet_id' : new_sheet_id ,'serial_list' : serial_code_list}, status = 200)
         except Exception:
             return JsonResponse({'message' : 'keyerror'}, status = 403)
 
