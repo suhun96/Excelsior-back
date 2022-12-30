@@ -300,16 +300,29 @@ class QunatityByWarehouseView(View):
 
 class SheetListView(View):
     def get(self, request):
-        offset = int(request.GET.get('offset'))
-        limit  = int(request.GET.get('limit'))
+        offset         = int(request.GET.get('offset'))
+        limit          = int(request.GET.get('limit'))
+        name           = request.GET.get('user_name', None)
+        stock_type     = request.GET.get('type', None)
+        date_start     = request.GET.get('date_start', None)
+        date_end       = request.GET.get('date_end', None)
+        company_name   = request.GET.get('company_name', None)
+
 
         length = Sheet.objects.all().count()
 
         stock_type = request.GET.get('type', None)
 
-        q = Q()
+        q = Q(date__range = (date_start, date_end))
+
         if stock_type:
             q &= Q(type__icontains = stock_type)
+        if name:
+            user_id = User.objects.get(name = name).id
+            q &= Q(user_id__exact = user_id)
+        if company_name:
+            company_code = Company.objects.get(name = company_name).code
+            q &= Q(company_code = company_code)
 
         
         sheets = Sheet.objects.filter(q).values(
@@ -318,25 +331,32 @@ class SheetListView(View):
             'type',
             'company_code',
             'etc',
-            'date',
-            'created_at'
+            'date'
         ).order_by('date')[offset : offset+limit]
 
         for_list = []
+        
         for sheet in sheets:
+            print(sheet)
             id           = sheet['id']
             user_name    = User.objects.get(id = sheet['user']).name
             stock_type   = sheet['type']
 
             company_name = Company.objects.get(code = sheet['company_code']).name
             etc          = sheet['etc']
-            created_at   = sheet['created_at']
+            date         = sheet['date']
+
+            year    = date.year
+            month   = date.month
+            month   = str(month).zfill(2)
+            day     = date.day
+            day     = str(day).zfill(2)
             
             dict = {
                 'id'        :  id,       
                 'type'      : stock_type,
                 'user'      : user_name,
-                'created_at'    : created_at,
+                'date'      : f"{year}-{month}-{day}",
                 'company_name'  : company_name,
                 'etc'       : etc
             }
@@ -387,7 +407,7 @@ class InfoSheetListView(View):
             return JsonResponse({'message' : "기준 종료 날짜 설정 오류"}, status = 403)
         
         # Sheet 필터링
-        q = Q(created_at__range = (date_start, date_end))
+        q = Q(date__range = (date_start, date_end))
 
         if stock_type:
             q &= Q(type__icontains = stock_type)
@@ -396,7 +416,6 @@ class InfoSheetListView(View):
             q &= Q(user_id__exact = user_id)
         if company_name:
             company_code = Company.objects.get(name = company_name).code
-            
             q &= Q(company_code = company_code)
         
         
@@ -450,7 +469,9 @@ class InfoSheetListView(View):
 
                 year    = sheet.date.year
                 month   = sheet.date.month
+                month   = str(month).zfill(2)
                 day     = sheet.date.day
+                day     = str(day).zfill(2)
 
 
 
