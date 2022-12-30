@@ -313,6 +313,9 @@ class ProductInfoView(View):
         company_code = input_data.get('company_code', None)
         is_set = input_data.get('is_set', None)
         composition = input_data.get('composition', None )
+
+        check_price    = input_data.get('price', None)
+        check_quantity = input_data.get('quantity', None)
         
         
         
@@ -375,8 +378,9 @@ class ProductInfoView(View):
                         # 새로운  세트 제품 등록
                         new_product = Product.objects.create(**CREATE_SET)
 
-                        self.create_sheet_new(input_data, user, new_product)
-
+                        if check_price and check_quantity:
+                            self.create_sheet_new(input_data, user, new_product)
+                        
                         # 새로운 세트 제품의 구성품 등록
                         for id, quantity in composition.items():
                             ProductComposition.objects.create(
@@ -411,7 +415,8 @@ class ProductInfoView(View):
                         # 새로운 제품 등록
                         new_product = Product.objects.create(**CREATE_SET)
                         
-                        self.create_sheet_new(input_data, user, new_product)
+                        if check_price and check_quantity:
+                            self.create_sheet_new(input_data, user, new_product)
 
                         return JsonResponse({'message' : '[Case 2] 새로운 일반 상품이 등록되었습니다'}, status = 200) 
                     
@@ -450,7 +455,8 @@ class ProductInfoView(View):
                         # 새로운  세트 제품 등록
                         new_product = Product.objects.create(**CREATE_SET)
 
-                        self.create_sheet_new(input_data, user, new_product)
+                        if check_price and check_quantity:
+                            self.create_sheet_new(input_data, user, new_product)
 
                         # 새로운 세트 제품의 구성품 등록
                         for id, quantity in composition.items():
@@ -485,7 +491,8 @@ class ProductInfoView(View):
                         # 새로운 제품 등록
                         new_product = Product.objects.create(**CREATE_SET)
                         
-                        self.create_sheet_new(input_data, user, new_product)
+                        if check_price and check_quantity:
+                            self.create_sheet_new(input_data, user, new_product)
                         
                         return JsonResponse({'message' : '[Case 4] 새로운 일반 상품이 등록되었습니다.'}, status = 200)
 
