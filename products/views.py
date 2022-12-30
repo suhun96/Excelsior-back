@@ -134,98 +134,95 @@ class ProductInfoView(View):
         quantity = input_data.get('quantity', None)
         new_product_code = new_product.product_code
 
-        # try:
-        #     with transaction.atomic():
-        print('check-point')
-        if company_code:
-            new_sheet = Sheet.objects.create(
-                user_id = input_user,
-                type = 'new',
-                company_code = company_code,
-                etc  = '초도 입고'
-            )
-                    
-            if Product.objects.filter(product_code = new_product_code).exists() == False:
-                raise Exception({'message' : f'{new_product_code}는 존재하지 않습니다.'}) 
+        try:
+            with transaction.atomic():
         
-            SheetComposition.objects.create(
-                sheet_id        = new_sheet.id,
-                product_id      = new_product.id,
-                quantity        = quantity, 
-                warehouse_code  = Warehouse.objects.get(main = True).code,
-                location        = new_product.location,
-                unit_price      = price,
-            )
-            
-            stock = StockByWarehouse.objects.filter(warehouse_code = Warehouse.objects.get(main = True).code , product_id = new_product.id)
+                if company_code:
+                    new_sheet = Sheet.objects.create(
+                        user_id = input_user,
+                        type = 'new',
+                        company_code = company_code,
+                        etc  = '초도 입고'
+                    )
+                            
+                    if Product.objects.filter(product_code = new_product_code).exists() == False:
+                        raise Exception({'message' : f'{new_product_code}는 존재하지 않습니다.'}) 
                 
-            if stock.exists():
-                before_quantity = stock.last().stock_quantity
-                stock_quantity  = before_quantity + int(quantity)
-            else:
-                stock_quantity  = int(quantity)
-
-            StockByWarehouse.objects.filter(warehouse_code = Warehouse.objects.get(main = True).code, product_id = new_product.id).create(
-                sheet_id = new_sheet.id,
-                stock_quantity = stock_quantity,
-                product_id = new_product.id,
-                warehouse_code = Warehouse.objects.get(main = True).code )
-            
-            mam_create_sheet(new_product.id, price, quantity, stock_quantity)
-
-            QuantityByWarehouse.objects.filter(warehouse_code = Warehouse.objects.get(main = True).code, product_id = new_product.id).update_or_create(
-                product_id = new_product.id,
-                warehouse_code = Warehouse.objects.get(main = True).code,
-                defaults={
-                    'total_quantity' : stock_quantity,
-                })
-        
-        else:
-            print('check-point-2')
-            new_sheet = Sheet.objects.create(
-                user_id = input_user,
-                type = 'new',
-                etc  = '초도 입고'
-            )
+                    SheetComposition.objects.create(
+                        sheet_id        = new_sheet.id,
+                        product_id      = new_product.id,
+                        quantity        = quantity, 
+                        warehouse_code  = Warehouse.objects.get(main = True).code,
+                        location        = new_product.location,
+                        unit_price      = price,
+                    )
                     
-            if Product.objects.filter(product_code = new_product_code).exists() == False:
-                raise Exception({'message' : f'{new_product_code}는 존재하지 않습니다.'}) 
-        
-            SheetComposition.objects.create(
-                sheet_id        = new_sheet.id,
-                product_id      = new_product.id,
-                quantity        = quantity, 
-                warehouse_code  = Warehouse.objects.get(main = True).code,
-                location        = new_product.location,
-                unit_price      = price,
-            )
+                    stock = StockByWarehouse.objects.filter(warehouse_code = Warehouse.objects.get(main = True).code , product_id = new_product.id)
             
-            stock = StockByWarehouse.objects.filter(warehouse_code = Warehouse.objects.get(main = True).code , product_id = new_product.id)
-            
-            if stock.exists():
-                print('check-point-3')
-                before_quantity = stock.last().stock_quantity
-                stock_quantity  = before_quantity + int(quantity)
-            else:
-                print('check-point-4')
-                stock_quantity  = int(quantity)
+                    if stock.exists():
+                        before_quantity = stock.last().stock_quantity
+                        stock_quantity  = before_quantity + int(quantity)
+                    else:
+                        stock_quantity  = int(quantity)
+                    
+                    StockByWarehouse.objects.filter(warehouse_code = Warehouse.objects.get(main = True).code, product_id = new_product.id).create(
+                        sheet_id = new_sheet.id,
+                        stock_quantity = stock_quantity,
+                        product_id = new_product.id,
+                        warehouse_code = Warehouse.objects.get(main = True).code )
+                    
+                    # mam_create_sheet(new_product.id, price, quantity, stock_quantity)
 
-            StockByWarehouse.objects.filter(warehouse_code = Warehouse.objects.get(main = True).code, product_id = new_product.id).create(
-                sheet_id = new_sheet.id,
-                stock_quantity = stock_quantity,
-                product_id = new_product.id,
-                warehouse_code = Warehouse.objects.get(main = True).code )
-            
-            mam_create_sheet(new_product.id, price, quantity, stock_quantity)
-            
-            QuantityByWarehouse.objects.filter(warehouse_code = Warehouse.objects.get(main = True).code, product_id = new_product.id).update_or_create(
-                product_id = new_product.id,
-                warehouse_code = Warehouse.objects.get(main = True).code,
-                defaults={
-                    'total_quantity' : stock_quantity,
-                })
-        # except:
-        #     raise Exception({'message' : 'sheet를 생성하는중 에러가 발생했습니다.'})
+                    QuantityByWarehouse.objects.filter(warehouse_code = Warehouse.objects.get(main = True).code, product_id = new_product.id).update_or_create(
+                        product_id = new_product.id,
+                        warehouse_code = Warehouse.objects.get(main = True).code,
+                        defaults={
+                            'total_quantity' : stock_quantity,
+                        })
+                
+                else:
+                    new_sheet = Sheet.objects.create(
+                        user_id = input_user,
+                        type = 'new',
+                        etc  = '초도 입고'
+                    )
+                            
+                    if Product.objects.filter(product_code = new_product_code).exists() == False:
+                        raise Exception({'message' : f'{new_product_code}는 존재하지 않습니다.'}) 
+                
+                    SheetComposition.objects.create(
+                        sheet_id        = new_sheet.id,
+                        product_id      = new_product.id,
+                        quantity        = quantity, 
+                        warehouse_code  = Warehouse.objects.get(main = True).code,
+                        location        = new_product.location,
+                        unit_price      = price,
+                    )
+                    
+                    stock = StockByWarehouse.objects.filter(warehouse_code = Warehouse.objects.get(main = True).code , product_id = new_product.id)
+                    
+                    if stock.exists():
+                        before_quantity = stock.last().stock_quantity
+                        stock_quantity  = before_quantity + int(quantity)
+                    else:
+                        stock_quantity  = int(quantity)
+
+                    StockByWarehouse.objects.filter(warehouse_code = Warehouse.objects.get(main = True).code, product_id = new_product.id).create(
+                        sheet_id = new_sheet.id,
+                        stock_quantity = stock_quantity,
+                        product_id = new_product.id,
+                        warehouse_code = Warehouse.objects.get(main = True).code )
+                    
+                    # mam_create_sheet(new_product.id, price, quantity, stock_quantity)
+                    
+                    QuantityByWarehouse.objects.filter(warehouse_code = Warehouse.objects.get(main = True).code, product_id = new_product.id).update_or_create(
+                        product_id = new_product.id,
+                        warehouse_code = Warehouse.objects.get(main = True).code,
+                        defaults={
+                            'total_quantity' : stock_quantity,
+                        })
+        except:
+            raise Exception({'message' : 'sheet를 생성하는중 에러가 발생했습니다.'})
 
     def get(self, request):
         offset = int(request.GET.get('offset'))
@@ -499,7 +496,7 @@ class ProductInfoView(View):
                         
                         return JsonResponse({'message' : '[Case 4] 새로운 일반 상품이 등록되었습니다.'}, status = 200)
 
-        except IntegrityError:
+        except KeyError:
             return JsonResponse({'message' : 'composition에 입력된 id 값을 확인해주세요'}, status = 403)        
 
 class ModifyProductInfoView(View):
