@@ -46,9 +46,13 @@ class CreateSheetView(View):
 
                         stock = StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id)
                         
+                        if not stock.exists():
+                            stock_quantity = 0
+
                         if stock.exists():
                             before_quantity = stock.last().stock_quantity
                             stock_quantity  = before_quantity + int(quantity)
+                            
                         else:
                             stock_quantity  = int(quantity)
 
@@ -60,7 +64,7 @@ class CreateSheetView(View):
                         
                         # 여기서 계산한 총 수량과
                         mam_create_sheet(product_id, unit_price, quantity, stock_quantity)
-
+                        
                         QuantityByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id).update_or_create(
                             product_id = product_id,
                             warehouse_code = warehouse_code,
@@ -93,6 +97,7 @@ class CreateSheetView(View):
                             stock_quantity  = before_quantity - int(quantity)
                         else:
                             stock_quantity  = int(quantity)
+                            
 
                         StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id).create(
                             sheet_id = new_sheet_id,
@@ -337,7 +342,6 @@ class SheetListView(View):
         for_list = []
         
         for sheet in sheets:
-            print(sheet)
             id           = sheet['id']
             user_name    = User.objects.get(id = sheet['user']).name
             stock_type   = sheet['type']
