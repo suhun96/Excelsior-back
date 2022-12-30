@@ -374,8 +374,8 @@ def mam_create_sheet(product_id, unit_price, quantity, stock_quantity):
         total_quantity = total['total_quantity__sum']      
 
     except QuantityByWarehouse.DoesNotExist:
-        total_quantity = unit_price
-
+        total_quantity = quantity
+        
     if not MovingAverageMethod.objects.filter(product_id = product_id).exists():
         new_MAM = MovingAverageMethod.objects.create(
             product_id = product_id,
