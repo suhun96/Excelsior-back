@@ -128,7 +128,7 @@ class ProductInfoView(View):
         company_code = input_data.get('company_code', None)
 
         if not company_code:
-            company_code = "AA"
+            company_code = ""
         
         price    = input_data.get('price', None)
         quantity = input_data.get('quantity', None)

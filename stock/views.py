@@ -345,8 +345,12 @@ class SheetListView(View):
             id           = sheet['id']
             user_name    = User.objects.get(id = sheet['user']).name
             stock_type   = sheet['type']
+            
+            try: 
+                company_name = Company.objects.get(code = sheet['company_code']).name
+            except Company.MultipleObjectsReturned:
+                company_code = ""
 
-            company_name = Company.objects.get(code = sheet['company_code']).name
             etc          = sheet['etc']
             date         = sheet['date']
 
@@ -405,6 +409,7 @@ class InfoSheetListView(View):
         product_name   = request.GET.get('product_name')
         warehouse_name = request.GET.get('warehouse_name', None)
         
+
         if not date_start:
             return JsonResponse({'message' : "기준 시작 날짜 설정 오류"}, status = 403)
         if not date_end:
@@ -432,9 +437,17 @@ class InfoSheetListView(View):
             stock_type   = sheet.type
 
             document_num = self.generate_document_num(sheet.id, sheet.date)
-            sheet_company_name = Company.objects.get(code = sheet.company_code).name
-            sheet_company_code = Company.objects.get(code = sheet.company_code).code
             
+            try: 
+                sheet_company_name = Company.objects.get(code = sheet.company_code).name
+            except Company.MultipleObjectsReturned:
+                sheet_company_name = ""
+
+            try: 
+                sheet_company_code = Company.objects.get(code = sheet.company_code).code
+            except Company.MultipleObjectsReturned:
+                sheet_company_code = ""
+
             etc          = sheet.etc
             created_at   = sheet.created_at
             
