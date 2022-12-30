@@ -546,8 +546,10 @@ class ClickSheetView(View):
         for_list = []
         for composition in compositions:
             product = Product.objects.get(id = composition.product_id)
-            total = QuantityByWarehouse.objects.filter(product_id = product.id).aggregate(Sum('total_quantity'))
-
+            try:
+                total = QuantityByWarehouse.objects.filter(product_id = product.id).aggregate(Sum('total_quantity'))
+            except QuantityByWarehouse.DoesNotExist:
+                total = 0
             serial_codes = SerialCode.objects.filter(sheet_id = sheet_id ,product_id = product.id).values('code')
             list_serial_code = []
             
