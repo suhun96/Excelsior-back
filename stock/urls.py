@@ -20,4 +20,6 @@ urlpatterns = [
     path('serial/', include('stock.urls_serial_code')),
 
     path('check-set', CheckSetProductView.as_view()),
+
+    path('generate-set', GenerateSetProductView.as_view()),
 ]

@@ -996,32 +996,174 @@ class InquireSerialCodeValueView(View):
 class CheckSetProductView(View):
     def post(self, request):
         set_product_code = request.POST['set_product_code']
-        warehouse_code   = request.POST['warehouse_code']
 
         set_proudct_info = Product.objects.get(product_code = set_product_code)
         
         component_ids = ProductComposition.objects.filter(set_product_id = set_proudct_info.id).values_list('composition_product', flat= True)
         
-        dict_B = {}
+        RESULT_LIST = []
 
         for id in component_ids:
             product_info = Product.objects.get(id = id)
-            quantity = QuantityByWarehouse.objects.get(warehouse_code = warehouse_code, product_id = product_info.id).total_quantity
-            dict_B.update({
-                'product_code' : product_info.product_code,
-                'name'         : product_info.name,
-                'quantity'     : quantity
-            })
-        
-        dict = {
-            'company_code'  : set_proudct_info.company_code,
-            'company_name'  : Company.objects.get(code = set_proudct_info.company_code).name,
-            'product_code'  : set_proudct_info.product_code,
-            'name'          : set_proudct_info.name,
-            'warehouse_name': Warehouse.objects.get(code = set_proudct_info.warehouse_code).name,
-            'location'      : set_proudct_info.location,
-            'barcode'       : set_proudct_info.barcode,
-            'products'      : [dict_B]
-        }
+            
+            try: 
+                total = QuantityByWarehouse.objects.filter(product_id = product_info.id).aggregate(Sum('total_quantity'))
+            except QuantityByWarehouse.DoesNotExist:
+                total = 0
 
-        return JsonResponse({'message' : dict}, status = 200)
+            warehouse_by_quantity = QuantityByWarehouse.objects.filter(product_id = product_info.id)
+            WBQ_dict = []
+            for WBQ in warehouse_by_quantity:
+                WBQ_dict.append({
+                    'warehouse_code'   : WBQ.warehouse_code,
+                    'warehouse_name'   : Warehouse.objects.get(code = WBQ.warehouse_code).name,
+                    'partial_quantity' : WBQ.total_quantity
+                })
+
+            conponents_dict = {
+                'product_name'      : product_info.name,
+                'product_code'      : product_info.product_code,
+                'WBQ'               : WBQ_dict,
+                'total_quantity'    : total['total_quantity__sum'],
+                'required_quantity' : ProductComposition.objects.get(id = id).quantity
+            }
+            
+            RESULT_LIST.append(conponents_dict)
+
+        return JsonResponse({'message' : RESULT_LIST}, status = 200)
+
+class GenerateSetProductView(View):
+    def generate_sheet(self, input_data, user):
+        user = user
+        input_data = input_data
+
+        input_user =  user.id
+    
+        input_date = input_data.get('date', None)
+        input_etc  = input_data.get('etc', None)
+        
+        # 세트 생산에 사용.
+        set_product_code     = input_data.get('set_product_code')
+        manufacture_quantity = input_data.get('manufacture_quantity')
+        warehouse_code       = input_data.get('warehouse_code')
+        
+        try:
+            with transaction.atomic():
+                generate_sheet = Sheet.objects.create(
+                    user_id = input_user,
+                    type = 'generate',
+                    company_code = 'EX',
+                    date = input_date,
+                    etc  = input_etc
+                )            
+
+                try:           
+                    set_product   = Product.objects.get(product_code =set_product_code)
+                except Product.DoesNotExist:
+                    return JsonResponse({'message' : f'{set_product_code}는 존재하지 않습니다.'}, status = 403) 
+
+                if set_product.is_set == False:
+                    return JsonResponse({'message' : f'이 상품은 세트가 아닙니다. 생산 불가능 합니다.'}, status = 403) 
+                
+                generate_sheet_composition = SheetComposition.objects.create(
+                    sheet_id        = generate_sheet.id,
+                    product_id      = set_product.id,
+                    quantity        = manufacture_quantity, 
+                    warehouse_code  = warehouse_code,
+                    unit_price      = 123456,
+                    etc             = f'세트를 생산했습니다.{generate_sheet.id}'
+                )
+                
+                # 수량 반영
+                stock = StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = set_product.id)
+                        
+                if stock.exists():
+                    before_quantity = stock.last().stock_quantity
+                    stock_quantity  = before_quantity + int(manufacture_quantity)
+                else:
+                    stock_quantity  = int(manufacture_quantity)
+
+                StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = set_product.id).create(
+                    sheet_id = generate_sheet.id,
+                    stock_quantity = stock_quantity,
+                    product_id = set_product.id,
+                    warehouse_code = warehouse_code )
+                
+                QuantityByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = set_product.id).update_or_create(
+                    product_id = set_product.id,
+                    warehouse_code = warehouse_code,
+                    defaults={'total_quantity' : stock_quantity})
+            
+            return generate_sheet
+        except:
+            raise Exception({'message' : 'generate_sheet를 생성하는중 에러가 발생했습니다.'})
+    
+    def used_sheet(self, input_data, user, generate_sheet):
+        components = input_data.get('components')
+        input_date = input_data.get('date', None)
+
+        try:
+            with transaction.atomic():
+                used_sheet = Sheet.objects.create(
+                    user_id = user.id,
+                    type = 'used',
+                    company_code = 'EX',
+                    date = input_date,
+                    etc  = f'세트 생산으로 인해 자동 생선된 소진 sheet 입니다.{generate_sheet}'
+                )
+
+                for component in components:
+                    component_id = Product.objects.get(product_code = component.get('product_code')).id
+                    SheetComposition.objects.create(
+                        sheet_id        = used_sheet.id,
+                        product_id      = component_id,
+                        quantity        = component.get('quantity'), 
+                        warehouse_code  = component.get('warehouse_code'),
+                        unit_price      = 0,
+                        etc             = f'세트를 생산하는데 사용했습니다.{generate_sheet.id}'
+                    )
+                
+                # 수량 반영
+                
+                    stock = StockByWarehouse.objects.filter(warehouse_code = component.get('warehouse_code'), product_id = component_id)
+                
+                    if stock.exists():
+                        before_quantity = stock.last().stock_quantity
+                        stock_quantity  = before_quantity - int(component.get('quantity'))
+                    else:
+                        stock_quantity  = int(component.get('quantity'))
+
+                    StockByWarehouse.objects.filter(warehouse_code = component.get('warehouse_code'), product_id = component_id).create(
+                        sheet_id = used_sheet.id,
+                        stock_quantity = stock_quantity,
+                        product_id = component_id,
+                        warehouse_code = component.get('warehouse_code') )
+                    
+                    QuantityByWarehouse.objects.filter(warehouse_code = component.get('warehouse_code'), product_id = component_id).update_or_create(
+                        product_id = component_id,
+                        warehouse_code = component.get('warehouse_code'),
+                        defaults={'total_quantity' : stock_quantity})
+        except Exception:
+            raise Exception({'message' : 'used_sheet를 생성하는중 에러가 발생했습니다.'})
+
+
+
+    @jwt_decoder
+    def post(self, request):
+        input_data = json.loads(request.body)
+        user = request.user
+
+        generate_sheet = self.generate_sheet(input_data, user)
+        self.used_sheet(input_data, user, generate_sheet)
+
+        return JsonResponse({'message' : '세트 생산이 완료되었습니다. '}, status = 200)
+
+
+
+    
+
+
+
+
+
+
