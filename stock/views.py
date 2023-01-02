@@ -114,91 +114,6 @@ class CreateSheetView(View):
                     telegram_bot(new_sheet_id)
                     
                     return JsonResponse({'message' : '출고 성공'}, status = 200)
-
-                if new_sheet.type == 'generate':
-                    generated_composition = SheetComposition.objects.get(sheet_id = new_sheet_id)
-
-                    product_id     = generated_composition.product.id
-                    warehouse_code = generated_composition.warehouse_code
-                    quantity       = generated_composition.quantity
-
-
-                    # 재고 있는지 확인
-                    stock = StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id)
-                    
-                    if stock.exists():
-                        before_quantity = stock.last().stock_quantity
-                        stock_quantity  = before_quantity + int(quantity)
-                    else:
-                        stock_quantity  = int(quantity)
-
-                    # 창고별 입고, 출고 내역 업데이트 
-                    StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id).create(
-                        sheet_id = new_sheet_id,
-                        stock_quantity = stock_quantity,
-                        product_id = product_id,
-                        warehouse_code = warehouse_code )
-                    
-                    # 창고별 제품 총 수량
-                    QuantityByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id).update_or_create(
-                        product_id = product_id,
-                        warehouse_code = warehouse_code,
-                        defaults={
-                            
-                            'total_quantity' : stock_quantity,
-                        })
-
-                    # 소진 
-                    used_sheet = Sheet.objects.create(
-                        user_id = user.id,
-                        type = 'used',
-                        company_code = 'EX',
-                        etc = f'Sheet_ID :{new_sheet_id} 세트 생산으로 인한 재고소진'
-                    )
-
-                    set_compositions = ProductComposition.objects.filter(set_product_id = product_id).values()
-
-                    for composition in set_compositions:
-                        SheetComposition.objects.create(
-                            sheet_id        = used_sheet.id,
-                            product_id      = composition['composition_product_id'],
-                            unit_price      = 0,
-                            quantity        = composition['quantity'],
-                            warehouse_code  = warehouse_code,
-                            location        = Product.objects.get(id = composition['composition_product_id']).location,
-                            etc             = f'Sheet_ID : {new_sheet_id} 생산으로 인한 구성품 소진입니다.'
-                        )
-
-                        stock = StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = composition['composition_product_id'])
-                        
-                        if stock.exists():
-                            before_quantity = stock.last().stock_quantity
-                            stock_quantity  = before_quantity - int(composition['quantity'])
-                        else:
-                            stock_quantity  = int(composition['quantity'])
-
-                        StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = composition['composition_product_id']).create(
-                            sheet_id = used_sheet.id,
-                            stock_quantity = stock_quantity,
-                            product_id = composition['composition_product_id'],
-                            warehouse_code = warehouse_code )
-                        
-                        QuantityByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = composition['composition_product_id']).update_or_create(
-                            product_id = composition['composition_product_id'],
-                            warehouse_code = warehouse_code,
-                            defaults={
-                                'total_quantity' : stock_quantity
-                            })
-                    
-                    # serial code 생선
-                    create_serial_code(generated_composition, new_sheet_id)
-                    serial_codes = SerialCode.objects.filter(sheet_id = new_sheet_id).values_list('code', flat= True)
-                    
-                    serial_code_list = []
-                    for serial_code in serial_codes:
-                        serial_code_list.append(serial_code)
-                    
-                    return JsonResponse({'message' : '생산 성공','sheet_id' : new_sheet_id ,'serial_list' : serial_code_list}, status = 200)
         except Exception:
             return JsonResponse({'message' : 'keyerror'}, status = 403)
 
@@ -227,7 +142,7 @@ class ModifySheetView(View):
                 # sheet 수정    
                 UPDATE_SET = {'user' : modify_user}
 
-                update_options = ['company_code', 'etc', 'date']
+                update_options = ['company_id', 'etc', 'date']
 
                 for key, value in modify_data.items():
                     if key in update_options:
@@ -266,7 +181,7 @@ class DeleteSheetView(View):
                 # sheet, sheet_detail log 작성
                 create_sheet_logs(sheet_id, delete_user)
                 # 롤백
-                rollback_quantity(sheet_id)
+                rollback_sheet_detail(sheet_id)
                 # Sheet_detail 삭제
                 SheetComposition.objects.filter(sheet_id = sheet_id).delete()
                 # type 변환
@@ -326,15 +241,15 @@ class SheetListView(View):
             user_id = User.objects.get(name = name).id
             q &= Q(user_id__exact = user_id)
         if company_name:
-            company_code = Company.objects.get(name = company_name).code
-            q &= Q(company_code = company_code)
+            company_id = Company.objects.get(name = company_name).id
+            q &= Q(company_id = company_id)
 
         
         sheets = Sheet.objects.filter(q).values(
             'id',
             'user',
             'type',
-            'company_code',
+            'company_id',
             'etc',
             'date'
         ).order_by('date')[offset : offset+limit]
@@ -346,10 +261,9 @@ class SheetListView(View):
             user_name    = User.objects.get(id = sheet['user']).name
             stock_type   = sheet['type']
             
-            try: 
-                company_name = Company.objects.get(code = sheet['company_code']).name
-            except Company.MultipleObjectsReturned:
-                company_code = ""
+            
+            company_name = Company.objects.get(id = sheet['company_id']).name
+            
 
             etc          = sheet['etc']
             date         = sheet['date']
@@ -424,11 +338,14 @@ class InfoSheetListView(View):
             user_id = User.objects.get(name = name).id
             q &= Q(user_id__exact = user_id)
         if company_name:
-            company_code = Company.objects.get(name = company_name).code
-            q &= Q(company_code = company_code)
+            company_id = Company.objects.get(name = company_name).id
+            q &= Q(company_id = company_id)
         
         
         sheet_ids = Sheet.objects.filter(q).values_list('id', flat= True).order_by('date')[offset : offset+limit]
+
+        # sheet_ids = Sheet.objects.filter(q).values_list('id', flat= True).order_by('date')
+        
 
         for_list = []
         for sheet_id in sheet_ids:
@@ -439,12 +356,12 @@ class InfoSheetListView(View):
             document_num = self.generate_document_num(sheet.id, sheet.date)
             
             try: 
-                sheet_company_name = Company.objects.get(code = sheet.company_code).name
+                sheet_company_name = Company.objects.get(id = sheet.company_id).name
             except Company.MultipleObjectsReturned:
                 sheet_company_name = ""
 
             try: 
-                sheet_company_code = Company.objects.get(code = sheet.company_code).code
+                sheet_company_code = Company.objects.get(id = sheet.company_id).code
             except Company.MultipleObjectsReturned:
                 sheet_company_code = ""
 
@@ -656,16 +573,16 @@ class PriceCheckView(View):
         input_data = request.POST
         
         try:
-            company_code = input_data['company_code']
+            company_id = input_data['company_id']
             product_id   = Product.objects.get(product_code = input_data['product_code']).id
             print(product_id)
             type         = input_data['type']
             
             if type == 'inbound':
-                price = ProductPrice.objects.get(company_code = company_code, product_id = product_id).inbound_price
+                price = ProductPrice.objects.get(company_id = company_id, product_id = product_id).inbound_price
             
             if type == 'outbound':
-                price = ProductPrice.objects.get(company_code = company_code, product_id = product_id).outbound_price
+                price = ProductPrice.objects.get(company_id = company_id, product_id = product_id).outbound_price
         
             return JsonResponse({'message' : f'{price}'}, status = 200)
         
@@ -821,7 +738,7 @@ class StockTotalView(View):
         barcode         = request.GET.get('barcode', None)
         
         type            = request.GET.get('type', None)
-        company_code    = request.GET.get('company_code', None)
+        company_id      = request.GET.get('company_id', None)
 
         warehouse_code  = request.GET.get('warehouse_code', None)
 
@@ -849,17 +766,17 @@ class StockTotalView(View):
 
                 price = 0
                 if type == 'inbound':
-                    if not company_code:
+                    if not company_id:
                         price = 0
                     else:
-                        check_price = ProductPrice.objects.get(company_code = company_code, product_id = product.id)
+                        check_price = ProductPrice.objects.get(company_id = company_id, product_id = product.id)
                         price = check_price.inbound_price
 
                 if type == 'outbound':
-                    if not company_code:
+                    if not company_id:
                         price = 0
                     else:
-                        check_price = ProductPrice.objects.get(company_code = company_code, product_id = product.id)
+                        check_price = ProductPrice.objects.get(company_id = company_id, product_id = product.id)
                         price = check_price.outbound_price
                 
                 if not warehouse_code:

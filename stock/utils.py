@@ -17,7 +17,7 @@ from locations.models   import *
 def register_checker(input_data):
         input_data = input_data
         input_products = input_data.get('products', None)
-        input_company = input_data.get('company_code')
+        input_company = input_data.get('company_id')
 
         try:
             with transaction.atomic():
@@ -26,7 +26,7 @@ def register_checker(input_data):
                         product_id = Product.objects.get(product_code =product['product_code']).id
                         ProductPrice.objects.update_or_create(
                             product_id = product_id,
-                            company_code = input_company,
+                            company_id = input_company,
                             defaults={
                                 'inbound_price' : product['price']
                             }
@@ -37,7 +37,7 @@ def register_checker(input_data):
                         product_id = Product.objects.get(product_code =product['product_code']).id
                         ProductPrice.objects.update_or_create(
                             product_id = product_id,
-                            company_code = input_company,
+                            company_id = input_company,
                             defaults={
                                 'outbound_price' : product['price']
                             }
@@ -53,7 +53,7 @@ def create_sheet(input_data, user):
         input_type = input_data.get('type', None)
         input_date = input_data.get('date', None)
         input_etc  = input_data.get('etc', None)
-        input_company = input_data.get('company_code', None)
+        input_company = input_data.get('company_id', None)
         input_products = input_data.get('products', None)
         
         try:
@@ -61,7 +61,7 @@ def create_sheet(input_data, user):
                 new_sheet = Sheet.objects.create(
                     user_id = input_user,
                     type = input_type,
-                    company_code = input_company,
+                    company_id = input_company,
                     date = input_date,
                     etc  = input_etc
                 )
@@ -133,7 +133,6 @@ def create_serial_code(composition, new_sheet_id):
                 serial_code2 = serial_code1 + str(after_route).zfill(2) + numbering
                 SerialCode.objects.create(code = serial_code2, sheet_id = new_sheet_id, product_id = product_id)
 
-
 def create_sheet_logs(sheet_id, modify_user):
         target_sheet = Sheet.objects.get(id = sheet_id)
         try:
@@ -142,7 +141,7 @@ def create_sheet_logs(sheet_id, modify_user):
                     sheet_id  = target_sheet.id,
                     user_name = modify_user.name,
                     type      = target_sheet.type,
-                    company_code = target_sheet.company_code,
+                    company_id = target_sheet.company_id,
                     etc       = target_sheet.etc,
                 )
 
