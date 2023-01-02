@@ -994,16 +994,16 @@ class InquireSerialCodeValueView(View):
 # class InquireS
 
 class CheckSetProductView(View):
-    def post(self, request):
-        set_product_code = request.POST['set_product_code']
-
+    def get(self, request):
+        set_product_code = request.GET.get('set_product_code')
+        
         set_proudct_info = Product.objects.get(product_code = set_product_code)
         
         component_ids = ProductComposition.objects.filter(set_product_id = set_proudct_info.id).values_list('composition_product', flat= True)
-        
         RESULT_LIST = []
 
         for id in component_ids:
+            print(id)
             product_info = Product.objects.get(id = id)
             
             try: 
@@ -1025,7 +1025,7 @@ class CheckSetProductView(View):
                 'product_code'      : product_info.product_code,
                 'WBQ'               : WBQ_dict,
                 'total_quantity'    : total['total_quantity__sum'],
-                'required_quantity' : ProductComposition.objects.get(id = id).quantity
+                'required_quantity' : ProductComposition.objects.get(set_product_id= set_proudct_info.id , composition_product_id = id).quantity
             }
             
             RESULT_LIST.append(conponents_dict)
