@@ -101,7 +101,7 @@ class ProductPrice(models.Model):
     outbound_price = models.IntegerField(default=0)
 
     class Meta:
-        db_table = 'inventory_price'
+        db_table = 'product_price'
 
 ##############################################################################################################
 
