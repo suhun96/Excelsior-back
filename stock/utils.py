@@ -56,6 +56,7 @@ def create_sheet(input_data, user):
         input_company = input_data.get('company_id', None)
         input_products = input_data.get('products', None)
         
+        
         try:
             with transaction.atomic():
                 new_sheet = Sheet.objects.create(
