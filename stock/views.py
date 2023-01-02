@@ -969,7 +969,7 @@ class GenerateSetProductView(View):
                 generate_sheet = Sheet.objects.create(
                     user_id = input_user,
                     type = 'generate',
-                    company_code = 'EX',
+                    company_id = 25,
                     date = input_date,
                     etc  = input_etc
                 )            
@@ -1024,7 +1024,7 @@ class GenerateSetProductView(View):
                 used_sheet = Sheet.objects.create(
                     user_id = user.id,
                     type = 'used',
-                    company_code = 'EX',
+                    company_id = 25,
                     date = input_date,
                     etc  = f'세트 생산으로 인해 자동 생선된 소진 sheet 입니다.{generate_sheet}'
                 )
