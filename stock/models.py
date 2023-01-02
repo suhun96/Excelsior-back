@@ -9,7 +9,7 @@ from companies.models import *
 class Sheet(models.Model):
     user       = models.ForeignKey(User, on_delete= models.CASCADE)
     type       = models.CharField(max_length= 30)
-    company_code = models.CharField(max_length = 20)
+    company    = models.ForeignKey(Company, on_delete= models.CASCADE)
     status     = models.BooleanField(default= True)
     etc        = models.CharField(max_length= 500)
     date       = models.DateField(default= datetime.now())
@@ -20,13 +20,13 @@ class Sheet(models.Model):
         db_table = 'sheet'
 
 class SheetLog(models.Model):
-    sheet_id     = models.IntegerField()
-    user_name    = models.CharField(max_length=50)
-    type         = models.CharField(max_length= 30)
-    company_code = models.CharField(max_length = 20)
-    status       = models.BooleanField(default= True)
-    etc          = models.CharField(max_length= 500)
-    created_at   = models.DateTimeField(auto_now_add= True)
+    sheet_id   = models.IntegerField()
+    user_name  = models.CharField(max_length=50)
+    type       = models.CharField(max_length= 30)
+    company    = models.ForeignKey(Company, on_delete= models.CASCADE)
+    status     = models.BooleanField(default= True)
+    etc        = models.CharField(max_length= 500)
+    created_at = models.DateTimeField(auto_now_add= True)
 
     class Meta:
         db_table = 'sheet_logs'
@@ -96,7 +96,7 @@ class QuantityByWarehouse(models.Model):
 
 class ProductPrice(models.Model):
     product = models.ForeignKey(Product, on_delete= models.CASCADE)
-    company_code = models.CharField(max_length= 10)
+    company = models.ForeignKey(Company, on_delete= models.CASCADE)
     inbound_price = models.IntegerField(default=0)
     outbound_price = models.IntegerField(default=0)
 
