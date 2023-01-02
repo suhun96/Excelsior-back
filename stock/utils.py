@@ -18,7 +18,7 @@ def register_checker(input_data):
         input_data = input_data
         input_products = input_data.get('products', None)
         input_company = input_data.get('company_id')
-
+        
         try:
             with transaction.atomic():
                 if input_data['type'] == 'inbound':
