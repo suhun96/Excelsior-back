@@ -355,6 +355,8 @@ class InfoSheetListView(View):
 
             document_num = self.generate_document_num(sheet.id, sheet.date)
             
+            sheet_company_id = sheet.company_id
+
             try: 
                 sheet_company_name = Company.objects.get(id = sheet.company_id).name
             except Company.MultipleObjectsReturned:
@@ -415,6 +417,7 @@ class InfoSheetListView(View):
                         'document_num'          : document_num,
                         'user_name'             : user_name,
                         'type'                  : stock_type,
+                        'company_id'            : sheet_company_id,
                         'company_name'          : sheet_company_name,
                         'company_code'          : sheet_company_code,
                         'etc'                   : etc,
@@ -441,6 +444,7 @@ class InfoSheetListView(View):
                         'document_num'          : document_num,
                         'user_name'             : user_name,
                         'type'                  : stock_type,
+                        'company_id'            : sheet_company_id,
                         'company_name'          : sheet_company_name,
                         'company_code'          : sheet_company_code,
                         'etc'                   : etc,
