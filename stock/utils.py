@@ -53,7 +53,7 @@ def create_sheet(input_data, user):
         input_type = input_data.get('type', None)
         input_date = input_data.get('date', None)
         input_etc  = input_data.get('etc', None)
-        input_company = input_data.get('company_code', None)
+        input_company = input_data.get('company_id', None)
         input_products = input_data.get('products', None)
         
         
