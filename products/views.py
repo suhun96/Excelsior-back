@@ -125,10 +125,10 @@ class ProductInfoView(View):
         user = user
         input_user =  user.id
         input_data = input_data
-        company_code = input_data.get('company_code', None)
+        company_id = input_data.get('company_id', None)
 
-        if not company_code:
-            company_code = ""
+        if not company_id:
+            company_id = 1
         
         price    = input_data.get('price', None)
         quantity = input_data.get('quantity', None)
@@ -137,11 +137,11 @@ class ProductInfoView(View):
         try:
             with transaction.atomic():
         
-                if company_code:
+                if company_id:
                     new_sheet = Sheet.objects.create(
                         user_id = input_user,
                         type = 'new',
-                        company_code = company_code,
+                        company_id = company_id,
                         etc  = '초도 입고'
                     )
                             
@@ -183,6 +183,7 @@ class ProductInfoView(View):
                 else:
                     new_sheet = Sheet.objects.create(
                         user_id = input_user,
+                        company_id =  company_id,
                         type = 'new',
                         etc  = '초도 입고'
                     )
