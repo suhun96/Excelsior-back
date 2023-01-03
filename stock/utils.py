@@ -110,6 +110,8 @@ def create_serial_code(input_data, generate_sheet_id):
 
         set_product_code = input_data.get('set_product_code')
         manufacture_quantity = input_data.get('manufacture_quantity')
+        print(set_product_code)
+        print(manufacture_quantity)
 
         product_id      = Product.objects.get(product_code = set_product_code).id
         quantity        = manufacture_quantity
