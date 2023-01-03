@@ -151,14 +151,17 @@ class WarehouseInfoView(View):
 
         length = Warehouse.objects.all().count()
 
-        name = request.GET.get('name')
-        code = request.GET.get('code')
+        name = request.GET.get('name', None)
+        code = request.GET.get('code', None)
+        status = request.GET.get('status', None)
         
         q = Q()
         if name:
             q &= Q(name__icontains = name)
         if code:
             q &= Q(code__icontains = code)
+        if status:
+            q &= Q(status = status)
     
 
         warehouse_list = list(Warehouse.objects.filter(q)[offset : offset+limit].values())

@@ -25,8 +25,9 @@ from my_settings        import TELEGRAM_TOKEN, CHAT_ID
 
 class ProductGroupView(View):
     def get(self, request):
-        name = request.GET.get('name')
-        code = request.GET.get('code')
+        name = request.GET.get('name', None)
+        code = request.GET.get('code', None)
+        status = request.GET.get('status', None)
         offset = int(request.GET.get('offset'))
         limit  = int(request.GET.get('limit'))
 
@@ -38,6 +39,8 @@ class ProductGroupView(View):
                 q &= Q(name__icontains = name)
             if code:
                 q &= Q(code__icontains = code)
+            if status:
+                q &= Q(status = status)
             
             # result = list(ProductGroup.objects.filter(q).values())
             result = list(ProductGroup.objects.filter(q)[offset : offset+limit].values())
@@ -238,71 +241,74 @@ class ProductInfoView(View):
         warehouse_code      = request.GET.get('warehouse_code', None)
         product_code        = request.GET.get('product_code', None)
         barcode             = request.GET.get('barcode', None)
-        # try:
-        q = Q()
-        if name:
-            q &= Q(name__icontains = name)
-        if keyword:
-            q &= Q(keyword__icontains = keyword)
-        if productgroup_code:
-            q &= Q(productgroup_code__icontains = productgroup_code)
-        if warehouse_code:
-            q &= Q(warehouse_code__icontains = warehouse_code)
-        if product_code:
-            q &= Q(product_code__icontains = product_code)
-        if barcode:
-            q &= Q(barcode__icontains = barcode)
+        status              = request.GET.get('status', None)
+        try:
+            q = Q()
+            if name:
+                q &= Q(name__icontains = name)
+            if keyword:
+                q &= Q(keyword__icontains = keyword)
+            if productgroup_code:
+                q &= Q(productgroup_code__icontains = productgroup_code)
+            if warehouse_code:
+                q &= Q(warehouse_code__icontains = warehouse_code)
+            if product_code:
+                q &= Q(product_code__icontains = product_code)
+            if barcode:
+                q &= Q(barcode__icontains = barcode)
+            if status:
+                q &= Q(status = status)
 
-        result_list = []
-        products = Product.objects.filter(q)[offset : offset+limit].values()
-        
-        for product in products:
-            if product['company_code']== '':
-                dict_t = {
-                    'id' : product['id'],
-                    'is_set' : product['is_set'],
-                    'company_code'      : '',
-                    'company_name'      : '',
-                    'productgroup_code' : product['productgroup_code'],
-                    'productgroup_name' : ProductGroup.objects.get(code = product['productgroup_code']).name,
-                    'product_num'       : product['product_num'],
-                    'product_code'      : product['product_code'],
-                    'safe_quantity'     : product['safe_quantity'],
-                    'keyword'           : product['keyword'],
-                    'name'              : product['name'],
-                    'warehouse_code'    : product['warehouse_code'],
-                    'warehouse_name'    : Warehouse.objects.get(code = product['warehouse_code']).name,
-                    'location'          : product['location'],
-                    'barcode'           : product['barcode'],
-                    'status'            : product['status'],
-                }
-                result_list.append(dict_t)
-                
-            else:
-                dict_t = {
-                    'id' : product['id'],
-                    'is_set' : product['is_set'],
-                    'company_code'      : product['company_code'],
-                    'company_name'      : Company.objects.get(code = product['company_code']).name,
-                    'productgroup_code' : product['productgroup_code'],
-                    'productgroup_name' : ProductGroup.objects.get(code = product['productgroup_code']).name,
-                    'product_num'       : product['product_num'],
-                    'product_code'      : product['product_code'],
-                    'safe_quantity'     : product['safe_quantity'],
-                    'keyword'           : product['keyword'],
-                    'name'              : product['name'],
-                    'warehouse_code'    : product['warehouse_code'],
-                    'warehouse_name'    : Warehouse.objects.get(code = product['warehouse_code']).name,
-                    'location'          : product['location'],
-                    'barcode'           : product['barcode'],
-                    'status'            : product['status'],
-                }
-                result_list.append(dict_t)
+            result_list = []
+            products = Product.objects.filter(q)[offset : offset+limit].values()
+            
+            for product in products:
+                if product['company_code']== '':
+                    dict_t = {
+                        'id' : product['id'],
+                        'is_set' : product['is_set'],
+                        'company_code'      : '',
+                        'company_name'      : '',
+                        'productgroup_code' : product['productgroup_code'],
+                        'productgroup_name' : ProductGroup.objects.get(code = product['productgroup_code']).name,
+                        'product_num'       : product['product_num'],
+                        'product_code'      : product['product_code'],
+                        'safe_quantity'     : product['safe_quantity'],
+                        'keyword'           : product['keyword'],
+                        'name'              : product['name'],
+                        'warehouse_code'    : product['warehouse_code'],
+                        'warehouse_name'    : Warehouse.objects.get(code = product['warehouse_code']).name,
+                        'location'          : product['location'],
+                        'barcode'           : product['barcode'],
+                        'status'            : product['status'],
+                    }
+                    result_list.append(dict_t)
+                    
+                else:
+                    dict_t = {
+                        'id' : product['id'],
+                        'is_set' : product['is_set'],
+                        'company_code'      : product['company_code'],
+                        'company_name'      : Company.objects.get(code = product['company_code']).name,
+                        'productgroup_code' : product['productgroup_code'],
+                        'productgroup_name' : ProductGroup.objects.get(code = product['productgroup_code']).name,
+                        'product_num'       : product['product_num'],
+                        'product_code'      : product['product_code'],
+                        'safe_quantity'     : product['safe_quantity'],
+                        'keyword'           : product['keyword'],
+                        'name'              : product['name'],
+                        'warehouse_code'    : product['warehouse_code'],
+                        'warehouse_name'    : Warehouse.objects.get(code = product['warehouse_code']).name,
+                        'location'          : product['location'],
+                        'barcode'           : product['barcode'],
+                        'status'            : product['status'],
+                    }
+                    result_list.append(dict_t)
 
 
-        return JsonResponse({'message' : result_list, 'length': length}, status = 200)
-        # except KeyError:
-        #     return JsonResponse({'message' : 'keyerror'}, status = 403)
+            return JsonResponse({'message' : result_list, 'length': length}, status = 200)
+        except KeyError:
+            return JsonResponse({'message' : 'keyerror'}, status = 403)
 
     @jwt_decoder
     def post(self, request):
