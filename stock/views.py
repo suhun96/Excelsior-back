@@ -973,11 +973,12 @@ class GenerateSetProductView(View):
                 generate_sheet = Sheet.objects.create(
                     user_id = input_user,
                     type = 'generate',
-                    company_id = 25,
+                    company_id = 1,
                     date = input_date,
                     etc  = input_etc
                 )            
 
+                
                 try:           
                     set_product   = Product.objects.get(product_code =set_product_code)
                 except Product.DoesNotExist:
@@ -1028,7 +1029,7 @@ class GenerateSetProductView(View):
                 used_sheet = Sheet.objects.create(
                     user_id = user.id,
                     type = 'used',
-                    company_id = 25,
+                    company_id = 1,
                     date = input_date,
                     etc  = f'세트 생산으로 인해 자동 생선된 소진 sheet 입니다.{generate_sheet}'
                 )
@@ -1075,6 +1076,7 @@ class GenerateSetProductView(View):
         user = request.user
 
         generate_sheet = self.generate_sheet(input_data, user)
+        print(generate_sheet)
         self.used_sheet(input_data, user, generate_sheet)
 
         return JsonResponse({'message' : '세트 생산이 완료되었습니다. '}, status = 200)
