@@ -1033,7 +1033,7 @@ class GenerateSetProductView(View):
                     type = 'used',
                     company_id = 1,
                     date = input_date,
-                    etc  = f'세트 생산으로 인해 자동 생선된 소진 sheet 입니다.{generate_sheet_id}'
+                    etc  = f'세트 생산으로 인한 소진'
                 )
 
                 for component in components:
@@ -1044,7 +1044,7 @@ class GenerateSetProductView(View):
                         quantity        = component.get('quantity'), 
                         warehouse_code  = component.get('warehouse_code'),
                         unit_price      = 0,
-                        etc             = f'세트를 생산하는데 사용했습니다.{generate_sheet_id}'
+                        etc             = f'세트 생산으로 인한 소진'
                     )
                 
                 # 수량 반영
@@ -1078,6 +1078,7 @@ class GenerateSetProductView(View):
         user = request.user
 
         generate_sheet_id = self.generate_sheet(input_data, user)
+        create_serial_code(input_data, generate_sheet_id)
         self.used_sheet(input_data, user, generate_sheet_id)
 
         return JsonResponse({'message' : '세트 생산이 완료되었습니다. '}, status = 200)

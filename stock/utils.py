@@ -101,26 +101,27 @@ def create_sheet(input_data, user):
         except:
             raise Exception({'message' : 'sheet를 생성하는중 에러가 발생했습니다.'})
 
-def create_serial_code(composition, new_sheet_id):
+def create_serial_code(input_data, generate_sheet_id):
         now = datetime.now()
         year    = str(now.year)
         month   = str(now.month).zfill(2)
         day     = str(now.day).zfill(2)
         today = year[2:4] + month + day
 
-        product_id      = composition.product.id
-        quantity        = composition.quantity
+        set_product_code = input_data.get('set_product_code')
+        manufacture_quantity = input_data.get('manufacture_quantity')
 
-        product_code = Product.objects.get(id = product_id).product_code
+        product_id      = Product.objects.get(product_code = set_product_code).id
+        quantity        = manufacture_quantity
         
-        serial_code1 = product_code + today
+        serial_code1 = set_product_code + today
 
         if not SerialCode.objects.filter(code__icontains = serial_code1).exists():
             for i in range(quantity):
                 route = '01'
                 numbering = str(i + 1).zfill(3)
                 serial_code2 = serial_code1 + route + numbering   
-                SerialCode.objects.create(code = serial_code2, sheet_id = new_sheet_id, product_id = product_id)
+                SerialCode.objects.create(code = serial_code2, sheet_id = generate_sheet_id, product_id = product_id)
         else:
             last_serial = SerialCode.objects.filter(code__icontains = serial_code1).latest('id').code
             
@@ -132,7 +133,7 @@ def create_serial_code(composition, new_sheet_id):
             for i  in range(quantity):
                 numbering = str(i + 1).zfill(3)
                 serial_code2 = serial_code1 + str(after_route).zfill(2) + numbering
-                SerialCode.objects.create(code = serial_code2, sheet_id = new_sheet_id, product_id = product_id)
+                SerialCode.objects.create(code = serial_code2, sheet_id = generate_sheet_id, product_id = product_id)
 
 def create_sheet_logs(sheet_id, modify_user):
         target_sheet = Sheet.objects.get(id = sheet_id)
