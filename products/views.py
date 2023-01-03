@@ -25,8 +25,9 @@ from my_settings        import TELEGRAM_TOKEN, CHAT_ID
 
 class ProductGroupView(View):
     def get(self, request):
-        name = request.GET.get('name')
-        code = request.GET.get('code')
+        name = request.GET.get('name', None)
+        code = request.GET.get('code', None)
+        status = request.GET.get('status', None)
         offset = int(request.GET.get('offset'))
         limit  = int(request.GET.get('limit'))
 
@@ -38,6 +39,8 @@ class ProductGroupView(View):
                 q &= Q(name__icontains = name)
             if code:
                 q &= Q(code__icontains = code)
+            if status:
+                q &= Q(status = status)
             
             # result = list(ProductGroup.objects.filter(q).values())
             result = list(ProductGroup.objects.filter(q)[offset : offset+limit].values())
