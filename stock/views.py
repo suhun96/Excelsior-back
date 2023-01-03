@@ -579,7 +579,7 @@ class PriceCheckView(View):
         try:
             company_id = input_data['company_id']
             product_id   = Product.objects.get(product_code = input_data['product_code']).id
-            print(product_id)
+            
             type         = input_data['type']
             
             if type == 'inbound':
@@ -924,7 +924,6 @@ class CheckSetProductView(View):
         RESULT_LIST = []
 
         for id in component_ids:
-            print(id)
             product_info = Product.objects.get(id = id)
             
             try: 
