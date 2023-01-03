@@ -1081,7 +1081,7 @@ class GenerateSetProductView(View):
         create_serial_code(input_data, generate_sheet_id)
         self.used_sheet(input_data, user, generate_sheet_id)
 
-        return JsonResponse({'message' : '세트 생산이 완료되었습니다. '}, status = 200)
+        return JsonResponse({'message' : '세트 생산이 완료되었습니다.', 'generate_sheet_id' : generate_sheet_id}, status = 200)
 
 
 
