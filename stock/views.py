@@ -227,11 +227,11 @@ class SheetListView(View):
         date_start     = request.GET.get('date_start', None)
         date_end       = request.GET.get('date_end', None)
         company_name   = request.GET.get('company_name', None)
+        stock_type     = request.GET.get('type', None)
 
 
         length = Sheet.objects.all().count()
 
-        stock_type = request.GET.get('type', None)
 
         q = Q(date__range = (date_start, date_end))
 
@@ -972,11 +972,13 @@ class GenerateSetProductView(View):
                 generate_sheet = Sheet.objects.create(
                     user_id = input_user,
                     type = 'generate',
-                    company_id = 25,
+                    company_id = 1,
                     date = input_date,
                     etc  = input_etc
                 )            
 
+                generate_sheet_id = generate_sheet.id
+                
                 try:           
                     set_product   = Product.objects.get(product_code =set_product_code)
                 except Product.DoesNotExist:
@@ -991,7 +993,7 @@ class GenerateSetProductView(View):
                     quantity        = manufacture_quantity, 
                     warehouse_code  = warehouse_code,
                     unit_price      = 123456,
-                    etc             = f'세트를 생산했습니다.{generate_sheet.id}'
+                    etc             = f'세트를 생산했습니다.{generate_sheet_id}'
                 )
                 
                 # 수량 반영
@@ -1014,22 +1016,24 @@ class GenerateSetProductView(View):
                     warehouse_code = warehouse_code,
                     defaults={'total_quantity' : stock_quantity})
             
-            return generate_sheet
+            return generate_sheet_id
         except:
             raise Exception({'message' : 'generate_sheet를 생성하는중 에러가 발생했습니다.'})
     
-    def used_sheet(self, input_data, user, generate_sheet):
+    def used_sheet(self, input_data, user, generate_sheet_id):
         components = input_data.get('components')
         input_date = input_data.get('date', None)
+
+        generate_sheet_id = generate_sheet_id
 
         try:
             with transaction.atomic():
                 used_sheet = Sheet.objects.create(
                     user_id = user.id,
                     type = 'used',
-                    company_id = 25,
+                    company_id = 1,
                     date = input_date,
-                    etc  = f'세트 생산으로 인해 자동 생선된 소진 sheet 입니다.{generate_sheet}'
+                    etc  = f'세트 생산으로 인해 자동 생선된 소진 sheet 입니다.{generate_sheet_id}'
                 )
 
                 for component in components:
@@ -1040,7 +1044,7 @@ class GenerateSetProductView(View):
                         quantity        = component.get('quantity'), 
                         warehouse_code  = component.get('warehouse_code'),
                         unit_price      = 0,
-                        etc             = f'세트를 생산하는데 사용했습니다.{generate_sheet.id}'
+                        etc             = f'세트를 생산하는데 사용했습니다.{generate_sheet_id}'
                     )
                 
                 # 수량 반영
@@ -1073,8 +1077,8 @@ class GenerateSetProductView(View):
         input_data = json.loads(request.body)
         user = request.user
 
-        generate_sheet = self.generate_sheet(input_data, user)
-        self.used_sheet(input_data, user, generate_sheet)
+        generate_sheet_id = self.generate_sheet(input_data, user)
+        self.used_sheet(input_data, user, generate_sheet_id)
 
         return JsonResponse({'message' : '세트 생산이 완료되었습니다. '}, status = 200)
 
