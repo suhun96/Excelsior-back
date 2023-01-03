@@ -37,7 +37,8 @@ class CompanyView(View):
             'email'    : 'email__icontains',
             'address_main' : 'address_main__icontains',
             'address_desc' : 'address_desc__icontains',
-            'zip_code' : 'zip_code__icontains'
+            'zip_code' : 'zip_code__icontains',
+            'status'    : 'status'
         }
 
         filter_set = { filter_options.get(key) : value for (key, value) in request.GET.items() if filter_options.get(key) }
