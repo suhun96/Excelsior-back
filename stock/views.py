@@ -610,13 +610,15 @@ class SerialCodeCheckView(View):
             stock_type = "입고"
         if stock_type == "outbound":
             stock_type = "출고"
+        if stock_type == "generate":
+            stock_type = "생산"
 
         document_num = f"{year}/{month}/{day}-{stock_type}-{sheet_id}"
     
         return document_num
 
     def serial_product_code_checker(self, serial_code):
-        product_id = SerialCode.objects.get(serial = serial_code).product_id
+        product_id = SerialCode.objects.get(code = serial_code).product_id
 
         product_code = Product.objects.get(id = product_id).product_code
         return product_code
@@ -652,7 +654,7 @@ class SerialCodeCheckView(View):
                 'document_num'          : document_num,
                 'user_name'             : sheet.user.name,
                 'type'                  : sheet.type,
-                'company_name'          : Company.objects.get(code = sheet.company_code).name,
+                'company_name'          : Company.objects.get(id = sheet.company_id).name,
                 'etc'                   : sheet.etc,
                 'created_at'            : sheet.created_at,
                 'product_code'          : product.product_code,
@@ -672,7 +674,7 @@ class SerialCodeCheckView(View):
                 'document_num'          : document_num,
                 'user'                  : sheet.user.name,
                 'type'                  : sheet.type,
-                'company_name'          : Company.objects.get(code = sheet.company_code).name,
+                'company_name'          : Company.objects.get(id = sheet.company_id).name,
                 'etc'                   : sheet.etc,
                 'product_code'          : product.product_code,
                 'product_name'          : product.name,
@@ -707,7 +709,7 @@ class SerialCodeCheckView(View):
                     result = self.print_sheet(sheet, serial_code)
                     return JsonResponse({'message': '보유하고 있는 시리얼 입니다.', 'result': result}, status = 403)
 
-                if sheet_type == 'create':
+                if sheet_type == 'generate':
                     result = self.print_sheet(sheet, serial_code)
                     return JsonResponse({'message': '보유하고 있는 시리얼 입니다.', 'result': result}, status = 403)
         
@@ -715,7 +717,7 @@ class SerialCodeCheckView(View):
                     return JsonResponse({'message' : '입고 처리가 가능합니다.'}, status = 200)
 
         if process_type == 'outbound':
-            if not SerialCode.objects.filter(serial = serial_code).exists():
+            if not SerialCode.objects.filter(code = serial_code).exists():
                 return JsonResponse({'message' : '존재하지 않는 시리얼입니다.'}, status = 403)
 
             else:
@@ -726,7 +728,7 @@ class SerialCodeCheckView(View):
                     product_code = self.serial_product_code_checker(serial_code)
                     return JsonResponse({'message' : '출고 처리가 가능합니다.' , 'product_code' : product_code}, status = 200)
 
-                if sheet_type == "create":
+                if sheet_type == "generate":
                     product_code = self.serial_product_code_checker(serial_code)
                     return JsonResponse({'message' : '출고 처리가 가능합니다.', 'product_code' : product_code}, status = 200)
 
@@ -967,6 +969,10 @@ class GenerateSetProductView(View):
         manufacture_quantity = input_data.get('manufacture_quantity')
         warehouse_code       = input_data.get('warehouse_code')
         
+        # 세트 생산에 etc를 기입하지 않을 때 빈값으로 넣는다.
+        if not input_etc:
+            input_etc = ""
+
         try:
             with transaction.atomic():
                 generate_sheet = Sheet.objects.create(
