@@ -18,19 +18,18 @@ def register_checker(input_data):
         input_data = input_data
         input_products = input_data.get('products', None)
         input_company = input_data.get('company_id')
-        
-        
-        if Company.objects.filter(id = input_company).exists() == False:
-            return JsonResponse({'message' : '존재하지 않는 회사입니다.'}, status = 403)
 
         try:
+            if Company.objects.filter(id = input_company).exists() == False:
+                raise Exception({'message' : '존재하지 않는 회사입니다.'})
+            
             with transaction.atomic():
                 if input_data['type'] == 'inbound':
                     for product in input_products:
                         product_id = Product.objects.get(product_code =product['product_code']).id
                         ProductPrice.objects.update_or_create(
                             product_id = product_id,
-                            company_id = company_id,
+                            company_id = input_company,
                             defaults={
                                 'inbound_price' : product['price']
                             }
@@ -60,11 +59,10 @@ def create_sheet(input_data, user):
     input_company = input_data.get('company_id', None)
     input_products = input_data.get('products', None)
     
-    if input_company:
-        if not Company.objects.filter(id = input_company).exists():
-            return JsonResponse({'message' : '존재하지 않는 회사입니다.'}, status = 403)
 
     try:
+        if not Company.objects.filter(id = input_company).exists():
+            raise Exception('존재하지 않는 회사입니다.')
         with transaction.atomic():
             new_sheet = Sheet.objects.create(
                 user_id = input_user,
@@ -75,7 +73,7 @@ def create_sheet(input_data, user):
             )
 
             if not input_products:
-                raise Exception({'message' : '입,출고서에 제품을 비워 등록할 수 없습니다.'})
+                raise Exception('입,출고서에 제품을 비워 등록할 수 없습니다.')
             
 
             for product in input_products:
@@ -83,7 +81,7 @@ def create_sheet(input_data, user):
                 product_id   = Product.objects.get(product_code =product['product_code']).id
 
                 if Product.objects.filter(product_code = product_code).exists() == False:
-                    raise Exception({'message' : f'{product_code}는 존재하지 않습니다.'}) 
+                    raise Exception(f'{product_code}는 존재하지 않습니다.') 
 
                 new_sheet_composition = SheetComposition.objects.create(
                     sheet_id        = new_sheet.id,
@@ -106,7 +104,7 @@ def create_sheet(input_data, user):
         
         return new_sheet
     except:
-        raise Exception({'message' : 'sheet를 생성하는중 에러가 발생했습니다.'})
+        raise Exception('sheet를 생성하는중 에러가 발생했습니다.')
 
 def create_product_serial_code(product_id, quantity, new_sheet_id):
     now = datetime.now()
