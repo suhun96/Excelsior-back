@@ -120,6 +120,7 @@ class CreateSheetView(View):
                     return JsonResponse({'message' : '출고 성공'}, status = 200)
         except Exception as e:
             return JsonResponse({'message' : e} , status = 403)
+            
 class ModifySheetView(View):
     def check_serial_code(self, sheet_id):
         if SerialCode.objects.filter(sheet_id= sheet_id).exists():
@@ -621,6 +622,8 @@ class SerialCodeCheckView(View):
             stock_type = "출고"
         if stock_type == "generate":
             stock_type = "생산"
+        if stock_type == "new":
+            stock_type = "초도 입고"
 
         document_num = f"{year}/{month}/{day}-{stock_type}-{sheet_id}"
     
@@ -879,7 +882,6 @@ class StockTotalView(View):
             return JsonResponse({'message' : '잘못된 요청을 보내셨습니다.2'}, status = 403)
         except ProductPrice.DoesNotExist:
             return JsonResponse({'message' : '0' }, status = 403)
-
 
 # Serial Code - Title
 class CreateSerialCodeTitleView(View):
