@@ -705,7 +705,34 @@ class SerialCodeCheckView(View):
         serial_code  = request.GET.get('serial_code')
         process_type = request.GET.get('process_type')
 
-        
+        if process_type == "generate":
+            set_product_code = request.GET.get('set_product_code', None)
+
+            if not set_product_code:
+                return JsonResponse({'message' : '생산 시리얼 코드 체크를 위해서는 set_product_code가 필요합니다.'}, status = 200)
+
+            if not SerialCode.objects.filter(code = serial_code).exists(): 
+                return JsonResponse({'message' : '존재하지 않는 시리얼 입니다.'}, status = 403)
+            
+            else:
+                sheet = self.serial_tracker(serial_code)
+                sheet_type = sheet.type
+
+                if sheet_type == 'new':
+                    return JsonResponse({'message' : '생산 처리가 가능합니다.'}, status = 200)
+
+                if sheet_type == 'generate':
+                    return JsonResponse({'message' : '생산 처리가 가능합니다.'}, status = 200)
+
+                if sheet_type == 'inbound':
+                    return JsonResponse({'message' : '생산 처리가 가능합니다.'}, status = 200)
+
+                if sheet_type == 'outbound':
+                    result = self.print_sheet(sheet, serial_code)
+                    return JsonResponse({'message': '이미 출고된 시리얼 입니다.', 'result': result }, status = 403)
+                
+                return JsonResponse({'message' : '생산 처리가 가능합니다.'}, status = 200)
+
         if process_type == 'inbound':
             if not SerialCode.objects.filter(code = serial_code).exists():
                 return JsonResponse({'message' : '입고 처리가 가능합니다.'}, status = 200)
@@ -732,6 +759,10 @@ class SerialCodeCheckView(View):
             else:
                 sheet = self.serial_tracker(serial_code)
                 sheet_type  = sheet.type
+
+                if sheet_type == "new":
+                    product_code = self.serial_product_code_checker(serial_code)
+                    return JsonResponse({'message' : '출고 처리가 가능합니다.' , 'product_code' : product_code}, status = 200)
 
                 if sheet_type == "inbound":
                     product_code = self.serial_product_code_checker(serial_code)
@@ -1091,8 +1122,6 @@ class GenerateSetProductView(View):
         except Exception:
             raise Exception({'message' : 'used_sheet를 생성하는중 에러가 발생했습니다.'})
 
-
-
     @jwt_decoder
     def post(self, request):
         input_data = json.loads(request.body)
@@ -1103,6 +1132,8 @@ class GenerateSetProductView(View):
         self.used_sheet(input_data, user, generate_sheet_id)
 
         return JsonResponse({'message' : '세트 생산이 완료되었습니다.', 'generate_sheet_id' : generate_sheet_id}, status = 200)
+
+
 
 
 
