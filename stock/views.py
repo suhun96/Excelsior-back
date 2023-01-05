@@ -302,8 +302,8 @@ class InfoSheetListView(View):
             stock_type = "입고"
         if stock_type == "outbound":
             stock_type = "출고"
-        if stock_type == 'new':
-                stock_type = '등록'
+        if stock_type == 'generate':
+            stock_type = '생산'
 
         document_num = f"{year}/{month}/{day}-{stock_type}-{sheet_id}"
     
@@ -315,13 +315,16 @@ class InfoSheetListView(View):
 
         length = Sheet.objects.all().count()
 
+        # sheet
         name           = request.GET.get('user_name', None)
         stock_type     = request.GET.get('type', None)
         date_start     = request.GET.get('date_start', None)
         date_end       = request.GET.get('date_end', None)
         company_name   = request.GET.get('company_name', None)
-        product_name   = request.GET.get('product_name')
+        # sheet-detail 
+        product_name   = request.GET.get('product_name', None)
         warehouse_name = request.GET.get('warehouse_name', None)
+        product_group_code = request.GET.get('product_group', None)
         
 
         if not date_start:
@@ -378,6 +381,9 @@ class InfoSheetListView(View):
                 q2 &= Q(warehouse_code__icontains = warehouse_code)
             if product_name:
                 product_id = Product.objects.get(name = product_name).id
+                q2 &= Q(product_id = product_id)
+            if product_group_code:
+                product_id = Product.objects.get(productgroup_code = product_group_code).id
                 q2 &= Q(product_id = product_id)
 
 
