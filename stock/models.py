@@ -109,6 +109,7 @@ class SerialCode(models.Model):
     sheet_id   = models.IntegerField()
     product_id = models.IntegerField()
     code       = models.CharField(max_length= 100)
+    status     = models.BooleanField(default= True)
     
     class Meta:
         db_table = 'serial_codes'
