@@ -784,15 +784,21 @@ class StockTotalView(View):
                     if not company_id:
                         price = 0
                     else:
-                        check_price = ProductPrice.objects.get(company_id = company_id, product_id = product.id)
-                        price = check_price.inbound_price
+                        try:
+                            check_price = ProductPrice.objects.get(company_id = company_id, product_id = product.id)
+                            price = check_price.inbound_price
+                        except ProductPrice.DoesNotExist:
+                            price = 0
 
                 if type == 'outbound':
                     if not company_id:
                         price = 0
                     else:
-                        check_price = ProductPrice.objects.get(company_id = company_id, product_id = product.id)
-                        price = check_price.outbound_price
+                        try:
+                            check_price = ProductPrice.objects.get(company_id = company_id, product_id = product.id)
+                            price = check_price.outbound_price
+                        except ProductPrice.DoesNotExist:
+                            price = 0
                 
                 if not warehouse_code:
                     try:
