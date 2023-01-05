@@ -25,11 +25,11 @@ class CreateSheetView(View):
         input_data = json.loads(request.body)
         user = request.user
 
-        new_sheet = create_sheet(input_data, user)
-        new_sheet_id = new_sheet.id
-
         try:
             with transaction.atomic():
+                new_sheet = create_sheet(input_data, user)
+                new_sheet_id = new_sheet.id
+
                 if new_sheet.type == 'inbound':
                     compositions = SheetComposition.objects.filter(sheet_id = new_sheet_id).values(
                             'product',
@@ -712,7 +712,7 @@ class SerialCodeCheckView(View):
             set_product_code = request.GET.get('set_product_code', None)
 
             if not set_product_code:
-                return JsonResponse({'message' : '생산 시리얼 코드 체크를 위해서는 set_product_code가 필요합니다.'}, status = 200)
+                return JsonResponse({'message' : '생산 시리얼 코드 체크를 위해서는 set_product_code가 필요합니다.'}, status = 403)
 
             if not SerialCode.objects.filter(code = serial_code).exists(): 
                 return JsonResponse({'message' : '존재하지 않는 시리얼 입니다.'}, status = 403)
