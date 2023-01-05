@@ -182,6 +182,11 @@ class ProductInfoView(View):
                         defaults={
                             'total_quantity' : stock_quantity,
                         })
+                    
+                    if Product.objects.get(id = new_product.id).is_serial == True:
+                        create_product_serial_code(new_product.id, quantity, new_sheet.id)    
+                    else:
+                        pass
                 
                 else:
                     new_sheet = Sheet.objects.create(
@@ -225,6 +230,13 @@ class ProductInfoView(View):
                         defaults={
                             'total_quantity' : stock_quantity
                         })
+                    # 초도 입고 시리얼 코드 생산
+
+                    if Product.objects.get(id = new_product.id).is_serial == True:
+                        create_product_serial_code(new_product.id, quantity, new_sheet.id)    
+                    else:
+                        pass
+
         except:
             raise Exception({'message' : 'sheet를 생성하는중 에러가 발생했습니다.'})
 
