@@ -19,6 +19,10 @@ def register_checker(input_data):
         input_products = input_data.get('products', None)
         input_company = input_data.get('company_id')
         
+        
+        if Company.objects.filter(id = input_company).exists() == False:
+            return JsonResponse({'message' : '존재하지 않는 회사입니다.'}, status = 403)
+
         try:
             with transaction.atomic():
                 if input_data['type'] == 'inbound':
@@ -26,7 +30,7 @@ def register_checker(input_data):
                         product_id = Product.objects.get(product_code =product['product_code']).id
                         ProductPrice.objects.update_or_create(
                             product_id = product_id,
-                            company_id = input_company,
+                            company_id = company_id,
                             defaults={
                                 'inbound_price' : product['price']
                             }
@@ -43,7 +47,7 @@ def register_checker(input_data):
                             }
                         )
         except:
-            raise Exception({'message' : 'price_checker를 생성하는중 에러가 발생했습니다.'})
+            raise Exception({'message' : 'register_checker를 생성하는중 에러가 발생했습니다.'})
 
 def create_sheet(input_data, user):
     user = user
@@ -56,6 +60,9 @@ def create_sheet(input_data, user):
     input_company = input_data.get('company_id', None)
     input_products = input_data.get('products', None)
     
+    if input_company:
+        if not Company.objects.filter(id = input_company).exists():
+            return JsonResponse({'message' : '존재하지 않는 회사입니다.'}, status = 403)
 
     try:
         with transaction.atomic():
