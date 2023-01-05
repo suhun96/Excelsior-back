@@ -320,6 +320,8 @@ class ProductInfoView(View):
         company_code = input_data.get('company_code', None)
         is_set = input_data.get('is_set', None)
         composition = input_data.get('composition', None )
+        is_serial = input_data.get('is_serial', None)
+
 
         check_price    = input_data.get('price', None)
         check_quantity = input_data.get('quantity', None)
@@ -341,6 +343,12 @@ class ProductInfoView(View):
                 return JsonResponse({'message' : '존재하지 않는 창고 코드입니다.'}, status = 403)
         if not warehouse_code:
             warehouse_code = Warehouse.objects.get(main = True).code
+        
+        # 시리얼 사용 유무
+        if not is_serial:
+            is_serial = False
+        if is_serial:
+            is_serial = True
 
         try:
             with transaction.atomic():
@@ -362,7 +370,8 @@ class ProductInfoView(View):
                     # 세트 상품이면 
                     if is_set == "True":
                         CREATE_SET = {
-                            'is_set' : True,  
+                            'is_set' : True,
+                            'is_serial': True,      
                             'productgroup_code' : product_group_code , 
                             'company_code' : company_code, 
                             'name' : name,
@@ -399,7 +408,8 @@ class ProductInfoView(View):
                     # 일반 상품이면
                     else:
                         CREATE_SET = {
-                            'is_set' : False,  
+                            'is_set' : False,
+                            'is_serial' : is_serial,  
                             'productgroup_code' : product_group_code , 
                             'company_code'      : company_code, 
                             'name'              : name,
@@ -442,6 +452,7 @@ class ProductInfoView(View):
                     if is_set == "True":
                         CREATE_SET = {
                             'is_set' : True,  
+                            'is_serial' : True,
                             'productgroup_code' : product_group_code ,  
                             'name' : name,
                             'product_num' : product_num,
@@ -476,8 +487,9 @@ class ProductInfoView(View):
                     # 일반 상품이면
                     else:
                         CREATE_SET = {
-                            'is_set' : False,  
-                            'productgroup_code' : product_group_code ,  
+                            'is_set' : False,
+                            'is_serial' : is_serial,  
+                            'productgroup_code' : product_group_code,  
                             'name' : name,
                             'product_num' : product_num,
                             'product_code' : product_group_code + product_num,
