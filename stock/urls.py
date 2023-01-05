@@ -10,7 +10,6 @@ urlpatterns = [
     path('sheet-info', InfoSheetListView.as_view()),
     path('quantity', TotalQuantityView.as_view()),
     path('price', PriceCheckView.as_view()),
-    path('serial-check', SerialCodeCheckView.as_view()),
     path('stock-info', StockTotalView.as_view()),
     
     path('sheet-modify', ModifySheetView.as_view()), # POST
