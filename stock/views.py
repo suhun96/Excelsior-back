@@ -717,7 +717,7 @@ class SerialCodeCheckView(View):
             else:
                 sheet = self.serial_tracker(serial_code)
                 sheet_type = sheet.type
-
+                
                 if sheet_type == 'new':
                     return JsonResponse({'message' : '생산 처리가 가능합니다.'}, status = 200)
 
