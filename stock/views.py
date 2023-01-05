@@ -717,11 +717,11 @@ class SerialCodeCheckView(View):
             else:
                 set_product_id = Product.objects.get(product_code = set_product_code).id
                 component_ids = ProductComposition.objects.filter(set_product_id = set_product_id).values_list('composition_product', flat= True)
-                print(component_ids)
+                
                 target_product_id = SerialCode.objects.get(code = serial_code).product_id
-                print(target_product_id)
+                
                 if not target_product_id in component_ids:
-                    return JsonResponse({'message' : '구성품의 시리얼 코드가 아닙니다.'}, status = 200)
+                    return JsonResponse({'message' : '구성품의 시리얼 코드가 아닙니다.'}, status = 403)
 
                 sheet = self.serial_tracker(serial_code)
                 sheet_type = sheet.type
