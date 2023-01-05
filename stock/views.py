@@ -324,7 +324,7 @@ class InfoSheetListView(View):
         # sheet-detail 
         product_name   = request.GET.get('product_name', None)
         warehouse_name = request.GET.get('warehouse_name', None)
-        product_group_code = request.GET.get('product_group', None)
+        product_group_code = request.GET.get('product_group_code', None)
         
 
         if not date_start:
