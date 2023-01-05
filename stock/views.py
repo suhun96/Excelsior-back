@@ -737,6 +737,10 @@ class SerialCodeCheckView(View):
 
                 if sheet_type == 'inbound':
                     return JsonResponse({'message' : '생산 처리가 가능합니다.'}, status = 200)
+                
+                if sheet_type == 'used':
+                    result = self.print_sheet(sheet, serial_code)
+                    return JsonResponse({'message': '이미 출고된 시리얼 입니다.', 'result': result }, status = 403)
 
                 if sheet_type == 'outbound':
                     result = self.print_sheet(sheet, serial_code)
