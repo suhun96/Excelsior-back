@@ -18,8 +18,10 @@ def register_checker(input_data):
         input_data = input_data
         input_products = input_data.get('products', None)
         input_company = input_data.get('company_id')
-        
+
         try:
+            if Company.objects.filter(id = input_company).exists() == False:
+                raise Exception({'message' : '존재하지 않는 회사입니다.'})
             with transaction.atomic():
                 if input_data['type'] == 'inbound':
                     for product in input_products:
