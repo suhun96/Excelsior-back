@@ -969,7 +969,9 @@ class InquireSerialCodeTitleView(View):
 
 # Serial Code - Value
 class CreateSerialCodeValueView(View):
+    @jwt_decoder
     def post(self, request):
+        user = request.user
         serial_code_title_id = request.POST['title_id']
         serial_code_id       = request.POST['serial_code_id']
         contents             = request.POST['contents']
@@ -980,8 +982,14 @@ class CreateSerialCodeValueView(View):
                     title_id       = serial_code_title_id,
                     serial_code_id = serial_code_id,
                     defaults= {
-                        'contents' : contents
+                        'contents' : contents,
+                        'user_id'  : user.id
                     })
+                
+                tartget = SerialCodeValue.objects.get(id = obj.id)
+                tartget.date = datetime.now()
+                tartget.save()
+
                 if check == True:
                     return JsonResponse({'message' : '생성 성공'}, status = 200)
                 else:
