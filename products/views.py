@@ -622,7 +622,10 @@ class InquireProductEtcDescView(View):
             try:
                 contents = ProductEtcDesc.objects.get(product_id = product_id, etc_title_id = title_id).contents
                 dict = {}
-                dict.update({title_id : contents})
+                dict.update({
+                    "title_id" : title_id,
+                    "contents" : contents
+                })
                 result.append(dict)
             except ProductEtcDesc.DoesNotExist:
                 pass
