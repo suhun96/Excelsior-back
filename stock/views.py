@@ -1192,21 +1192,22 @@ class GenerateSetProductView(View):
     def post(self, request):
         input_data = json.loads(request.body)
         user = request.user
-        try:
-            generate_sheet_id = self.generate_sheet(input_data, user)
-            create_set_serial_code(input_data, generate_sheet_id)
-            used_sheet_id = self.used_sheet(input_data, user, generate_sheet_id)
+        # try:
+        generate_sheet_id = self.generate_sheet(input_data, user)
+        create_set_serial_code(input_data, generate_sheet_id)
+        used_sheet_id = self.used_sheet(input_data, user, generate_sheet_id)
 
-            #related_sheet
-            generate_sheet = Sheet.objects.get(id = generate_sheet_id)
-            generate_sheet.related_sheet = used_sheet_id
-            used_sheet = Sheet.objects.get(id = used_sheet_id)
-            used_sheet.related_sheet = generate_sheet_id
-            generate_sheet.save()
-            used_sheet.save()
-            return JsonResponse({'message' : '세트 생산이 완료되었습니다.', 'generate_sheet_id' : generate_sheet_id}, status = 200)
-        except Exception:
-            return JsonResponse({'message' : '세트 생산이 실패했습니다.'}, status = 403)
+        #related_sheet
+        generate_sheet = Sheet.objects.get(id = generate_sheet_id)
+        generate_sheet.related_sheet_id = used_sheet_id
+        used_sheet = Sheet.objects.get(id = used_sheet_id)
+        used_sheet.related_sheet_id = generate_sheet_id
+        generate_sheet.save()
+        used_sheet.save()
+        
+        return JsonResponse({'message' : '세트 생산이 완료되었습니다.', 'generate_sheet_id' : generate_sheet_id}, status = 200)
+        # except Exception:
+        #     return JsonResponse({'message' : '세트 생산이 실패했습니다.'}, status = 403)
         
 
 
