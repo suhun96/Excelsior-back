@@ -114,6 +114,8 @@ class CreateSheetView(View):
                         
                     register_checker(input_data)
                     telegram_bot(new_sheet_id)
+
+                    return JsonResponse({'message' : '출고 성공', 'sheet_id' : new_sheet_id}, status = 200)
                 
                 if new_sheet.type == 'return':
                     compositions = SheetComposition.objects.filter(sheet_id = new_sheet_id).values(
@@ -149,7 +151,7 @@ class CreateSheetView(View):
 
                     telegram_bot(new_sheet_id)
                     
-                    return JsonResponse({'message' : '출고 성공'}, status = 200)
+                    return JsonResponse({'message' : '반품 성공', 'sheet_id' : new_sheet_id}, status = 200)
         except Exception as e:
             return JsonResponse({'message' : e} , status = 403)
             
