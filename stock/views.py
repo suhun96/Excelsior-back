@@ -643,7 +643,7 @@ class SerialCodeCheckView(View):
         return sheet
 
     def print_sheet(self, sheet, serial_code):
-        product_id = SerialCode.objects.get(code = serial_code).product_id
+        product_id = SerialCode.objects.filter(code = serial_code).latest('id').product_id
         
         sheet_composition = SheetComposition.objects.get(sheet_id = sheet.id , product_id = product_id)
         
@@ -790,6 +790,10 @@ class SerialCodeCheckView(View):
                 if sheet_type == "outbound":
                     result = self.print_sheet(sheet, serial_code)
                     return JsonResponse({'message': '이미 출고된 시리얼 입니다.', 'result': result }, status = 403)
+
+                if sheet_type == "used":
+                    result = self.print_sheet(sheet, serial_code)
+                    return JsonResponse({'message': '이미 세트 생산에 사용된 시리얼 입니다.', 'result': result }, status = 403)
 
 class StockTotalView(View):
     def get(self, request):
