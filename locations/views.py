@@ -111,7 +111,6 @@ class DeleteWarehouseTypeView(View):
         WarehouseType.objects.get(id = warehouse_type_id).delete()
         return JsonResponse({'message' : '삭제를 성공했습니다.'}, status = 200)
     
-
 class WarehouseInfoView(View):
     @jwt_decoder
     def post(self, request):
