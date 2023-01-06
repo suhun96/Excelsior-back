@@ -618,14 +618,13 @@ class InquireProductEtcDescView(View):
         product_id = request.GET.get('product_id')
         Use_Titles = ProductEtcTitle.objects.filter(status = True).values_list('id', flat= True)
         result = []
-        
         for title_id in Use_Titles:
             try:
                 contents = ProductEtcDesc.objects.get(product_id = product_id, etc_title_id = title_id).contents
                 dict = {}
                 dict.update({title_id : contents})
                 result.append(dict)
-            except CustomValue.DoesNotExist:
+            except ProductEtcDesc.DoesNotExist:
                 pass
 
         return JsonResponse({'message' : result}, status = 200)
