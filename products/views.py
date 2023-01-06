@@ -106,7 +106,7 @@ class ModifyProductGroupView(View):
             with transaction.atomic():
                 UPDATE_SET = {}
 
-                update_options = ['etc']
+                update_options = ['etc', 'status']
 
                 for key, value in input_data.items():
                     if key == 'name':
