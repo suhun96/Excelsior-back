@@ -544,7 +544,7 @@ class ModifyProductInfoView(View):
             return JsonResponse({'message' : "존재하지 않는 제품입니다."}, status = 403)
         
         UPDATE_SET = {}
-        UPDATE_OPT = ['safe_quantity', 'keyword', 'name', 'location', 'barcode']
+        UPDATE_OPT = ['safe_quantity', 'keyword', 'name', 'location', 'barcode', 'status']
 
         try:
             with transaction.atomic():
