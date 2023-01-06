@@ -279,6 +279,7 @@ class ProductInfoView(View):
                     dict_t = {
                         'id' : product['id'],
                         'is_set' : product['is_set'],
+                        'is_serial' : product['is_serial'],
                         'company_code'      : '',
                         'company_name'      : '',
                         'productgroup_code' : product['productgroup_code'],
@@ -300,6 +301,7 @@ class ProductInfoView(View):
                     dict_t = {
                         'id' : product['id'],
                         'is_set' : product['is_set'],
+                        'is_serial' : product['is_serial'],
                         'company_code'      : product['company_code'],
                         'company_name'      : Company.objects.get(code = product['company_code']).name,
                         'productgroup_code' : product['productgroup_code'],

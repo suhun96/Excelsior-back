@@ -12,7 +12,7 @@ from my_settings        import TELEGRAM_TOKEN, CHAT_ID
 def telegram_bot(new_sheet_id):
     bot = telegram.Bot(token = TELEGRAM_TOKEN)
     
-    long_text = "[🤖 재고알림봇!]\n"
+    long_text = "[🤖 안전재고미만 알림]\n"
     count = 0
     products = SheetComposition.objects.filter(sheet_id = new_sheet_id).values('product')
 
@@ -28,11 +28,14 @@ def telegram_bot(new_sheet_id):
         safe_quantity = product.safe_quantity
         name          = product.name
         product_code  = product.product_code
-    
+        product_group_name = ProductGroup.objects.get(code = product.productgroup_code).name
+
         if safe_quantity > TOTAL[0]['quantity']:
             count += 1
-            text = f"제품 {name}({product_code}) 재고가 안전 재고 이하로 떨어졌습니다.  {TOTAL[0]['quantity']} / {safe_quantity} \n"
+            text = f"[{product_group_name}] {name}({product_code}) {TOTAL[0]['quantity']} / {safe_quantity} \n"
             long_text = long_text + text
     
     if count > 0:
         bot.sendMessage(chat_id = CHAT_ID, text = long_text)
+        
+        
