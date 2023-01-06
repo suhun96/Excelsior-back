@@ -186,7 +186,6 @@ class CompanyModifyView(View):
         except:
             return JsonResponse({'message' : "예외 사항이 발생했습니다."}, status = 403)
 
-
 class CompnayStatusView(View):
     @jwt_decoder
     def post(self, request):
