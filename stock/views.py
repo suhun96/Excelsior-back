@@ -636,7 +636,7 @@ class SerialCodeCheckView(View):
         return product_code
 
     def serial_tracker(self, serial_code):
-        sheet_id = SerialCode.objects.get(code = serial_code).sheet_id
+        sheet_id = SerialCode.objects.filter(code = serial_code).latest('id').sheet_id
 
         sheet = Sheet.objects.get(id = sheet_id )
 
