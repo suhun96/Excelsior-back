@@ -1113,7 +1113,8 @@ class GenerateSetProductView(View):
                         etc             = '세트 생산으로 인한 소진'
                     )
                     # 시리얼 코드 체크
-                    count_serial_code(input_data, component, used_sheet)
+                    if 'serials' in component:
+                        count_serial_code(input_data, component, used_sheet)
     
                     # 수량 반영
                     stock = StockByWarehouse.objects.filter(warehouse_code = component.get('warehouse_code'), product_id = component_id)
