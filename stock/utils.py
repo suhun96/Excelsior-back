@@ -224,7 +224,7 @@ def create_sheet_detail(sheet_id, products):
                         code = serial_code
                     )
     except:
-        raise Exception({'message' : 'create_sheet_detail 사용하는중 에러가 발생했습니다.'})
+        raise Exception('create_sheet_detail 사용하는중 에러가 발생했습니다.')
 
 def modify_sheet_detail(sheet_id, products):
     try:
