@@ -126,7 +126,7 @@ class WarehouseInfoView(View):
         if 'id' in input_data:
             SET = {}
             for key, value in input_data.items():
-                if key in ['name', 'code', 'type', 'way', 'etc']:
+                if key in ['name', 'code', 'type', 'way', 'etc', 'status']:
                     SET.update({key : value})
             
             Warehouse.objects.filter(id = input_data['id']).update(**SET)
