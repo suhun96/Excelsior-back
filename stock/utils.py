@@ -473,7 +473,7 @@ def count_serial_code(input_data, component, used_sheet):
             raise Exception('시리얼 갯수와 요청하신 수량이 일치하지 않습니다.')
 
         for serial in serial_list:
-            serial_product_id = SerialCode.objects.get(code = serial).product_id
+            serial_product_id = SerialCode.objects.filter(code = serial).latest('id').id
             component_quantity = ProductComposition.objects.get(set_product_id = set_product_id, composition_product_id = serial_product_id).quantity
 
             total_manufacture_quantity = manufacture_quantity * component_quantity
