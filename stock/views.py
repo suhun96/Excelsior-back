@@ -1099,7 +1099,7 @@ class GenerateSetProductView(View):
                     type = 'used',
                     company_id = 1,
                     date = input_date,
-                    etc  = f'세트 생산으로 인한 소진'
+                    etc  = '세트 생산으로 인한 소진'
                 )
 
                 for component in components:
@@ -1110,20 +1110,12 @@ class GenerateSetProductView(View):
                         quantity        = component.get('quantity'), 
                         warehouse_code  = component.get('warehouse_code'),
                         unit_price      = 0,
-                        etc             = f'세트 생산으로 인한 소진'
+                        etc             = '세트 생산으로 인한 소진'
                     )
-                # 시리얼 코드 체크
-                # 시리얼 갯수 
-                    # serial_list = component.get('serials')
-                    # serial_quantity = len(serial_list)
-
-                    # if not serial_quantity == component.get('quantity'):
-                    #     raise Exception('시리얼 갯수와 요청하신 수량이 일치하지 않습니다.')
-                    # for serial in serial_list:
-                    #     target_product_id = SerialCode.objects.get(code = serial).product_id
-                        
-                # 수량 반영
-                
+                    # 시리얼 코드 체크
+                    count_serial_code(input_data, component, used_sheet)
+    
+                    # 수량 반영
                     stock = StockByWarehouse.objects.filter(warehouse_code = component.get('warehouse_code'), product_id = component_id)
                 
                     if stock.exists():
