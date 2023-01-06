@@ -1147,6 +1147,8 @@ class GenerateSetProductView(View):
                     date = input_date,
                     etc  = '세트 생산으로 인한 소진'
                 )
+                
+                used_sheet_id = used_sheet.id
 
                 for component in components:
                     component_id = Product.objects.get(product_code = component.get('product_code')).id
@@ -1181,6 +1183,8 @@ class GenerateSetProductView(View):
                         product_id = component_id,
                         warehouse_code = component.get('warehouse_code'),
                         defaults={'total_quantity' : stock_quantity})
+
+            return used_sheet_id
         except Exception:
             raise Exception({'message' : 'used_sheet를 생성하는중 에러가 발생했습니다.'})
 
@@ -1188,12 +1192,22 @@ class GenerateSetProductView(View):
     def post(self, request):
         input_data = json.loads(request.body)
         user = request.user
+        try:
+            generate_sheet_id = self.generate_sheet(input_data, user)
+            create_set_serial_code(input_data, generate_sheet_id)
+            used_sheet_id = self.used_sheet(input_data, user, generate_sheet_id)
 
-        generate_sheet_id = self.generate_sheet(input_data, user)
-        create_set_serial_code(input_data, generate_sheet_id)
-        self.used_sheet(input_data, user, generate_sheet_id)
-
-        return JsonResponse({'message' : '세트 생산이 완료되었습니다.', 'generate_sheet_id' : generate_sheet_id}, status = 200)
+            #related_sheet
+            generate_sheet = Sheet.objects.get(id = generate_sheet_id)
+            generate_sheet.related_sheet = used_sheet_id
+            used_sheet = Sheet.objects.get(id = used_sheet_id)
+            used_sheet.related_sheet = generate_sheet_id
+            generate_sheet.save()
+            used_sheet.save()
+            return JsonResponse({'message' : '세트 생산이 완료되었습니다.', 'generate_sheet_id' : generate_sheet_id}, status = 200)
+        except Exception:
+            return JsonResponse({'message' : '세트 생산이 실패했습니다.'}, status = 403)
+        
 
 
 

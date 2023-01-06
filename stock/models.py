@@ -13,6 +13,7 @@ class Sheet(models.Model):
     status     = models.BooleanField(default= True)
     etc        = models.CharField(max_length= 500)
     date       = models.DateField(default= datetime.now())
+    related_sheet = models.IntegerField(default= 1)
     created_at = models.DateTimeField(auto_now_add= True)
     updated_at = models.DateTimeField(auto_now= True)
 
