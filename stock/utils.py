@@ -458,3 +458,38 @@ def mam_delete_sheet(product_id, unit_price, quantity, stock_quantity):
             average_price = round_result,
             total_quantity = stock_quantity
         )
+
+def count_serial_code(input_data, component, used_sheet):
+    manufacture_quantity = input_data.get('manufacture_quantity')
+    set_product_code = input_data.get('set_product_code')
+    set_product_id = Product.objects.get(product_code = set_product_code).id
+    set_components_ids = ProductComposition.objects.filter(set_product_id = set_product_id).values_list('composition_product', flat= True)
+    
+    serial_list = component.get('serials')
+    serial_quantity = len(serial_list)
+
+    try:
+        if not serial_quantity == component.get('quantity'):
+            raise Exception('시리얼 갯수와 요청하신 수량이 일치하지 않습니다.')
+
+        for serial in serial_list:
+            serial_product_id = SerialCode.objects.get(code = serial).product_id
+            component_quantity = ProductComposition.objects.get(set_product_id = set_product_id, composition_product_id = serial_product_id).quantity
+
+            total_manufacture_quantity = manufacture_quantity * component_quantity
+
+            if not serial_quantity == total_manufacture_quantity:
+                raise Exception('생산시 요구되는 시리얼 갯수와 입력하신 시리얼 갯수가 일치하지 않습니다.')
+
+            if not serial_product_id in set_components_ids:
+                raise Exception('시리얼 코드 불일치를 발견했습니다.')
+
+            SerialCode.objects.create(
+                sheet_id = used_sheet.id,
+                product_id = serial_product_id,
+                code = serial
+            )
+    except Exception:
+        raise Exception('입력한 시리얼 코드를 체크하는중 오류가 발생했습니다.')
+    
+
