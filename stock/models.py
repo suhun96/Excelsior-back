@@ -108,7 +108,7 @@ class SerialCodeValue(models.Model):
     date        = models.DateTimeField(auto_now= True)
 
     class Meta:
-        db_table = 'serial_code_values'
+        db_table = 'serial_code_value'
 
 ############################################################################################################
 
