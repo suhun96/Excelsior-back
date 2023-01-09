@@ -17,7 +17,6 @@ from users.decorator    import jwt_decoder
 class SignUpView(View):
     def post(self, request):
         data = request.POST
-        print(data)
         # 정규식 : 전화번호, 비밀번호
         REGEX_PHONE = '(010)\d{4}\d{4}'                          # 010 휴대전화 정규표현식
         REGEX_PW    = '^(?=.{8,16}$)(?=.*[a-z])(?=.*[0-9]).*$'   # 비밀번호 정규표현식, 8자 이상 16자 이하, 소문자, 숫자 최소 하나 사용 
