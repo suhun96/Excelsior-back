@@ -283,28 +283,21 @@ class SheetListView(View):
             q &= Q(company_id = company_id)
 
         
-        sheets = Sheet.objects.filter(q).values(
-            'id',
-            'user',
-            'type',
-            'company_id',
-            'etc',
-            'date'
-        ).order_by('date')[offset : offset+limit]
+        sheets = Sheet.objects.filter(q).order_by('date')[offset : offset+limit]
 
         for_list = []
         
         for sheet in sheets:
-            id           = sheet['id']
-            user_name    = User.objects.get(id = sheet['user']).name
-            stock_type   = sheet['type']
+            id           = sheet.id
+            user_name    = User.objects.get(id = sheet.user.id).name
+            stock_type   = sheet.type
             
             
-            company_name = Company.objects.get(id = sheet['company_id']).name
+            company_name = Company.objects.get(id = sheet.company_id).name
             
 
-            etc          = sheet['etc']
-            date         = sheet['date']
+            etc          = sheet.etc
+            date         = sheet.date
 
             year    = date.year
             month   = date.month
@@ -318,7 +311,9 @@ class SheetListView(View):
                 'user'      : user_name,
                 'date'      : f"{year}-{month}-{day}",
                 'company_name'  : company_name,
-                'etc'       : etc
+                'etc'       : etc,
+                'created_at' : sheet.created_at,
+                'updated_at' : sheet.updated_at
             }
             
             for_list.append(dict)
@@ -477,7 +472,10 @@ class InfoSheetListView(View):
                         'partial_quantity'      : partial_quantity,
                         'location'              : composition.location,
                         'serial_codes'          : list(serial_codes),
-                        'detail_etc'            : composition.etc   
+                        'detail_etc'            : composition.etc,
+                        'created_at'            : sheet.created_at,
+                        'updated_at'            : sheet.updated_at
+
                     }
                     for_list.append(dict) 
                 
@@ -504,7 +502,9 @@ class InfoSheetListView(View):
                         'partial_quantity'      : partial_quantity,
                         'location'              : composition.location,
                         'serial_codes'          : list(serial_codes),
-                        'detail_etc'            : composition.etc   
+                        'detail_etc'            : composition.etc,
+                        'created_at'            : sheet.created_at,
+                        'updated_at'            : sheet.updated_at   
                     }
                     for_list.append(dict)
 
@@ -527,11 +527,7 @@ class ClickSheetView(View):
                 total = QuantityByWarehouse.objects.filter(product_id = product.id).aggregate(Sum('total_quantity'))
             except QuantityByWarehouse.DoesNotExist:
                 total = 0
-            serial_codes = SerialCode.objects.filter(sheet_id = sheet_id ,product_id = product.id).values('code')
-            list_serial_code = []
-            
-            for obj in serial_codes:
-                list_serial_code.append(obj.get('code'))
+            serial_codes = SerialCode.objects.filter(sheet_id = sheet_id ,product_id = product.id).values_list('code', flat= True)
             
             if product.company_code == "" :
                 dict = {
@@ -546,7 +542,7 @@ class ClickSheetView(View):
                     'warehouse_name'        : Warehouse.objects.get(code = composition.warehouse_code).name,
                     'partial_quantity'      : QuantityByWarehouse.objects.get(warehouse_code = composition.warehouse_code, product_id = product.id).total_quantity,
                     'location'              : composition.location,
-                    'serial_codes'          : list_serial_code,
+                    'serial_codes'          : list(serial_codes),
                     'etc'                   : composition.etc   
                 } 
             else:
@@ -563,7 +559,7 @@ class ClickSheetView(View):
                     'warehouse_name'        : Warehouse.objects.get(code = composition.warehouse_code).name,
                     'partial_quantity'      : QuantityByWarehouse.objects.get(warehouse_code = composition.warehouse_code, product_id = product.id).total_quantity,
                     'location'              : composition.location,
-                    'serial_codes'          : list_serial_code,
+                    'serial_codes'          : list(serial_codes),
                     'etc'                   : composition.etc   
                 }
 
@@ -1208,15 +1204,3 @@ class GenerateSetProductView(View):
         # except Exception:
         #     return JsonResponse({'message' : '세트 생산이 실패했습니다.'}, status = 403)
         
-
-
-
-
-
-    
-
-
-
-
-
-
