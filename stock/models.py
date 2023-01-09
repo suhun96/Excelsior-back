@@ -103,7 +103,7 @@ class SerialCodeTitle(models.Model):
 class SerialCodeValue(models.Model):
     title       = models.ForeignKey(SerialCodeTitle, on_delete= models.CASCADE)
     serial_code = models.ForeignKey(SerialCode, on_delete= models.CASCADE, related_name= 'serial_code_value')
-    contents    = models.CharField(max_length= 200)
+    contents    = models.CharField(max_length= 255)
     user        = models.ForeignKey(User, on_delete= models.CASCADE, default=1)
     date        = models.DateTimeField(auto_now= True)
 
