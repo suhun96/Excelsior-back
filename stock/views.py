@@ -342,6 +342,10 @@ class InfoSheetListView(View):
             stock_type = "출고"
         if stock_type == 'generate':
             stock_type = '생산'
+        if stock_type == 'new':
+            stock_type = '초도입고'
+        if stock_type == 'used':
+            stock_type = '사용'
 
         document_num = f"{year}/{month}/{day}-{stock_type}-{sheet_id}"
     
@@ -421,12 +425,12 @@ class InfoSheetListView(View):
                 product_id = Product.objects.get(name = product_name).id
                 q2 &= Q(product_id = product_id)
             if product_group_code:
-                product_id = Product.objects.get(productgroup_code = product_group_code).id
-                q2 &= Q(product_id = product_id)
+                product_id_list = Product.objects.filter(productgroup_code = product_group_code).values_list('id', flat = True)
+                q2 &= Q(product_id__in = product_id_list)
 
 
             compositions = SheetComposition.objects.filter(q2)
-            
+           
             for composition in compositions:
                 product = Product.objects.get(id = composition.product_id)
                 
@@ -441,11 +445,6 @@ class InfoSheetListView(View):
                     partial_quantity = 0
 
                 serial_codes = SerialCode.objects.filter(sheet_id = sheet_id, product_id = product.id).values_list('code', flat=True)
-                
-                list_serial_code = []
-
-                for object in serial_codes:
-                    list_serial_code.append(object)
 
                 year    = sheet.date.year
                 month   = sheet.date.month
@@ -477,7 +476,7 @@ class InfoSheetListView(View):
                         'warehouse_name'        : Warehouse.objects.get(code = composition.warehouse_code).name,
                         'partial_quantity'      : partial_quantity,
                         'location'              : composition.location,
-                        'serial_codes'          : list_serial_code,
+                        'serial_codes'          : list(serial_codes),
                         'detail_etc'            : composition.etc   
                     }
                     for_list.append(dict) 
@@ -504,7 +503,7 @@ class InfoSheetListView(View):
                         'warehouse_name'        : Warehouse.objects.get(code = composition.warehouse_code).name,
                         'partial_quantity'      : partial_quantity,
                         'location'              : composition.location,
-                        'serial_codes'          : list_serial_code,
+                        'serial_codes'          : list(serial_codes),
                         'detail_etc'            : composition.etc   
                     }
                     for_list.append(dict)
