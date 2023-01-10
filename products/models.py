@@ -34,7 +34,7 @@ class Product(models.Model):
     is_set            = models.BooleanField(default=False)
     is_serial         = models.BooleanField(default=False)
     company_code      = models.CharField(max_length = 10) 
-    productgroup_code = models.CharField(max_length = 10, blank = False)
+    product_group     = models.ForeignKey(ProductGroup, on_delete= models.CASCADE)
     product_num       = models.CharField(max_length = 10, blank = False)
     product_code      = models.CharField(max_length = 10, blank = False)
     safe_quantity     = models.IntegerField(default = 0)
