@@ -292,8 +292,10 @@ class SheetListView(View):
             user_name    = User.objects.get(id = sheet.user.id).name
             stock_type   = sheet.type
             
-            
-            company_name = Company.objects.get(id = sheet.company_id).name
+            company = Company.objects.get(id = sheet.company_id)
+            company_name = company.name
+            company_id = company.id
+            company_code = company.code
             
 
             etc          = sheet.etc
@@ -310,7 +312,9 @@ class SheetListView(View):
                 'type'      : stock_type,
                 'user'      : user_name,
                 'date'      : f"{year}-{month}-{day}",
+                'company_id'    : company_id,
                 'company_name'  : company_name,
+                'company_code'  : company_code,
                 'etc'       : etc,
                 'created_at' : sheet.created_at,
                 'updated_at' : sheet.updated_at

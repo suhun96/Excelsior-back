@@ -329,7 +329,7 @@ class ProductInfoView(View):
         user = request.user
         input_data = json.loads(request.body)
         name = input_data.get('name', None)
-        product_group_code = input_data.get('product_group_code', None)
+        product_group_id = input_data.get('product_group_id', None)
         warehouse_code = input_data.get('warehouse_code', None)
         company_code = input_data.get('company_code', None)
         is_set = input_data.get('is_set', None)
@@ -346,10 +346,10 @@ class ProductInfoView(View):
         if name == None:
             return JsonResponse({'message' : '제품명을 입력해주세요'}, status = 403)
 
-        if product_group_code == None:
-            return JsonResponse({'message' : '제품 그룹 코드를 입력해주세요'}, status = 403)
+        if product_group_id == None:
+            return JsonResponse({'message' : '제품 그룹 id를 입력해주세요'}, status = 403)
         else:
-            if not ProductGroup.objects.filter(code = product_group_code).exists():
+            if not ProductGroup.objects.filter(id = product_group_id).exists():
                 return JsonResponse({'message' : '존재하지 않는 제품그룹 코드입니다.'}, status = 403)
         
         if warehouse_code:
@@ -372,11 +372,13 @@ class ProductInfoView(View):
                     if not Company.objects.filter(code = company_code).exists():
                         return JsonResponse({'message' : f'[{company_code}] 존재하지 않는 회사 코드입니다.'})
                     
-                    product = Product.objects.filter(productgroup_code = product_group_code) 
-
-                    if product.exists():
-                        productgroup_num = product.latest('created_at').product_num
-                        change_int_num = int(productgroup_num) + 1
+                    tartget_product = Product.objects.filter(product_group_id = product_group_id) 
+                    
+                    if tartget_product.exists():
+                        latest_product = tartget_product.latest('created_at')
+                        product_group_code = latest_product.product_group.code
+                        product_num = latest_product.product_num
+                        change_int_num = int(product_num) + 1
                         product_num = str(change_int_num).zfill(3)           
                     else:
                         product_num = '001'
@@ -386,7 +388,7 @@ class ProductInfoView(View):
                         CREATE_SET = {
                             'is_set' : True,
                             'is_serial': True,      
-                            'productgroup_code' : product_group_code , 
+                            'product_group_id' : product_group_id , 
                             'company_code' : company_code, 
                             'name' : name,
                             'product_num'  : product_num,
@@ -424,7 +426,7 @@ class ProductInfoView(View):
                         CREATE_SET = {
                             'is_set' : False,
                             'is_serial' : is_serial,  
-                            'productgroup_code' : product_group_code , 
+                            'product_group_id'  : product_group_id , 
                             'company_code'      : company_code, 
                             'name'              : name,
                             'product_num'       : product_num,
@@ -453,12 +455,14 @@ class ProductInfoView(View):
                     
                 # 회사코드가 없으면 
                 if not company_code:
-                    product = Product.objects.filter(productgroup_code = product_group_code) 
+                    tartget_product = Product.objects.filter(product_group_id = product_group_id)
 
-                    if product.exists():
-                        productgroup_num = product.latest('created_at').product_num
-                        change_int_num = int(productgroup_num) + 1
-                        product_num = str(change_int_num).zfill(3)           
+                    if tartget_product.exists():
+                        latest_product = tartget_product.latest('created_at')
+                        product_group_code = latest_product.product_group.code
+                        product_num = latest_product.product_num
+                        change_int_num = int(product_num) + 1
+                        product_num = str(change_int_num).zfill(3)                 
                     else:
                         product_num = '001'
                     
@@ -467,7 +471,7 @@ class ProductInfoView(View):
                         CREATE_SET = {
                             'is_set' : True,  
                             'is_serial' : True,
-                            'productgroup_code' : product_group_code ,  
+                            'product_group_id' : product_group_id,  
                             'name' : name,
                             'product_num' : product_num,
                             'product_code' : product_group_code + product_num,
@@ -503,7 +507,7 @@ class ProductInfoView(View):
                         CREATE_SET = {
                             'is_set' : False,
                             'is_serial' : is_serial,  
-                            'productgroup_code' : product_group_code,  
+                            'product_group_id' : product_group_id,
                             'name' : name,
                             'product_num' : product_num,
                             'product_code' : product_group_code + product_num,
