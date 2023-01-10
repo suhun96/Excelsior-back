@@ -551,6 +551,7 @@ class ClickSheetView(View):
                     'product_name'          : product.name,
                     'product_group_name'    : ProductGroup.objects.get(code = product.productgroup_code).name,
                     'barcode'               : product.barcode,
+                    'company_id'            : Company.objects.get(code = product.company_code).id,
                     'company_name'          : Company.objects.get(code = product.company_code).name,
                     'unit_price'            : composition.unit_price,
                     'quantity'              : composition.quantity,
