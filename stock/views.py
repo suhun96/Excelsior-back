@@ -364,7 +364,6 @@ class InfoSheetListView(View):
         company_name   = request.GET.get('company_name', None)
         # sheet-detail 
         product_name   = request.GET.get('product_name', None)
-        warehouse_name = request.GET.get('warehouse_name', None)
         product_group_id = request.GET.get('product_group_id', None)
         
 
@@ -380,13 +379,10 @@ class InfoSheetListView(View):
             user_id = User.objects.get(name = name).id
             q &= Q(sheet__user_id__exact = user_id)
         if stock_type:
-            q2 &= Q(sheet__type = stock_type)
-        if warehouse_name:
-            warehouse_code = Warehouse.objects.get(name = warehouse_name).code
-            q2 &= Q(warehouse_code__icontains = warehouse_code)
+            q &= Q(sheet__type = stock_type)
         if product_name:
             product_id = Product.objects.get(name = product_name).id
-            q2 &= Q(product_id = product_id)
+            q &= Q(product_id = product_id)
         if company_name:
             company_id = Company.objects.get(name = company_name).id
             q &= Q(sheet__company_id = company_id)
@@ -400,14 +396,15 @@ class InfoSheetListView(View):
             'sheet__user__name',
             'sheet__type',
             'sheet__company_id',
-            'sheet__company_name',
-            'sheet__company_code',
+            'sheet__company__name',
+            'sheet__company__code',
             'sheet__etc',
             'sheet__date',
             'sheet__related_sheet_id',
             'sheet__created_at',
             'product_id',
             'product__name',
+            'product__company_code',
             'product__product_code',
             'product__barcode',
             'unit_price',
@@ -417,8 +414,7 @@ class InfoSheetListView(View):
             'etc'
             )
         
-        
-
+    
         return JsonResponse({'message' : list(sheet_detail) , 'length': length}, status = 200)
 
 class ClickSheetView(View):

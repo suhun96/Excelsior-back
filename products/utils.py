@@ -28,7 +28,7 @@ def telegram_bot(new_sheet_id):
         safe_quantity = product.safe_quantity
         name          = product.name
         product_code  = product.product_code
-        product_group_name = ProductGroup.objects.get(code = product.productgroup_code).name
+        product_group_name = ProductGroup.objects.get(id = product.product_group_id).name
 
         if safe_quantity > TOTAL[0]['quantity']:
             count += 1
