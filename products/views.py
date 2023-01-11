@@ -129,9 +129,6 @@ class ProductInfoView(View):
         input_user =  user.id
         input_data = input_data
         company_id = input_data.get('company_id', None)
-
-        if not company_id:
-            company_id = 1
         
         price    = input_data.get('price', None)
         quantity = input_data.get('quantity', None)
