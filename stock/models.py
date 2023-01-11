@@ -9,7 +9,7 @@ from companies.models import *
 class Sheet(models.Model):
     user       = models.ForeignKey(User, on_delete= models.CASCADE)
     type       = models.CharField(max_length= 30)
-    company    = models.ForeignKey(Company, on_delete= models.CASCADE, default= 1)
+    company    = models.ForeignKey(Company, on_delete= models.CASCADE, null= True)
     status     = models.BooleanField(default= True)
     etc        = models.CharField(max_length= 500)
     date       = models.DateField(default= datetime.now())
