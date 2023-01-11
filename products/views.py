@@ -128,112 +128,60 @@ class ProductInfoView(View):
         user = user
         input_user =  user.id
         input_data = input_data
-        company_id = input_data.get('company_id', None)
-        
         price    = input_data.get('price', None)
         quantity = input_data.get('quantity', None)
         new_product_code = new_product.product_code
 
         try:
-            with transaction.atomic():
-        
-                if company_id:
-                    new_sheet = Sheet.objects.create(
-                        user_id = input_user,
-                        type = 'new',
-                        company_id = company_id,
-                        etc  = '초도 입고'
-                    )
-                            
-                    if Product.objects.filter(product_code = new_product_code).exists() == False:
-                        raise Exception({'message' : f'{new_product_code}는 존재하지 않습니다.'}) 
-                
-                    SheetComposition.objects.create(
-                        sheet_id        = new_sheet.id,
-                        product_id      = new_product.id,
-                        quantity        = quantity, 
-                        warehouse_code  = Warehouse.objects.get(main = True).code,
-                        location        = new_product.location,
-                        unit_price      = price,
-                    )
-                    
-                    stock = StockByWarehouse.objects.filter(warehouse_code = Warehouse.objects.get(main = True).code , product_id = new_product.id)
+            with transaction.atomic():        
+                new_sheet = Sheet.objects.create(
+                    user_id = input_user,
+                    type = 'new',
+                    etc  = '초도 입고'
+                )
+
+                generate_document_num(new_sheet.id)
+
+                if Product.objects.filter(product_code = new_product_code).exists() == False:
+                    raise Exception({'message' : f'{new_product_code}는 존재하지 않습니다.'}) 
             
-                    if stock.exists():
-                        before_quantity = stock.last().stock_quantity
-                        stock_quantity  = before_quantity + int(quantity)
-                    else:
-                        stock_quantity  = int(quantity)
-                    
-                    StockByWarehouse.objects.filter(warehouse_code = Warehouse.objects.get(main = True).code, product_id = new_product.id).create(
-                        sheet_id = new_sheet.id,
-                        stock_quantity = stock_quantity,
-                        product_id = new_product.id,
-                        warehouse_code = Warehouse.objects.get(main = True).code )
-                    
-                    # mam_create_sheet(new_product.id, price, quantity, stock_quantity)
-
-                    QuantityByWarehouse.objects.filter(warehouse_code = Warehouse.objects.get(main = True).code, product_id = new_product.id).update_or_create(
-                        product_id = new_product.id,
-                        warehouse_code = Warehouse.objects.get(main = True).code,
-                        defaults={
-                            'total_quantity' : stock_quantity,
-                        })
-                    
-                    if Product.objects.get(id = new_product.id).is_serial == True:
-                        create_product_serial_code(new_product.id, quantity, new_sheet.id)    
-                    else:
-                        pass
+                SheetComposition.objects.create(
+                    sheet_id        = new_sheet.id,
+                    product_id      = new_product.id,
+                    quantity        = quantity, 
+                    warehouse_code  = Warehouse.objects.get(main = True).code,
+                    location        = new_product.location,
+                    unit_price      = price,
+                )
                 
+                stock = StockByWarehouse.objects.filter(warehouse_code = Warehouse.objects.get(main = True).code , product_id = new_product.id)
+        
+                if stock.exists():
+                    before_quantity = stock.last().stock_quantity
+                    stock_quantity  = before_quantity + int(quantity)
                 else:
-                    new_sheet = Sheet.objects.create(
-                        user_id = input_user,
-                        company_id =  company_id,
-                        type = 'new',
-                        etc  = '초도 입고'
-                    )
-                            
-                    if Product.objects.filter(product_code = new_product_code).exists() == False:
-                        raise Exception({'message' : f'{new_product_code}는 존재하지 않습니다.'}) 
+                    stock_quantity  = int(quantity)
                 
-                    SheetComposition.objects.create(
-                        sheet_id        = new_sheet.id,
-                        product_id      = new_product.id,
-                        quantity        = quantity, 
-                        warehouse_code  = Warehouse.objects.get(main = True).code,
-                        location        = new_product.location,
-                        unit_price      = price,
-                    )
-                    
-                    stock = StockByWarehouse.objects.filter(warehouse_code = Warehouse.objects.get(main = True).code , product_id = new_product.id)
-                    
-                    if stock.exists():
-                        before_quantity = stock.last().stock_quantity
-                        stock_quantity  = before_quantity + int(quantity)
-                    else:
-                        stock_quantity  = int(quantity)
+                StockByWarehouse.objects.filter(warehouse_code = Warehouse.objects.get(main = True).code, product_id = new_product.id).create(
+                    sheet_id = new_sheet.id,
+                    stock_quantity = stock_quantity,
+                    product_id = new_product.id,
+                    warehouse_code = Warehouse.objects.get(main = True).code )
+                
+                # mam_create_sheet(new_product.id, price, quantity, stock_quantity)
 
-                    StockByWarehouse.objects.filter(warehouse_code = Warehouse.objects.get(main = True).code, product_id = new_product.id).create(
-                        sheet_id = new_sheet.id,
-                        stock_quantity = stock_quantity,
-                        product_id = new_product.id,
-                        warehouse_code = Warehouse.objects.get(main = True).code )
-                    
-                    # mam_create_sheet(new_product.id, price, quantity, stock_quantity)
-                    
-                    QuantityByWarehouse.objects.filter(warehouse_code = Warehouse.objects.get(main = True).code, product_id = new_product.id).update_or_create(
-                        product_id = new_product.id,
-                        warehouse_code = Warehouse.objects.get(main = True).code,
-                        defaults={
-                            'total_quantity' : stock_quantity
-                        })
-                    # 초도 입고 시리얼 코드 생산
-
-                    if Product.objects.get(id = new_product.id).is_serial == True:
-                        create_product_serial_code(new_product.id, quantity, new_sheet.id)    
-                    else:
-                        pass
-
+                QuantityByWarehouse.objects.filter(warehouse_code = Warehouse.objects.get(main = True).code, product_id = new_product.id).update_or_create(
+                    product_id = new_product.id,
+                    warehouse_code = Warehouse.objects.get(main = True).code,
+                    defaults={
+                        'total_quantity' : stock_quantity,
+                    })
+                
+                if Product.objects.get(id = new_product.id).is_serial == True:
+                    create_product_serial_code(new_product.id, quantity, new_sheet.id)    
+                else:
+                    pass
+                
         except:
             raise Exception({'message' : 'sheet를 생성하는중 에러가 발생했습니다.'})
 
