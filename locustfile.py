@@ -18,9 +18,7 @@ class SheetInbound(HttpUser):
     def task_inbound(self):
         self.token   = Token
         self.headers = {'Authorization' : self.token}
-<<<<<<< HEAD
         self.client.get('/product/info?offset=0&limit=10', headers= self.headers)
-=======
         self.data = {
             "type" : "inbound",
             "date" : "2023-01-09",
@@ -63,4 +61,4 @@ class SheetInbound(HttpUser):
 #         self.token   = Token
 #         self.headers = {'Authorization' : self.token}
         # self.client.get('/product/info?offset=0&limit=10', headers= self.headers)
->>>>>>> 92573194a326002179cfe850186b0742141cbe49
+

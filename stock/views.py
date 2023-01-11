@@ -326,30 +326,6 @@ class SheetListView(View):
         return JsonResponse({'message' : for_list, 'length': length}, status = 200)
 
 class InfoSheetListView(View):
-    def generate_document_num(self, sheet_id, date):
-        year  = date.year
-        month = date.month
-        day   = date.day
-        sheet = Sheet.objects.get(id = sheet_id)
-        stock_type = sheet.type
-        sheet_id   = sheet.id
-        
-        # 타입 변환기.
-        if stock_type == 'inbound':
-            stock_type = "입고"
-        if stock_type == "outbound":
-            stock_type = "출고"
-        if stock_type == 'generate':
-            stock_type = '생산'
-        if stock_type == 'new':
-            stock_type = '초도입고'
-        if stock_type == 'used':
-            stock_type = '사용'
-
-        document_num = f"{year}/{month}/{day}-{stock_type}-{sheet_id}"
-    
-        return document_num
-
     def get(self, request):
         offset = int(request.GET.get('offset'))
         limit  = int(request.GET.get('limit'))

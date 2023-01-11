@@ -6,6 +6,7 @@ from django.views       import View
 from django.http        import JsonResponse
 from django.db          import transaction
 from django.db.models   import Q , Sum
+from datetime           import datetime
 
 # Models
 from stock.models       import *
@@ -58,7 +59,6 @@ def create_sheet(input_data, user):
     input_etc  = input_data.get('etc', None)
     input_company = input_data.get('company_id', None)
     input_products = input_data.get('products', None)
-    
 
     try:
         if not Company.objects.filter(id = input_company).exists():
@@ -71,6 +71,8 @@ def create_sheet(input_data, user):
                 date = input_date,
                 etc  = input_etc
             )
+
+            generate_document_num(new_sheet.id)
 
             if not input_products:
                 raise Exception('입,출고서에 제품을 비워 등록할 수 없습니다.')
@@ -492,4 +494,39 @@ def count_serial_code(input_data, component, used_sheet):
     except Exception:
         raise Exception('입력한 시리얼 코드를 체크하는중 오류가 발생했습니다.')
     
+def generate_document_num(sheet_id):
+    target_sheet = Sheet.objects.get(id = sheet_id)
+    stock_type = target_sheet.type
+    year  = target_sheet.date.year
+    month = target_sheet.date.month
+    day   = target_sheet.date.day
+    
+    
+    # 타입 변환기.
+    if stock_type == 'inbound':
+        stock_type = "입고"
+    if stock_type == "outbound":
+        stock_type = "출고"
+    if stock_type == 'generate':
+        stock_type = '생산'
+    if stock_type == 'new':
+        stock_type = '초도입고'
+    if stock_type == 'used':
+        stock_type = '사용'
 
+    check_sheet_date = Sheet.objects.filter(date = target_sheet.date)
+
+    if check_sheet_date.exists():
+        count_document = check_sheet_date.count()
+        num = count_document + 1
+        document_num = f"{year}/{month}/{day}-{stock_type}-{num}"
+    else:
+        num = 1
+        document_num = f"{year}/{month}/{day}-{stock_type}-{num}"
+    
+    try:
+        with transaction.atomic():
+            target_sheet.document_num = document_num
+            target_sheet.save()
+    except Exception:
+        raise ('문서번호 생성중 오류 발생.')        
