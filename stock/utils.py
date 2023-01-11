@@ -498,8 +498,8 @@ def generate_document_num(sheet_id):
     target_sheet = Sheet.objects.get(id = sheet_id)
     stock_type = target_sheet.type
     year  = target_sheet.date.year
-    month = target_sheet.date.month
-    day   = target_sheet.date.day
+    month = str(target_sheet.date.month).zfill(2)
+    day   = str(target_sheet.date.day).zfill(2)
     
     
     # 타입 변환기.
@@ -518,11 +518,11 @@ def generate_document_num(sheet_id):
 
     if check_sheet_date.exists():
         count_document = check_sheet_date.count()
-        num = count_document + 1
-        document_num = f"{year}/{month}/{day}-{stock_type}-{num}"
+        num = count_document
+        document_num = f"{year}{month}{day}-{stock_type}-{num}"
     else:
         num = 1
-        document_num = f"{year}/{month}/{day}-{stock_type}-{num}"
+        document_num = f"{year}{month}{day}-{stock_type}-{num}"
     
     try:
         with transaction.atomic():

@@ -330,7 +330,7 @@ class InfoSheetListView(View):
         offset = int(request.GET.get('offset'))
         limit  = int(request.GET.get('limit'))
 
-        length = Sheet.objects.all().count()
+        length = SheetComposition.objects.all().count()
 
         # sheet
         name           = request.GET.get('user_name', None)
@@ -369,6 +369,7 @@ class InfoSheetListView(View):
         sheet_detail = SheetComposition.objects.filter(q)[offset : offset+limit].values(
             'id', 
             'sheet_id',
+            'sheet__document_num',
             'sheet__user__name',
             'sheet__type',
             'sheet__company_id',
@@ -383,6 +384,7 @@ class InfoSheetListView(View):
             'product__company_code',
             'product__product_code',
             'product__barcode',
+            'product__product_group__name',
             'unit_price',
             'quantity',
             'warehouse_code',
