@@ -272,7 +272,7 @@ class ProductInfoView(View):
             if status:
                 q &= Q(status = status)
 
-            result_list = []
+            
             products = Product.objects.filter(q)[offset : offset+limit].values(
                 'id',
                 'is_set',
@@ -293,7 +293,7 @@ class ProductInfoView(View):
 
             ) 
 
-            return JsonResponse({'message' : result_list, 'length': length}, status = 200)
+            return JsonResponse({'message' : list(products), 'length': length}, status = 200)
         except KeyError:
             return JsonResponse({'message' : 'keyerror'}, status = 403)
 

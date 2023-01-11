@@ -446,7 +446,7 @@ class ClickSheetView(View):
                 total = 0
             serial_codes = SerialCode.objects.filter(sheet_id = sheet_id ,product_id = product.id).values_list('code', flat= True)
             
-            if product.company_code == "" :
+            if product.company_id == "" :
                 dict = {
                     'product_code'          : product.product_code,
                     'product_name'          : product.name,
@@ -468,8 +468,8 @@ class ClickSheetView(View):
                     'product_name'          : product.name,
                     'product_group_name'    : ProductGroup.objects.get(code = product.productgroup_code).name,
                     'barcode'               : product.barcode,
-                    'company_id'            : Company.objects.get(code = product.company_code).id,
-                    'company_name'          : Company.objects.get(code = product.company_code).name,
+                    'company_id'            : product.company.id,
+                    'company_name'          : product.company.name,
                     'unit_price'            : composition.unit_price,
                     'quantity'              : composition.quantity,
                     'total_quantity'        : total['total_quantity__sum'],
