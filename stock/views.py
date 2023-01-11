@@ -269,10 +269,6 @@ class SheetListView(View):
         company_name   = request.GET.get('company_name', None)
         stock_type     = request.GET.get('type', None)
 
-
-        length = Sheet.objects.all().count()
-
-
         q = Q(date__range = (date_start, date_end))
 
         if stock_type:
@@ -285,52 +281,25 @@ class SheetListView(View):
             q &= Q(company_id = company_id)
 
         
-        sheets = Sheet.objects.filter(q).order_by('date')[offset : offset+limit]
-
-        for_list = []
-        
-        for sheet in sheets:
-            id           = sheet.id
-            user_name    = User.objects.get(id = sheet.user.id).name
-            stock_type   = sheet.type
+        sheets = Sheet.objects.filter(q).order_by('date')[offset : offset+limit](
+            'id',       
+            'type',
+            'user__name',
+            'date',
+            'company_id',
+            'company__name',
+            'company__code',
+            'etc',
+            'document_num',
+            'related_sheet_id',
+            'created_at',
+            'updated_at'
+        )
             
-            company = Company.objects.get(id = sheet.company_id)
-            company_name = company.name
-            company_id = company.id
-            company_code = company.code
-            
-
-            etc          = sheet.etc
-            date         = sheet.date
-
-            year    = date.year
-            month   = date.month
-            month   = str(month).zfill(2)
-            day     = date.day
-            day     = str(day).zfill(2)
-            
-            dict = {
-                'id'        :  id,       
-                'type'      : stock_type,
-                'user'      : user_name,
-                'date'      : f"{year}-{month}-{day}",
-                'company_id'    : company_id,
-                'company_name'  : company_name,
-                'company_code'  : company_code,
-                'etc'       : etc,
-                'created_at' : sheet.created_at,
-                'updated_at' : sheet.updated_at
-            }
-            
-            for_list.append(dict)
-
-
-        return JsonResponse({'message' : for_list, 'length': length}, status = 200)
+        return JsonResponse({'message' : sheets}, status = 200)
 
 class InfoSheetListView(View):
     def get(self, request):
-
-        length = SheetComposition.objects.all().count()
         
         # sheet
         sheet_id       = request.GET.get('sheet_id', None)
@@ -426,7 +395,7 @@ class InfoSheetListView(View):
                 )
             
         
-            return JsonResponse({'message' : list(sheet_detail) , 'length': length}, status = 200)
+            return JsonResponse({'message' : list(sheet_detail) }, status = 200)
 
 class ClickSheetView(View):
     def get(self, request):
