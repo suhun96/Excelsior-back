@@ -249,7 +249,7 @@ class ProductInfoView(View):
 
         name                = request.GET.get('name', None)
         keyword             = request.GET.get('keyword', None)
-        productgroup_code   = request.GET.get('product_group_code', None)
+        product_group_name  = request.GET.get('product_group_name', None)
         warehouse_code      = request.GET.get('warehouse_code', None)
         product_code        = request.GET.get('product_code', None)
         barcode             = request.GET.get('barcode', None)
@@ -260,8 +260,9 @@ class ProductInfoView(View):
                 q &= Q(name__icontains = name)
             if keyword:
                 q &= Q(keyword__icontains = keyword)
-            if productgroup_code:
-                q &= Q(productgroup_code__icontains = productgroup_code)
+            if product_group_name:
+                product_group_list = ProductGroup.objects.filter(name__icontains = product_group_name).values_list('id', flat= True)
+                q &= Q(product_group_id__in = list(product_group_list))
             if warehouse_code:
                 q &= Q(warehouse_code__icontains = warehouse_code)
             if product_code:
@@ -272,50 +273,50 @@ class ProductInfoView(View):
                 q &= Q(status = status)
 
             result_list = []
-            products = Product.objects.filter(q)[offset : offset+limit].values()
+            products = Product.objects.filter(q)[offset : offset+limit]
             
             for product in products:
-                if product['company_code']== '':
+                if product.company_code== '':
                     dict_t = {
-                        'id' : product['id'],
-                        'is_set' : product['is_set'],
-                        'is_serial' : product['is_serial'],
+                        'id' : product.id,
+                        'is_set' : product.is_set,
+                        'is_serial' : product.is_serial,
                         'company_code'      : '',
                         'company_name'      : '',
-                        'productgroup_code' : product['productgroup_code'],
-                        'productgroup_name' : ProductGroup.objects.get(code = product['productgroup_code']).name,
-                        'product_num'       : product['product_num'],
-                        'product_code'      : product['product_code'],
-                        'safe_quantity'     : product['safe_quantity'],
-                        'keyword'           : product['keyword'],
-                        'name'              : product['name'],
-                        'warehouse_code'    : product['warehouse_code'],
-                        'warehouse_name'    : Warehouse.objects.get(code = product['warehouse_code']).name,
-                        'location'          : product['location'],
-                        'barcode'           : product['barcode'],
-                        'status'            : product['status'],
+                        'productgroup_code' : product.product_group.code,
+                        'productgroup_name' : product.product_group.name,
+                        'product_num'       : product.product_num,
+                        'product_code'      : product.product_code,
+                        'safe_quantity'     : product.safe_quantity,
+                        'keyword'           : product.keyword,
+                        'name'              : product.name,
+                        'warehouse_code'    : product.warehouse_code,
+                        'warehouse_name'    : Warehouse.objects.get(code = product.warehouse_code).name,
+                        'location'          : product.location,
+                        'barcode'           : product.barcode,
+                        'status'            : product.status,
                     }
                     result_list.append(dict_t)
                     
                 else:
                     dict_t = {
-                        'id' : product['id'],
-                        'is_set' : product['is_set'],
-                        'is_serial' : product['is_serial'],
-                        'company_code'      : product['company_code'],
-                        'company_name'      : Company.objects.get(code = product['company_code']).name,
-                        'productgroup_code' : product['productgroup_code'],
-                        'productgroup_name' : ProductGroup.objects.get(code = product['productgroup_code']).name,
-                        'product_num'       : product['product_num'],
-                        'product_code'      : product['product_code'],
-                        'safe_quantity'     : product['safe_quantity'],
-                        'keyword'           : product['keyword'],
-                        'name'              : product['name'],
-                        'warehouse_code'    : product['warehouse_code'],
-                        'warehouse_name'    : Warehouse.objects.get(code = product['warehouse_code']).name,
-                        'location'          : product['location'],
-                        'barcode'           : product['barcode'],
-                        'status'            : product['status'],
+                        'id' : product.id,
+                        'is_set' : product.is_set,
+                        'is_serial' : product.is_serial,
+                        'company_code'      : product.company_code,
+                        'company_name'      : Company.objects.get(code = product.company_code).name,
+                        'productgroup_code' : product.product_group.code,
+                        'productgroup_name' : product.product_group.name,
+                        'product_num'       : product.product_num,
+                        'product_code'      : product.product_code,
+                        'safe_quantity'     : product.safe_quantity,
+                        'keyword'           : product.keyword,
+                        'name'              : product.name,
+                        'warehouse_code'    : product.warehouse_code,
+                        'warehouse_name'    : Warehouse.objects.get(code = product.warehouse_code).name,
+                        'location'          : product.location,
+                        'barcode'           : product.barcode,
+                        'status'            : product.status,
                     }
                     result_list.append(dict_t)
 
