@@ -333,8 +333,9 @@ class InfoSheetListView(View):
         limit  = int(request.GET.get('limit'))
 
         length = SheetComposition.objects.all().count()
-
+        
         # sheet
+        sheet_id       = request.GET.get('sheet_id', None)
         name           = request.GET.get('user_name', None)
         stock_type     = request.GET.get('type', None)
         date_start     = request.GET.get('date_start', None)
@@ -344,58 +345,87 @@ class InfoSheetListView(View):
         product_name   = request.GET.get('product_name', None)
         product_group_id = request.GET.get('product_group_id', None)
         
-
-        if not date_start:
-            return JsonResponse({'message' : "기준 시작 날짜 설정 오류"}, status = 403)
-        if not date_end:
-            return JsonResponse({'message' : "기준 종료 날짜 설정 오류"}, status = 403)
-        
-        # Sheet 필터링
-        q = Q(sheet__date__range = (date_start, date_end))
-
-        if name:
-            user_id = User.objects.get(name = name).id
-            q &= Q(sheet__user_id__exact = user_id)
-        if stock_type:
-            q &= Q(sheet__type = stock_type)
-        if product_name:
-            product_id = Product.objects.get(name = product_name).id
-            q &= Q(product_id = product_id)
-        if company_name:
-            company_id = Company.objects.get(name = company_name).id
-            q &= Q(sheet__company_id = company_id)
-        if product_group_id:
-            product_id_list = Product.objects.filter(product_group_id = product_group_id).values_list('id', flat = True)
-            q &= Q(product_id__in = product_id_list)
-        
-        sheet_detail = SheetComposition.objects.filter(q)[offset : offset+limit].values(
-            'id', 
-            'sheet_id',
-            'sheet__document_num',
-            'sheet__user__name',
-            'sheet__type',
-            'sheet__company_id',
-            'sheet__company__name',
-            'sheet__company__code',
-            'sheet__etc',
-            'sheet__date',
-            'sheet__related_sheet_id',
-            'sheet__created_at',
-            'product_id',
-            'product__name',
-            'product__company_code',
-            'product__product_code',
-            'product__barcode',
-            'product__product_group__name',
-            'unit_price',
-            'quantity',
-            'warehouse_code',
-            'location',
-            'etc'
+        if sheet_id:
+            sheet_detail = SheetComposition.objects.filter(sheet_id = sheet_id).values(
+                'id', 
+                'sheet_id',
+                'sheet__document_num',
+                'sheet__user__name',
+                'sheet__type',
+                'sheet__company_id',
+                'sheet__company__name',
+                'sheet__company__code',
+                'sheet__etc',
+                'sheet__date',
+                'sheet__related_sheet_id',
+                'sheet__created_at',
+                'product_id',
+                'product__name',
+                'product__company_code',
+                'product__product_code',
+                'product__barcode',
+                'product__product_group__name',
+                'unit_price',
+                'quantity',
+                'warehouse_code',
+                'location',
+                'etc'
             )
+
+            return JsonResponse({'message' : list(sheet_detail) , 'length': length}, status = 200)
+
+        else:
+            if not date_start:
+                return JsonResponse({'message' : "기준 시작 날짜 설정 오류"}, status = 403)
+            if not date_end:
+                return JsonResponse({'message' : "기준 종료 날짜 설정 오류"}, status = 403)
+            
+            # Sheet 필터링
+            q = Q(sheet__date__range = (date_start, date_end))
+
+            if name:
+                user_id = User.objects.get(name = name).id
+                q &= Q(sheet__user_id__exact = user_id)
+            if stock_type:
+                q &= Q(sheet__type = stock_type)
+            if product_name:
+                product_id = Product.objects.get(name = product_name).id
+                q &= Q(product_id = product_id)
+            if company_name:
+                company_id = Company.objects.get(name = company_name).id
+                q &= Q(sheet__company_id = company_id)
+            if product_group_id:
+                product_id_list = Product.objects.filter(product_group_id = product_group_id).values_list('id', flat = True)
+                q &= Q(product_id__in = product_id_list)
+            
+            sheet_detail = SheetComposition.objects.filter(q)[offset : offset+limit].values(
+                'id', 
+                'sheet_id',
+                'sheet__document_num',
+                'sheet__user__name',
+                'sheet__type',
+                'sheet__company_id',
+                'sheet__company__name',
+                'sheet__company__code',
+                'sheet__etc',
+                'sheet__date',
+                'sheet__related_sheet_id',
+                'sheet__created_at',
+                'product_id',
+                'product__name',
+                'product__company_code',
+                'product__product_code',
+                'product__barcode',
+                'product__product_group__name',
+                'unit_price',
+                'quantity',
+                'warehouse_code',
+                'location',
+                'etc'
+                )
+            
         
-    
-        return JsonResponse({'message' : list(sheet_detail) , 'length': length}, status = 200)
+            return JsonResponse({'message' : list(sheet_detail) , 'length': length}, status = 200)
 
 class ClickSheetView(View):
     def get(self, request):
