@@ -273,53 +273,25 @@ class ProductInfoView(View):
                 q &= Q(status = status)
 
             result_list = []
-            products = Product.objects.filter(q)[offset : offset+limit]
-            
-            for product in products:
-                if product.company_code== '':
-                    dict_t = {
-                        'id' : product.id,
-                        'is_set' : product.is_set,
-                        'is_serial' : product.is_serial,
-                        'company_code'      : '',
-                        'company_name'      : '',
-                        'productgroup_code' : product.product_group.code,
-                        'productgroup_name' : product.product_group.name,
-                        'product_num'       : product.product_num,
-                        'product_code'      : product.product_code,
-                        'safe_quantity'     : product.safe_quantity,
-                        'keyword'           : product.keyword,
-                        'name'              : product.name,
-                        'warehouse_code'    : product.warehouse_code,
-                        'warehouse_name'    : Warehouse.objects.get(code = product.warehouse_code).name,
-                        'location'          : product.location,
-                        'barcode'           : product.barcode,
-                        'status'            : product.status,
-                    }
-                    result_list.append(dict_t)
-                    
-                else:
-                    dict_t = {
-                        'id' : product.id,
-                        'is_set' : product.is_set,
-                        'is_serial' : product.is_serial,
-                        'company_code'      : product.company_code,
-                        'company_name'      : Company.objects.get(code = product.company_code).name,
-                        'productgroup_code' : product.product_group.code,
-                        'productgroup_name' : product.product_group.name,
-                        'product_num'       : product.product_num,
-                        'product_code'      : product.product_code,
-                        'safe_quantity'     : product.safe_quantity,
-                        'keyword'           : product.keyword,
-                        'name'              : product.name,
-                        'warehouse_code'    : product.warehouse_code,
-                        'warehouse_name'    : Warehouse.objects.get(code = product.warehouse_code).name,
-                        'location'          : product.location,
-                        'barcode'           : product.barcode,
-                        'status'            : product.status,
-                    }
-                    result_list.append(dict_t)
+            products = Product.objects.filter(q)[offset : offset+limit].values(
+                'id',
+                'is_set',
+                'is_serial',
+                'company__code',
+                'company__name',
+                'product_group__code',
+                'product_group__name',
+                'product_num',
+                'product_code',
+                'safe_quantity',
+                'keyword',
+                'name',
+                'warehouse_code',
+                'location',
+                'barcode',
+                'status'
 
+            ) 
 
             return JsonResponse({'message' : result_list, 'length': length}, status = 200)
         except KeyError:
@@ -333,6 +305,7 @@ class ProductInfoView(View):
         product_group_id = input_data.get('product_group_id', None)
         warehouse_code = input_data.get('warehouse_code', None)
         company_code = input_data.get('company_code', None)
+        company_id   = input_data.get('company_id', None)
         is_set = input_data.get('is_set', None)
         composition = input_data.get('composition', None )
         is_serial = input_data.get('is_serial', None)
@@ -390,7 +363,7 @@ class ProductInfoView(View):
                             'is_set' : True,
                             'is_serial': True,      
                             'product_group_id' : product_group_id , 
-                            'company_code' : company_code, 
+                            'company_id' : company_id, 
                             'name' : name,
                             'product_num'  : product_num,
                             'product_code' : company_code + product_group_code + product_num,
@@ -428,7 +401,7 @@ class ProductInfoView(View):
                             'is_set' : False,
                             'is_serial' : is_serial,  
                             'product_group_id'  : product_group_id , 
-                            'company_code'      : company_code, 
+                            'company_id'        : company_id, 
                             'name'              : name,
                             'product_num'       : product_num,
                             'product_code'      : company_code + product_group_code + product_num,
