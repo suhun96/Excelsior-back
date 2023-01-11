@@ -305,7 +305,7 @@ class ProductInfoView(View):
         product_group_id = input_data.get('product_group_id', None)
         warehouse_code = input_data.get('warehouse_code', None)
         company_code = input_data.get('company_code', None)
-        company_id   = input_data.get('company_id', None)
+        # company_id   = input_data.get('company_id', None)
         is_set = input_data.get('is_set', None)
         composition = input_data.get('composition', None )
         is_serial = input_data.get('is_serial', None)
@@ -346,6 +346,8 @@ class ProductInfoView(View):
                     if not Company.objects.filter(code = company_code).exists():
                         return JsonResponse({'message' : f'[{company_code}] 존재하지 않는 회사 코드입니다.'})
                     
+                    company_id = Company.objects.get(code = company_code).id
+
                     tartget_product = Product.objects.filter(product_group_id = product_group_id) 
                     
                     if tartget_product.exists():
