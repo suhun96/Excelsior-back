@@ -281,7 +281,7 @@ class SheetListView(View):
             q &= Q(company_id = company_id)
 
         
-        sheets = Sheet.objects.filter(q).order_by('date')[offset : offset+limit](
+        sheets = Sheet.objects.filter(q).order_by('date')[offset : offset+limit].values(
             'id',       
             'type',
             'user__name',
@@ -295,8 +295,8 @@ class SheetListView(View):
             'created_at',
             'updated_at'
         )
-            
-        return JsonResponse({'message' : sheets}, status = 200)
+        
+        return JsonResponse({'message' : list(sheets)}, status = 200)
 
 class InfoSheetListView(View):
     def get(self, request):
@@ -339,7 +339,7 @@ class InfoSheetListView(View):
                 'etc'
             )
 
-            return JsonResponse({'message' : list(sheet_detail) , 'length': length}, status = 200)
+            return JsonResponse({'message' : list(sheet_detail)}, status = 200)
 
         else:
             offset = int(request.GET.get('offset'))
