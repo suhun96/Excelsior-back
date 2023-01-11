@@ -365,7 +365,7 @@ class InfoSheetListView(View):
         # sheet-detail 
         product_name   = request.GET.get('product_name', None)
         warehouse_name = request.GET.get('warehouse_name', None)
-        product_group_code = request.GET.get('product_group_code', None)
+        product_group_id = request.GET.get('product_group_id', None)
         
 
         if not date_start:
@@ -374,146 +374,52 @@ class InfoSheetListView(View):
             return JsonResponse({'message' : "기준 종료 날짜 설정 오류"}, status = 403)
         
         # Sheet 필터링
-        q = Q(date__range = (date_start, date_end))
+        q = Q(sheet__date__range = (date_start, date_end))
 
-        if stock_type:
-            q &= Q(type__icontains = stock_type)
         if name:
             user_id = User.objects.get(name = name).id
-            q &= Q(user_id__exact = user_id)
+            q &= Q(sheet__user_id__exact = user_id)
+        if stock_type:
+            q2 &= Q(sheet__type = stock_type)
+        if warehouse_name:
+            warehouse_code = Warehouse.objects.get(name = warehouse_name).code
+            q2 &= Q(warehouse_code__icontains = warehouse_code)
+        if product_name:
+            product_id = Product.objects.get(name = product_name).id
+            q2 &= Q(product_id = product_id)
         if company_name:
             company_id = Company.objects.get(name = company_name).id
-            q &= Q(company_id = company_id)
+            q &= Q(sheet__company_id = company_id)
+        if product_group_id:
+            product_id_list = Product.objects.filter(product_group_id = product_group_id).values_list('id', flat = True)
+            q &= Q(product_id__in = product_id_list)
+        
+        sheet_detail = SheetComposition.objects.filter(q)[offset : offset+limit].values(
+            'id', 
+            'sheet_id',
+            'sheet__user__name',
+            'sheet__type',
+            'sheet__company_id',
+            'sheet__company_name',
+            'sheet__company_code',
+            'sheet__etc',
+            'sheet__date',
+            'sheet__related_sheet_id',
+            'sheet__created_at',
+            'product_id',
+            'product__name',
+            'product__product_code',
+            'product__barcode',
+            'unit_price',
+            'quantity',
+            'warehouse_code',
+            'location',
+            'etc'
+            )
         
         
-        sheet_ids = Sheet.objects.filter(q).values_list('id', flat= True).order_by('date')[offset : offset+limit]
 
-        # sheet_ids = Sheet.objects.filter(q).values_list('id', flat= True).order_by('date')
-        
-
-        for_list = []
-        for sheet_id in sheet_ids:
-            sheet = Sheet.objects.get(id = sheet_id)
-            user_name    = User.objects.get(id = sheet.user.id).name
-            stock_type   = sheet.type
-
-            document_num = self.generate_document_num(sheet.id, sheet.date)
-            
-            sheet_company_id = sheet.company_id
-
-            try: 
-                sheet_company_name = Company.objects.get(id = sheet.company_id).name
-            except Company.MultipleObjectsReturned:
-                sheet_company_name = ""
-
-            try: 
-                sheet_company_code = Company.objects.get(id = sheet.company_id).code
-            except Company.MultipleObjectsReturned:
-                sheet_company_code = ""
-
-            etc          = sheet.etc
-            created_at   = sheet.created_at
-            
-            # Sheet composition(detail) 필터링
-            q2 = Q(sheet_id = sheet_id)
-            
-            if warehouse_name:
-                warehouse_code = Warehouse.objects.get(name = warehouse_name).code
-                q2 &= Q(warehouse_code__icontains = warehouse_code)
-            if product_name:
-                product_id = Product.objects.get(name = product_name).id
-                q2 &= Q(product_id = product_id)
-            if product_group_code:
-                product_id_list = Product.objects.filter(productgroup_code = product_group_code).values_list('id', flat = True)
-                q2 &= Q(product_id__in = product_id_list)
-
-
-            compositions = SheetComposition.objects.filter(q2)
-           
-            for composition in compositions:
-                product = Product.objects.get(id = composition.product_id)
-                
-                try: 
-                    total = QuantityByWarehouse.objects.filter(product_id = product.id).aggregate(Sum('total_quantity'))
-                except QuantityByWarehouse.DoesNotExist:
-                    total = 0
-                
-                try:  
-                    partial_quantity = QuantityByWarehouse.objects.get(warehouse_code = composition.warehouse_code, product_id = product.id).total_quantity,
-                except QuantityByWarehouse.DoesNotExist:
-                    partial_quantity = 0
-
-                serial_codes = SerialCode.objects.filter(sheet_id = sheet_id, product_id = product.id).values_list('code', flat=True)
-
-                year    = sheet.date.year
-                month   = sheet.date.month
-                month   = str(month).zfill(2)
-                day     = sheet.date.day
-                day     = str(day).zfill(2)
-
-
-
-                if product.company_code == "" :
-                    dict = {
-                        'sheet_id'              : sheet_id,
-                        'document_num'          : document_num,
-                        'user_name'             : user_name,
-                        'type'                  : stock_type,
-                        'company_id'            : sheet_company_id,
-                        'company_name'          : sheet_company_name,
-                        'company_code'          : sheet_company_code,
-                        'etc'                   : etc,
-                        'date'                  : f"{year}-{month}-{day}",
-                        'product_code'          : product.product_code,
-                        'product_name'          : product.name,
-                        'product_group_name'    : ProductGroup.objects.get(code = product.productgroup_code).name,
-                        'barcode'               : product.barcode,
-                        'price'                 : composition.unit_price,
-                        'quantity'              : composition.quantity,
-                        'total_quantity'        : total['total_quantity__sum'],
-                        'warehouse_code'        : composition.warehouse_code,
-                        'warehouse_name'        : Warehouse.objects.get(code = composition.warehouse_code).name,
-                        'partial_quantity'      : partial_quantity,
-                        'location'              : composition.location,
-                        'serial_codes'          : list(serial_codes),
-                        'detail_etc'            : composition.etc,
-                        'created_at'            : sheet.created_at,
-                        'updated_at'            : sheet.updated_at
-
-                    }
-                    for_list.append(dict) 
-                
-                else:
-                    dict = {
-                        'sheet_id'              : sheet_id,
-                        'document_num'          : document_num,
-                        'user_name'             : user_name,
-                        'type'                  : stock_type,
-                        'company_id'            : sheet_company_id,
-                        'company_name'          : sheet_company_name,
-                        'company_code'          : sheet_company_code,
-                        'etc'                   : etc,
-                        'date'                  : f"{year}-{month}-{day}",
-                        'product_code'          : product.product_code,
-                        'product_name'          : product.name,
-                        'product_group_name'    : ProductGroup.objects.get(code = product.productgroup_code).name,
-                        'barcode'               : product.barcode,
-                        'price'                 : composition.unit_price,
-                        'quantity'              : composition.quantity,
-                        'total_quantity'        : total['total_quantity__sum'],
-                        'warehouse_code'        : composition.warehouse_code,
-                        'warehouse_name'        : Warehouse.objects.get(code = composition.warehouse_code).name,
-                        'partial_quantity'      : partial_quantity,
-                        'location'              : composition.location,
-                        'serial_codes'          : list(serial_codes),
-                        'detail_etc'            : composition.etc,
-                        'created_at'            : sheet.created_at,
-                        'updated_at'            : sheet.updated_at   
-                    }
-                    for_list.append(dict)
-
-
-        return JsonResponse({'message' : for_list, 'length': length}, status = 200)
+        return JsonResponse({'message' : list(sheet_detail) , 'length': length}, status = 200)
 
 class ClickSheetView(View):
     def get(self, request):

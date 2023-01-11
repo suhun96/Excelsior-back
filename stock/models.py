@@ -9,7 +9,7 @@ from companies.models import *
 class Sheet(models.Model):
     user       = models.ForeignKey(User, on_delete= models.CASCADE)
     type       = models.CharField(max_length= 30)
-    company_id = models.IntegerField(default =1 )
+    company    = models.ForeignKey(Company, on_delete= models.CASCADE, default= 1)
     status     = models.BooleanField(default= True)
     etc        = models.CharField(max_length= 500)
     date       = models.DateField(default= datetime.now())
@@ -19,6 +19,18 @@ class Sheet(models.Model):
 
     class Meta:
         db_table = 'sheet'
+
+class SheetComposition(models.Model):
+    sheet      = models.ForeignKey(Sheet, on_delete = models.CASCADE)
+    product    = models.ForeignKey(Product, on_delete = models.CASCADE)
+    unit_price = models.IntegerField(default = 0)
+    quantity   = models.IntegerField(default = 0)
+    warehouse_code = models.CharField(max_length = 20)
+    location   = models.CharField(max_length = 300) 
+    etc        = models.CharField(max_length = 300)
+
+    class Meta:
+        db_table = 'sheet_detail'
 
 class SheetLog(models.Model):
     sheet_id   = models.IntegerField()
@@ -43,18 +55,6 @@ class SheetCompositionLog(models.Model):
 
     class Meta:
         db_table = 'sheet_log_composition'
-
-class SheetComposition(models.Model):
-    sheet      = models.ForeignKey(Sheet, on_delete = models.CASCADE)
-    product    = models.ForeignKey(Product, on_delete = models.CASCADE)
-    unit_price = models.IntegerField(default = 0)
-    quantity   = models.IntegerField(default = 0)
-    warehouse_code = models.CharField(max_length = 20)
-    location   = models.CharField(max_length = 300) 
-    etc        = models.CharField(max_length = 300)
-
-    class Meta:
-        db_table = 'sheet_detail'
 
 class StockByWarehouse(models.Model):
     sheet = models.ForeignKey(Sheet, on_delete = models.CASCADE)
