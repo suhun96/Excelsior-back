@@ -192,6 +192,8 @@ class ModifySheetView(View):
                 tartget_sheet = Sheet.objects.get(id = sheet_id)
                 tartget_sheet.updated_at = datetime.now()
                 tartget_sheet.save()
+                # 업데이트 문서 번호
+                generate_document_num(tartget_sheet.id)
                 # 수정된 sheet_detail 생성
                 modify_sheet_detail(sheet_id, modify_data['products'])
                 # 수정된 sheet_detail 수량 반영
@@ -877,6 +879,26 @@ class CreateSerialCodeValueView(View):
         except KeyError:
             return JsonResponse({'message' : '잘못된 key 값을 입력하셨습니다.'}, status = 403)
 
+# Serial Code - 조회
+class InquireSerialCodeView(View):
+    def get(self, request):
+        target_sheet_id = request.GET.get('sheet_id', None)
+        target_product_id = request.GET.get('product_id', None)
+        
+        try:
+            if not target_sheet_id:
+                raise KeyError
+            if not target_product_id:
+                raise KeyError
+
+            serial_code_list = list(SerialCode.objects.filter(sheet_id = target_sheet_id, product_id = target_product_id).values_list('code', flat= True))
+
+            return JsonResponse({'message' : serial_code_list}, status = 200)
+        except KeyError:
+            return JsonResponse({'message' : '입력해주신 값에 오류가 있습니다.[ sheet_id, product_id ]'}, status = 403)
+        except SerialCode.DoesNotExist:
+            return JsonResponse({'message' : '검색 조건에 맞는 시리얼 코드가 없습니다.'}, status = 403)    
+
 ### 완성 못시킨 코드 ###
 class InquireSerialCodeValueView(View):
     def get(self, request):
@@ -1088,4 +1110,4 @@ class GenerateSetProductView(View):
         return JsonResponse({'message' : '세트 생산이 완료되었습니다.', 'generate_sheet_id' : generate_sheet_id}, status = 200)
         # except Exception:
         #     return JsonResponse({'message' : '세트 생산이 실패했습니다.'}, status = 403)
-        
+       
