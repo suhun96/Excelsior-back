@@ -329,8 +329,6 @@ class SheetListView(View):
 
 class InfoSheetListView(View):
     def get(self, request):
-        offset = int(request.GET.get('offset'))
-        limit  = int(request.GET.get('limit'))
 
         length = SheetComposition.objects.all().count()
         
@@ -375,6 +373,9 @@ class InfoSheetListView(View):
             return JsonResponse({'message' : list(sheet_detail) , 'length': length}, status = 200)
 
         else:
+            offset = int(request.GET.get('offset'))
+            limit  = int(request.GET.get('limit'))
+
             if not date_start:
                 return JsonResponse({'message' : "기준 시작 날짜 설정 오류"}, status = 403)
             if not date_end:
