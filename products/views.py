@@ -254,7 +254,11 @@ class ProductInfoView(View):
         is_set = input_data.get('is_set', None)
         composition = input_data.get('composition', None )
         is_serial = input_data.get('is_serial', None)
+<<<<<<< HEAD
         l
+=======
+        labor = input_data.get('labor', None)
+>>>>>>> 47cf394b29407c1b89b38f13bcd2a0b287f418d4
 
 
         check_price    = input_data.get('price', None)
@@ -271,7 +275,6 @@ class ProductInfoView(View):
         else:
             if not ProductGroup.objects.filter(id = product_group_id).exists():
                 return JsonResponse({'message' : '존재하지 않는 제품그룹 코드입니다.'}, status = 403)
-        
         if warehouse_code:
             if not Warehouse.objects.filter(code = input_data['warehouse_code']).exists():
                 return JsonResponse({'message' : '존재하지 않는 창고 코드입니다.'}, status = 403)
@@ -308,7 +311,8 @@ class ProductInfoView(View):
                     if is_set == "True":
                         CREATE_SET = {
                             'is_set' : True,
-                            'is_serial': True,      
+                            'is_serial': True, 
+                            'labor' : labor,     
                             'product_group_id' : product_group_id , 
                             'company_id' : company_id, 
                             'name' : name,
@@ -391,6 +395,7 @@ class ProductInfoView(View):
                         CREATE_SET = {
                             'is_set' : True,  
                             'is_serial' : True,
+                            'labor' : labor,   
                             'product_group_id' : product_group_id,  
                             'name' : name,
                             'product_num' : product_num,
