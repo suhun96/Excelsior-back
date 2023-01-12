@@ -199,7 +199,7 @@ class ModifySheetView(View):
                     return JsonResponse({'message' : 'serial code가 입력된 sheet 입니다. 업데이트 내역을 확인해 주세요.'}, status = 200)
                 else:
                     return JsonResponse({'message' : '업데이트 내역을 확인해 주세요~!!'}, status = 200)
-        except:
+        except KeyError:
             return JsonResponse({'message' : "예외 사항이 발생했습니다."}, status = 403)
 
 class DeleteSheetView(View):

@@ -20,12 +20,12 @@ def register_checker(input_data):
     input_products = input_data.get('products', None)
     input_company = input_data.get('company_id')
 
-    try:
-        if Company.objects.filter(id = input_company).exists() == False:
-            raise Exception({'message' : '존재하지 않는 회사입니다.'})
-        
+    try:        
         with transaction.atomic():
             if input_data['type'] == 'inbound':
+                if Company.objects.filter(id = input_company).exists() == False:
+                    raise Exception({'message' : '존재하지 않는 회사입니다.'})
+                
                 for product in input_products:
                     product_id = Product.objects.get(product_code =product['product_code']).id
                     ProductPrice.objects.update_or_create(
@@ -37,6 +37,9 @@ def register_checker(input_data):
                     )
                     
             elif input_data['type'] == 'outbound':
+                if Company.objects.filter(id = input_company).exists() == False:
+                    raise Exception({'message' : '존재하지 않는 회사입니다.'})
+
                 for product in input_products:
                     product_id = Product.objects.get(product_code =product['product_code']).id
                     ProductPrice.objects.update_or_create(
@@ -46,6 +49,9 @@ def register_checker(input_data):
                             'outbound_price' : product['price']
                         }
                     )
+            
+            elif input_data['type'] == 'new':
+                pass
             
     except:
         raise Exception({'message' : 'register_checker를 생성하는중 에러가 발생했습니다.'})
