@@ -254,13 +254,16 @@ def modify_sheet_detail(sheet_id, products):
             if "modified" in product:
                 SerialCode.objects.filter(product_id = product_id, sheet_id = sheet_id).delete()
                 if 'serial_code' in product:
-                    for serial_code in product['serial_code']:
-                        # 입/출고 구성품의 serial_code 연결
-                        SerialCode.objects.create(
-                            sheet_id = sheet_id,
-                            product_id = product_id,
-                            code = serial_code
-                        )
+                    if product['serial_code'] == None:
+                        pass    
+                    else:
+                        for serial_code in product['serial_code']:
+                            # 입/출고 구성품의 serial_code 연결
+                            SerialCode.objects.create(
+                                sheet_id = sheet_id,
+                                product_id = product_id,
+                                code = serial_code
+                            )
     except:
         raise Exception({'message' : 'create_sheet_detail 사용하는중 에러가 발생했습니다.2'})
 
