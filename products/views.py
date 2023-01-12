@@ -333,7 +333,8 @@ class ProductInfoView(View):
 
                         if check_price and check_quantity:
                             self.create_sheet_new(input_data, user, new_product)
-                        
+                            register_checker(input_data)
+
                         # 새로운 세트 제품의 구성품 등록
                         for id, quantity in composition.items():
                             ProductComposition.objects.create(
@@ -371,7 +372,7 @@ class ProductInfoView(View):
                         
                         if check_price and check_quantity:
                             self.create_sheet_new(input_data, user, new_product)
-
+                            register_checker(input_data)
                         return JsonResponse({'message' : '[Case 2] 새로운 일반 상품이 등록되었습니다'}, status = 200) 
                     
                 # 회사코드가 없으면 
@@ -413,7 +414,7 @@ class ProductInfoView(View):
 
                         if check_price and check_quantity:
                             self.create_sheet_new(input_data, user, new_product)
-
+                            register_checker(input_data)
                         # 새로운 세트 제품의 구성품 등록
                         for id, quantity in composition.items():
                             ProductComposition.objects.create(
@@ -450,7 +451,7 @@ class ProductInfoView(View):
                         
                         if check_price and check_quantity:
                             self.create_sheet_new(input_data, user, new_product)
-                        
+                            register_checker(input_data)
                         return JsonResponse({'message' : '[Case 4] 새로운 일반 상품이 등록되었습니다.'}, status = 200)
 
         except KeyError:
