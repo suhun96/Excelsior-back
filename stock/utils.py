@@ -395,6 +395,12 @@ def rollback_sheet_detail(sheet_id):
                         product_id = product_id,
                         warehouse_code = warehouse_code,
                         defaults={'total_quantity' : stock_quantity})
+
+            if target_sheet.type == 'used':
+                pass
+
+            if target_sheet.type == 'generate':
+                pass
     except:
         raise Exception({'message' : 'rollback_quantity 사용하는중 에러가 발생했습니다.'})
 
@@ -599,7 +605,51 @@ def generate_document_num(sheet_id):
     except Exception:
         raise ('문서번호 생성중 오류 발생.')        
 
-def modify_sheet_data(sheet_id, modify_user):
+def modify_sheet_data(sheet_id, modify_user, modify_data):
     UPDATE_SET = {'user' : modify_user}
 
-    update_opt_1 = ['company_']
+    update_opt_1 = ['company_id', 'etc', 'date']
+
+    for key, value in modify_data.items():
+        if key == 'date':
+            generate_document_num(sheet_id)
+        if key in update_opt_1:
+            UPDATE_SET.update({ key : value })
+
+    Sheet.objects.filter(id = sheet_id).update(**UPDATE_SET)
+
+    tartget_sheet = Sheet.objects.get(id = sheet_id)
+    tartget_sheet.updated_at = datetime.now()
+    tartget_sheet.save()
+
+def modify_sheet_detail_2(sheet_id, products):
+    try:
+        for product in products:
+            product_code = product['product_code']
+            product_id   = Product.objects.get(product_code =product['product_code']).id
+
+            if Product.objects.filter(product_code = product_code).exists() == False:
+                raise Exception({'message' : f'{product_code}는 존재하지 않습니다.'}) 
+
+            target_sheet_detail = SheetComposition.objects.get(sheet_id = sheet_id, product_id = product_id)
+            
+            if 'unit_price' in product:
+                target_sheet_detail.unit_price = product['unit_price']
+                target_sheet_detail.save()
+            if 'etc' in product:
+                target_sheet_detail.unit_price = product['etc']
+                target_sheet_detail.save()
+
+            if "modified" in product:
+                SerialCode.objects.filter(product_id = product_id, sheet_id = sheet_id).delete()
+                if 'serial_code' in product:
+                    for serial_code in product['serial_code']:
+                        # 입/출고 구성품의 serial_code 연결
+                        SerialCode.objects.create(
+                            sheet_id = sheet_id,
+                            product_id = product_id,
+                            code = serial_code
+                        )
+    except:
+        raise Exception({'message' : 'create_sheet_detail 사용하는중 에러가 발생했습니다.(check-point3)'})
+
