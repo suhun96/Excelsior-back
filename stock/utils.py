@@ -50,7 +50,6 @@ def register_checker(input_data):
     except:
         raise Exception({'message' : 'register_checker를 생성하는중 에러가 발생했습니다.'})
 
-
 def create_sheet(input_data, user):
     user = user
     input_data = input_data
