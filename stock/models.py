@@ -14,7 +14,7 @@ class Sheet(models.Model):
     etc        = models.CharField(max_length= 500)
     date       = models.DateField(default= datetime.now())
     document_num = models.CharField(max_length= 100, default= 'fix')
-    related_sheet_id = models.IntegerField(default= 1)
+    related_sheet_id = models.IntegerField()
     created_at = models.DateTimeField(auto_now_add= True)
     updated_at = models.DateTimeField(auto_now= True)
 

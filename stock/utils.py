@@ -329,6 +329,72 @@ def rollback_sheet_detail(sheet_id):
                         product_id = product_id,
                         warehouse_code = warehouse_code,
                         defaults={'total_quantity' : stock_quantity})
+            
+            if target_sheet.type == 'return':
+                target_details = SheetComposition.objects.filter(sheet_id = sheet_id).values(
+                        'product',
+                        'unit_price',
+                        'quantity',
+                        'warehouse_code'
+                    )
+
+                for detail in target_details:
+                    product_id     = detail.get('product')
+                    warehouse_code = detail.get('warehouse_code')
+                    quantity       = detail.get('quantity') 
+                    unit_price     = detail.get('unit_price')
+                    
+                    stock = StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id)
+                    
+                    # 반품일 경우 (-)
+                    before_quantity = stock.last().stock_quantity
+                    stock_quantity  = before_quantity - int(quantity)
+                    
+                    StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id).create(
+                        sheet_id = sheet_id,
+                        stock_quantity = stock_quantity,
+                        product_id = product_id,
+                        warehouse_code = warehouse_code )
+                    
+                    mam_delete_sheet(product_id, unit_price, quantity, stock_quantity)
+
+                    QuantityByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id).update_or_create(
+                        product_id = product_id,
+                        warehouse_code = warehouse_code,
+                        defaults={'total_quantity' : stock_quantity})
+
+            if target_sheet.type == 'new':
+                target_details = SheetComposition.objects.filter(sheet_id = sheet_id).values(
+                        'product',
+                        'unit_price',
+                        'quantity',
+                        'warehouse_code'
+                    )
+
+                for detail in target_details:
+                    product_id     = detail.get('product')
+                    warehouse_code = detail.get('warehouse_code')
+                    quantity       = detail.get('quantity') 
+                    unit_price     = detail.get('unit_price')
+                    
+                    stock = StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id)
+                    
+                    # 반품일 경우 (-)
+                    before_quantity = stock.last().stock_quantity
+                    stock_quantity  = before_quantity - int(quantity)
+                    
+                    StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id).create(
+                        sheet_id = sheet_id,
+                        stock_quantity = stock_quantity,
+                        product_id = product_id,
+                        warehouse_code = warehouse_code )
+                    
+                    mam_delete_sheet(product_id, unit_price, quantity, stock_quantity)
+
+                    QuantityByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id).update_or_create(
+                        product_id = product_id,
+                        warehouse_code = warehouse_code,
+                        defaults={'total_quantity' : stock_quantity})
     except:
         raise Exception({'message' : 'rollback_quantity 사용하는중 에러가 발생했습니다.'})
 
@@ -513,6 +579,8 @@ def generate_document_num(sheet_id):
         stock_type = '초도입고'
     if stock_type == 'used':
         stock_type = '사용'
+    if stock_type == 'return':
+        stock_type = '사용'
 
     check_sheet_date = Sheet.objects.filter(date = target_sheet.date)
 
@@ -530,3 +598,8 @@ def generate_document_num(sheet_id):
             target_sheet.save()
     except Exception:
         raise ('문서번호 생성중 오류 발생.')        
+
+def modify_sheet_data(sheet_id, modify_user):
+    UPDATE_SET = {'user' : modify_user}
+
+    update_opt_1 = ['company_']
