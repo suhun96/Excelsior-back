@@ -199,7 +199,7 @@ class ModifySheetView(View):
                     return JsonResponse({'message' : 'serial code가 입력된 sheet 입니다. 업데이트 내역을 확인해 주세요.'}, status = 200)
                 else:
                     return JsonResponse({'message' : '업데이트 내역을 확인해 주세요~!!'}, status = 200)
-        except KeyError:
+        except:
             return JsonResponse({'message' : "예외 사항이 발생했습니다."}, status = 403)
 
 class DeleteSheetView(View):
@@ -958,19 +958,30 @@ class GenerateSetProductView(View):
 
                 if set_product.is_set == False:
                     return JsonResponse({'message' : f'이 상품은 세트가 아닙니다. 생산 불가능 합니다.'}, status = 403) 
-                # ### 이동 평균법으로 가격을 가져오자.
+                ### 이동 평균법으로 가격을 가져오자.
 
-                # component_list = ProductComposition.objects.filter(id = set_product.id).values_list('composition_product_id', flat= True) 
+                component_list = ProductComposition.objects.filter(id = set_product.id).values_list('composition_product_id', flat= True) 
                 
-                # for component_id in component_list:
-                #     mam_price = MovingAverageMethod.objects.get(p)
+                generate_set_product_price = 0
+                for component_id in component_list:
+                    mam_price = MovingAverageMethod.objects.get(product_id = component_id)
+
+                    if mam_price.custom_price == 0:
+                        target_price = mam_price.average_price
+                    else:
+                        target_price = mam_price.custom_price
+                    generate_set_product_price += target_price
+                
+                labor_price = set_product.labor
+                total_price = generate_set_product_price + labor_price 
+
 
                 generate_sheet_composition = SheetComposition.objects.create(
                     sheet_id        = generate_sheet.id,
                     product_id      = set_product.id,
                     quantity        = manufacture_quantity, 
                     warehouse_code  = warehouse_code,
-                    unit_price      = 123456,
+                    unit_price      = total_price,
                     etc             = f'세트를 생산했습니다.{generate_sheet_id}'
                 )
                 
@@ -1018,14 +1029,23 @@ class GenerateSetProductView(View):
 
                 for component in components:
                     component_id = Product.objects.get(product_code = component.get('product_code')).id
+
+                    check_price = MovingAverageMethod.objects.get(product_id = component_id)
+
+                    if check_price.custom_price == 0:
+                        unit_price = check_price.average_price
+                    else:
+                        unit_price = check_price.custom_price
+
                     SheetComposition.objects.create(
                         sheet_id        = used_sheet.id,
                         product_id      = component_id,
                         quantity        = component.get('quantity'), 
                         warehouse_code  = component.get('warehouse_code'),
-                        unit_price      = 0,
+                        unit_price      = unit_price,
                         etc             = '세트 생산으로 인한 소진'
                     )
+                
                     # 시리얼 코드 체크
                     if 'serials' in component:
                         count_serial_code(input_data, component, used_sheet)
