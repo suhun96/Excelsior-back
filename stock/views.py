@@ -174,29 +174,25 @@ class ModifySheetView(View):
                 create_sheet_logs(sheet_id, modify_user)
                 # sheet_detail 롤백 [입고 = (-), 출고 = (+)]
                 rollback_sheet_detail(sheet_id)
-                # sheet_detail 삭제
-                SheetComposition.objects.filter(sheet_id = sheet_id).delete()
-
+                
                 # sheet 수정    
-                UPDATE_SET = {'user' : modify_user}
+                modify_sheet_data(sheet_id, modify_user, modify_data)
 
-                update_options = ['company_id', 'etc', 'date']
+                target_sheet_type = Sheet.objects.get(id = sheet_id).type 
+                
+                if target_sheet_type in ['inbound', 'outbound', 'return', 'new']:
+                    # sheet_detail 삭제
+                    SheetComposition.objects.filter(sheet_id = sheet_id).delete()
+                    # 수정된 sheet_detail 생성
+                    modify_sheet_detail(sheet_id, modify_data['products'])
+                    # 수정된 sheet_detail 수량 반영
+                    reflecte_sheet_detail(sheet_id)
+                    # 수정된 가격 반영
+                    register_checker(modify_data)
 
-                for key, value in modify_data.items():
-                    if key == 'date':
-                        generate_document_num(sheet_id)
-                    if key in update_options:
-                        UPDATE_SET.update({ key : value })
-                    
-
-                Sheet.objects.filter(id = sheet_id).update(**UPDATE_SET)
-
-                # 수정된 sheet_detail 생성
-                modify_sheet_detail(sheet_id, modify_data['products'])
-                # 수정된 sheet_detail 수량 반영
-                reflecte_sheet_detail(sheet_id)
-                # 수정된 가격 반영
-                register_checker(modify_data)
+                else:
+                    modify_sheet_detail_2(sheet_id, modify_data['products'])
+                    register_checker(modify_data)
 
                 check_serial_code = self.check_serial_code(sheet_id) 
                 
