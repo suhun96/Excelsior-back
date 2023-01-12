@@ -36,7 +36,7 @@ def register_checker(input_data):
                             }
                         )
                         
-                if input_data['type'] == 'outbound':
+                elif input_data['type'] == 'outbound':
                     for product in input_products:
                         product_id = Product.objects.get(product_code =product['product_code']).id
                         ProductPrice.objects.update_or_create(
@@ -46,6 +46,7 @@ def register_checker(input_data):
                                 'outbound_price' : product['price']
                             }
                         )
+                
         except:
             raise Exception({'message' : 'register_checker를 생성하는중 에러가 발생했습니다.'})
 
@@ -582,7 +583,7 @@ def generate_document_num(sheet_id):
     if stock_type == 'generate':
         stock_type = '생산'
     if stock_type == 'new':
-        stock_type = '초도입고'
+        stock_type = '신규'
     if stock_type == 'used':
         stock_type = '사용'
     if stock_type == 'return':
