@@ -413,7 +413,7 @@ class ClickSheetView(View):
                 dict = {
                     'product_code'          : product.product_code,
                     'product_name'          : product.name,
-                    'product_group_name'    : ProductGroup.objects.get(code = product.productgroup_code).name,
+                    'product_group_name'    : product.product_group__name,
                     'barcode'               : product.barcode,
                     'unit_price'            : composition.unit_price,
                     'quantity'              : composition.quantity,
@@ -429,7 +429,7 @@ class ClickSheetView(View):
                 dict = {
                     'product_code'          : product.product_code,
                     'product_name'          : product.name,
-                    'product_group_name'    : ProductGroup.objects.get(code = product.productgroup_code).name,
+                    'product_group_name'    : product.product_group__name,
                     'barcode'               : product.barcode,
                     'company_id'            : product.company.id,
                     'company_name'          : product.company.name,

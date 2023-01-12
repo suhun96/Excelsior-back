@@ -98,13 +98,16 @@ def create_sheet(input_data, user):
                 )
 
                 if 'serial_code' in product:
-                    for serial_code in product['serial_code']:
-                        # 입/출고 구성품의 serial_code 연결
-                        SerialCode.objects.create(
-                            sheet_id = new_sheet.id,
-                            product_id = product_id,
-                            code = serial_code
-                        )
+                    if product['serial_code'] == None:
+                        pass    
+                    else:
+                        for serial_code in product['serial_code']:
+                            # 입/출고 구성품의 serial_code 연결
+                            SerialCode.objects.create(
+                                sheet_id = new_sheet.id,
+                                product_id = product_id,
+                                code = serial_code
+                            )
         
         return new_sheet
     except:
