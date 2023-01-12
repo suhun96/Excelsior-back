@@ -220,6 +220,7 @@ class ProductInfoView(View):
                 'id',
                 'is_set',
                 'is_serial',
+                'labor',
                 'company__code',
                 'company__name',
                 'product_group__code',

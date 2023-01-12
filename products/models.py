@@ -33,6 +33,7 @@ class ProductEtcDesc(models.Model):
 class Product(models.Model):
     is_set            = models.BooleanField(default=False)
     is_serial         = models.BooleanField(default=False)
+    labor             = models.IntegerField(default=0, null=True)
     company           = models.ForeignKey(Company, on_delete= models.CASCADE, null= True) 
     product_group     = models.ForeignKey(ProductGroup, on_delete= models.CASCADE)
     product_num       = models.CharField(max_length = 10, blank = False)
