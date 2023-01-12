@@ -183,17 +183,14 @@ class ModifySheetView(View):
                 update_options = ['company_id', 'etc', 'date']
 
                 for key, value in modify_data.items():
+                    if key == 'date':
+                        generate_document_num(sheet_id)
                     if key in update_options:
                         UPDATE_SET.update({ key : value })
+                    
 
                 Sheet.objects.filter(id = sheet_id).update(**UPDATE_SET)
 
-                # 업데이트 날짜 적용
-                tartget_sheet = Sheet.objects.get(id = sheet_id)
-                tartget_sheet.updated_at = datetime.now()
-                tartget_sheet.save()
-                # 업데이트 문서 번호
-                generate_document_num(tartget_sheet.id)
                 # 수정된 sheet_detail 생성
                 modify_sheet_detail(sheet_id, modify_data['products'])
                 # 수정된 sheet_detail 수량 반영
@@ -673,10 +670,8 @@ class StockTotalView(View):
         product_code    = request.GET.get('product_code', None)
         keyword         = request.GET.get('keyword', None)
         barcode         = request.GET.get('barcode', None)
-        
         type            = request.GET.get('type', None)
         company_id      = request.GET.get('company_id', None)
-
         warehouse_code  = request.GET.get('warehouse_code', None)
 
         q = Q()
@@ -728,6 +723,7 @@ class StockTotalView(View):
                     except QuantityByWarehouse.DoesNotExist:
                         partial_quantity = 0
                     dict = {
+                        'is_serial'         : product.is_serial,
                         'product_name'      : product.name,
                         'product_code'      : product.product_code,
                         'warehouse_name'    : Warehouse.objects.get(code =product.warehouse_code).name,
@@ -745,6 +741,7 @@ class StockTotalView(View):
                         partial_quantity = 0
                     
                     dict = {
+                        'is_serial'         : product.is_serial,
                         'product_name'      : product.name,
                         'product_code'      : product.product_code,
                         'warehouse_name'    : Warehouse.objects.get(code = warehouse_code).name,
