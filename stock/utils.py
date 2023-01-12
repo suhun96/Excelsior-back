@@ -503,6 +503,7 @@ def mam_create_sheet(product_id, unit_price, quantity, stock_quantity):
         new_MAM = MovingAverageMethod.objects.create(
             product_id = product_id,
             average_price = unit_price,
+            custom_price = 0,
             total_quantity = total_quantity
         )
     else:

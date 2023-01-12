@@ -254,11 +254,7 @@ class ProductInfoView(View):
         is_set = input_data.get('is_set', None)
         composition = input_data.get('composition', None )
         is_serial = input_data.get('is_serial', None)
-<<<<<<< HEAD
-        l
-=======
         labor = input_data.get('labor', None)
->>>>>>> 47cf394b29407c1b89b38f13bcd2a0b287f418d4
 
 
         check_price    = input_data.get('price', None)
