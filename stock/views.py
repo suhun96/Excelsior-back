@@ -274,7 +274,11 @@ class SheetListView(View):
             q &= Q(company_id = company_id)
 
         
+<<<<<<< HEAD
         sheets = Sheet.objects.filter(q).order_by('-date','-id')[offset : offset+limit].values(
+=======
+        sheets = Sheet.objects.filter(q).order_by('-date', '-id')[offset : offset+limit].values(
+>>>>>>> 62460878e0ee96d3b4eb0ad7223386edce0c4850
             'id',       
             'type',
             'user__name',
@@ -362,7 +366,7 @@ class InfoSheetListView(View):
                 product_id_list = Product.objects.filter(product_group_id = product_group_id).values_list('id', flat = True)
                 q &= Q(product_id__in = product_id_list)
             
-            sheet_detail = SheetComposition.objects.filter(q)[offset : offset+limit].values(
+            sheet_detail = SheetComposition.objects.filter(q).order_by('-sheet__date', '-id')[offset : offset+limit].values(
                 'id', 
                 'sheet_id',
                 'sheet__document_num',
@@ -548,6 +552,8 @@ class SerialCodeCheckView(View):
             total = 0
 
         result = {
+            'sheet_id'              : sheet.id,
+            'related_sheet_id'      : sheet.related_sheet_id,
             'document_num'          : sheet.document_num,
             'user_name'             : sheet.user.name,
             'type'                  : sheet.type,
