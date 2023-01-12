@@ -37,7 +37,7 @@ class SheetLog(models.Model):
     sheet_id   = models.IntegerField()
     user_name  = models.CharField(max_length=50)
     type       = models.CharField(max_length= 30)
-    company    = models.ForeignKey(Company, on_delete= models.CASCADE)
+    company    = models.ForeignKey(Company, on_delete= models.CASCADE, null= True)
     status     = models.BooleanField(default= True)
     etc        = models.CharField(max_length= 500)
     created_at = models.DateTimeField(auto_now_add= True)
