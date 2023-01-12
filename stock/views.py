@@ -274,7 +274,7 @@ class SheetListView(View):
             q &= Q(company_id = company_id)
 
         
-        sheets = Sheet.objects.filter(q).order_by('date')[offset : offset+limit].values(
+        sheets = Sheet.objects.filter(q).order_by('-date', '-id')[offset : offset+limit].values(
             'id',       
             'type',
             'user__name',
@@ -362,7 +362,7 @@ class InfoSheetListView(View):
                 product_id_list = Product.objects.filter(product_group_id = product_group_id).values_list('id', flat = True)
                 q &= Q(product_id__in = product_id_list)
             
-            sheet_detail = SheetComposition.objects.filter(q)[offset : offset+limit].values(
+            sheet_detail = SheetComposition.objects.filter(q).order_by('-sheet__date', '-id')[offset : offset+limit].values(
                 'id', 
                 'sheet_id',
                 'sheet__document_num',

@@ -248,6 +248,7 @@ class ProductInfoView(View):
         input_data = json.loads(request.body)
         name = input_data.get('name', None)
         product_group_id = input_data.get('product_group_id', None)
+        product_group_code = input_data.get('product_group_code', None)
         warehouse_code = input_data.get('warehouse_code', None)
         company_code = input_data.get('company_code', None)
         # company_id   = input_data.get('company_id', None)
@@ -297,7 +298,6 @@ class ProductInfoView(View):
                     
                     if tartget_product.exists():
                         latest_product = tartget_product.latest('created_at')
-                        product_group_code = latest_product.product_group.code
                         product_num = latest_product.product_num
                         change_int_num = int(product_num) + 1
                         product_num = str(change_int_num).zfill(3)           
@@ -380,7 +380,6 @@ class ProductInfoView(View):
 
                     if tartget_product.exists():
                         latest_product = tartget_product.latest('created_at')
-                        product_group_code = latest_product.product_group.code
                         product_num = latest_product.product_num
                         change_int_num = int(product_num) + 1
                         product_num = str(change_int_num).zfill(3)                 
