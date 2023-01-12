@@ -574,51 +574,26 @@ class SerialCodeCheckView(View):
         
         except QuantityByWarehouse.DoesNotExist:
             partial_quantity = 0
-        except QuantityByWarehouse.DoesNotExist:
             total = 0
 
-        document_num = self.generate_document_num(sheet.id, sheet.created_at)
-
-        if product.company_code == "" :
-            result = {
-                'document_num'          : document_num,
-                'user_name'             : sheet.user.name,
-                'type'                  : sheet.type,
-                'company_name'          : Company.objects.get(id = sheet.company_id).name,
-                'etc'                   : sheet.etc,
-                'created_at'            : sheet.created_at,
-                'product_code'          : product.product_code,
-                'product_name'          : product.name,
-                'product_group_name'    : ProductGroup.objects.get(code = product.productgroup_code).name,
-                'barcode'               : product.barcode,
-                'unit_price'            : sheet_composition.unit_price,
-                'quantity'              : sheet_composition.quantity,
-                'total_quantity'        : total['total_quantity__sum'],
-                'warehouse_name'        : Warehouse.objects.get(code = sheet_composition.warehouse_code).name,
-                'partial_quantity'      : partial_quantity,
-                'location'              : sheet_composition.location,
-                'etc'                   : sheet_composition.etc   
-                } 
-        else:
-            result = {
-                'document_num'          : document_num,
-                'user'                  : sheet.user.name,
-                'type'                  : sheet.type,
-                'company_name'          : Company.objects.get(id = sheet.company_id).name,
-                'etc'                   : sheet.etc,
-                'product_code'          : product.product_code,
-                'product_name'          : product.name,
-                'product_group_name'    : ProductGroup.objects.get(code = product.productgroup_code).name,
-                'barcode'               : product.barcode,
-                'company_name'          : Company.objects.get(code = product.company_code).name,
-                'unit_price'            : sheet_composition.unit_price,
-                'quantity'              : sheet_composition.quantity,
-                'total_quantity'        : total['total_quantity__sum'],
-                'warehouse_name'        : Warehouse.objects.get(code = sheet_composition.warehouse_code).name,
-                'partial_quantity'      : partial_quantity,
-                'location'              : sheet_composition.location,
-                'etc'                   : sheet_composition.etc   
-            }
+        result = {
+            'document_num'          : sheet.document_num,
+            'user_name'             : sheet.user.name,
+            'type'                  : sheet.type,
+            'company_name'          : sheet.company.name,
+            'etc'                   : sheet.etc,
+            'created_at'            : sheet.created_at,
+            'product_code'          : product.product_code,
+            'product_name'          : product.name,
+            'product_group_name'    : product.product_group.name,
+            'barcode'               : product.barcode,
+            'unit_price'            : sheet_composition.unit_price,
+            'quantity'              : sheet_composition.quantity,
+            'total_quantity'        : total['total_quantity__sum'],
+            'partial_quantity'      : partial_quantity,
+            'location'              : sheet_composition.location,
+            'etc'                   : sheet_composition.etc   
+            } 
         
         return result
 
