@@ -274,7 +274,7 @@ class SheetListView(View):
             q &= Q(company_id = company_id)
 
         
-        sheets = Sheet.objects.filter(q).order_by('date')[offset : offset+limit].values(
+        sheets = Sheet.objects.filter(q).order_by('-date','-id')[offset : offset+limit].values(
             'id',       
             'type',
             'user__name',
