@@ -901,6 +901,7 @@ class CheckSetProductView(View):
                 })
 
             conponents_dict = {
+                'product_group_name': product_info.product_group.name,
                 'product_name'      : product_info.name,
                 'product_code'      : product_info.product_code,
                 'WBQ'               : WBQ_dict,
@@ -1087,5 +1088,5 @@ class GenerateSetProductView(View):
             self.bind_used_generate_sheed(generate_sheet_id, used_sheet_id)
             
             return JsonResponse({'message' : '세트 생산이 완료되었습니다.', 'generate_sheet_id' : generate_sheet_id}, status = 200)
-        except Exception:
+        except KeyError:
             return JsonResponse({'message' : '세트 생산이 실패했습니다.'}, status = 403)
