@@ -552,6 +552,8 @@ class SerialCodeCheckView(View):
             total = 0
 
         result = {
+            'sheet_id'              : sheet.id,
+            'related_sheet_id'      : sheet.related_sheet_id,
             'document_num'          : sheet.document_num,
             'user_name'             : sheet.user.name,
             'type'                  : sheet.type,
