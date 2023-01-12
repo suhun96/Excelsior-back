@@ -140,8 +140,6 @@ class ProductInfoView(View):
                     etc  = '초도 입고'
                 )
 
-                generate_document_num(new_sheet.id)
-
                 if Product.objects.filter(product_code = new_product_code).exists() == False:
                     raise Exception({'message' : f'{new_product_code}는 존재하지 않습니다.'}) 
             
@@ -168,7 +166,6 @@ class ProductInfoView(View):
                     product_id = new_product.id,
                     warehouse_code = Warehouse.objects.get(main = True).code )
                 
-                # mam_create_sheet(new_product.id, price, quantity, stock_quantity)
 
                 QuantityByWarehouse.objects.filter(warehouse_code = Warehouse.objects.get(main = True).code, product_id = new_product.id).update_or_create(
                     product_id = new_product.id,
@@ -181,7 +178,8 @@ class ProductInfoView(View):
                     create_product_serial_code(new_product.id, quantity, new_sheet.id)    
                 else:
                     pass
-                
+                # 이동 평균법 작동 
+                mam_create_sheet(new_product.id, price, quantity, stock_quantity)
         except:
             raise Exception({'message' : 'sheet를 생성하는중 에러가 발생했습니다.'})
 
@@ -333,8 +331,7 @@ class ProductInfoView(View):
 
                         if check_price and check_quantity:
                             self.create_sheet_new(input_data, user, new_product)
-                            register_checker(input_data)
-
+                            
                         # 새로운 세트 제품의 구성품 등록
                         for id, quantity in composition.items():
                             ProductComposition.objects.create(
@@ -372,7 +369,7 @@ class ProductInfoView(View):
                         
                         if check_price and check_quantity:
                             self.create_sheet_new(input_data, user, new_product)
-                            register_checker(input_data)
+                        
                         return JsonResponse({'message' : '[Case 2] 새로운 일반 상품이 등록되었습니다'}, status = 200) 
                     
                 # 회사코드가 없으면 
@@ -414,7 +411,7 @@ class ProductInfoView(View):
 
                         if check_price and check_quantity:
                             self.create_sheet_new(input_data, user, new_product)
-                            register_checker(input_data)
+                            
                         # 새로운 세트 제품의 구성품 등록
                         for id, quantity in composition.items():
                             ProductComposition.objects.create(
@@ -451,7 +448,6 @@ class ProductInfoView(View):
                         
                         if check_price and check_quantity:
                             self.create_sheet_new(input_data, user, new_product)
-                            register_checker(input_data)
                         return JsonResponse({'message' : '[Case 4] 새로운 일반 상품이 등록되었습니다.'}, status = 200)
 
         except KeyError:

@@ -31,17 +31,13 @@ class CreateSheetView(View):
                 new_sheet_id = new_sheet.id
 
                 if new_sheet.type == 'inbound':
-                    compositions = SheetComposition.objects.filter(sheet_id = new_sheet_id).values(
-                            'product',
-                            'unit_price',
-                            'quantity',
-                            'warehouse_code'
-                        )
+                    compositions = SheetComposition.objects.filter(sheet_id = new_sheet_id)
 
                     for composition in compositions:
-                        product_id     = composition.get('product')
-                        warehouse_code = composition.get('warehouse_code')
-                        quantity       = composition.get('quantity') 
+                        product_id     = composition.product_id
+                        warehouse_code = composition.warehouse_code
+                        quantity       = composition.quantity
+                        unit_price     = composition.unit_price 
 
                         stock = StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id)
                         
@@ -71,6 +67,9 @@ class CreateSheetView(View):
                             create_product_serial_code(product_id, quantity, new_sheet_id)
                         else:
                             pass
+
+                        # 이동 평균법 작동
+                        mam_create_sheet(product_id, unit_price, quantity, stock_quantity)
 
                     register_checker(input_data)
                     telegram_bot(new_sheet_id)

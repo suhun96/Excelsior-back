@@ -16,39 +16,40 @@ from locations.models   import *
 
 
 def register_checker(input_data):
-        input_data = input_data
-        input_products = input_data.get('products', None)
-        input_company = input_data.get('company_id')
+    input_data = input_data
+    input_products = input_data.get('products', None)
+    input_company = input_data.get('company_id')
 
-        try:
-            if Company.objects.filter(id = input_company).exists() == False:
-                raise Exception({'message' : '존재하지 않는 회사입니다.'})
+    try:
+        if Company.objects.filter(id = input_company).exists() == False:
+            raise Exception({'message' : '존재하지 않는 회사입니다.'})
+        
+        with transaction.atomic():
+            if input_data['type'] == 'inbound':
+                for product in input_products:
+                    product_id = Product.objects.get(product_code =product['product_code']).id
+                    ProductPrice.objects.update_or_create(
+                        product_id = product_id,
+                        company_id = input_company,
+                        defaults={
+                            'inbound_price' : product['price']
+                        }
+                    )
+                    
+            elif input_data['type'] == 'outbound':
+                for product in input_products:
+                    product_id = Product.objects.get(product_code =product['product_code']).id
+                    ProductPrice.objects.update_or_create(
+                        product_id = product_id,
+                        company_id = input_company,
+                        defaults={
+                            'outbound_price' : product['price']
+                        }
+                    )
             
-            with transaction.atomic():
-                if input_data['type'] == 'inbound':
-                    for product in input_products:
-                        product_id = Product.objects.get(product_code =product['product_code']).id
-                        ProductPrice.objects.update_or_create(
-                            product_id = product_id,
-                            company_id = input_company,
-                            defaults={
-                                'inbound_price' : product['price']
-                            }
-                        )
-                        
-                elif input_data['type'] == 'outbound':
-                    for product in input_products:
-                        product_id = Product.objects.get(product_code =product['product_code']).id
-                        ProductPrice.objects.update_or_create(
-                            product_id = product_id,
-                            company_id = input_company,
-                            defaults={
-                                'outbound_price' : product['price']
-                            }
-                        )
-                
-        except:
-            raise Exception({'message' : 'register_checker를 생성하는중 에러가 발생했습니다.'})
+    except:
+        raise Exception({'message' : 'register_checker를 생성하는중 에러가 발생했습니다.'})
+
 
 def create_sheet(input_data, user):
     user = user
