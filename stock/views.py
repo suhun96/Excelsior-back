@@ -525,28 +525,6 @@ class PriceCheckView(View):
             return JsonResponse({'message' : '0' }, status = 200)
         
 class SerialCodeCheckView(View):
-    def generate_document_num(self, sheet_id, created_at):
-        year  = created_at.year
-        month = created_at.month
-        day   = created_at.day
-        sheet = Sheet.objects.get(id = sheet_id)
-        stock_type = sheet.type
-        sheet_id   = sheet.id
-        
-        # 타입 변환기.
-        if stock_type == 'inbound':
-            stock_type = "입고"
-        if stock_type == "outbound":
-            stock_type = "출고"
-        if stock_type == "generate":
-            stock_type = "생산"
-        if stock_type == "new":
-            stock_type = "초도 입고"
-
-        document_num = f"{year}/{month}/{day}-{stock_type}-{sheet_id}"
-    
-        return document_num
-
     def serial_product_code_checker(self, serial_code):
         product_id = SerialCode.objects.get(code = serial_code).product_id
 
@@ -583,6 +561,7 @@ class SerialCodeCheckView(View):
             'company_name'          : sheet.company.name,
             'etc'                   : sheet.etc,
             'created_at'            : sheet.created_at,
+            'is_serial'             : product.is_serial,
             'product_code'          : product.product_code,
             'product_name'          : product.name,
             'product_group_name'    : product.product_group.name,
