@@ -181,10 +181,9 @@ class ModifySheetView(View):
                 
                 if target_sheet_type in ['inbound', 'outbound', 'return', 'new']:
                     # sheet_detail 삭제
-                    delete_product_list = list(SheetComposition.objects.filter(sheet_id = sheet_id).values_list('product_id', flat= True))
                     SheetComposition.objects.filter(sheet_id = sheet_id).delete()
                     # 연결된 serial_code 도 삭제
-                    SerialCode.objects.filter(sheet_id = sheet_id ,product_id__in = delete_product_list).delete()
+                    SerialCode.objects.filter(sheet_id = sheet_id).delete()
                     # 수정된 sheet_detail 생성
                     modify_sheet_detail(sheet_id, modify_data['products'])
                     # 수정된 sheet_detail 수량 반영 / 수정된 sheet_detail 중 is_serial이 True 인 product 시리얼 코드 자동 생성.
@@ -1109,31 +1108,53 @@ class ModifyMovingAverageMethodView(View):
             target = MovingAverageMethod.objects.get(product_id = product_id)
             target.custom_price = custom_price
             target.save()
+            return JsonResponse({'message' : '수정 완료'}, status = 200)
         except Exception:
-            return JsonResponse({'message' : '커스텀 가격을 수정하는데 애러가 발생'})
+            return JsonResponse({'message' : '커스텀 가격을 수정하는데 애러가 발생'}, status = 403)
 
 class InquireSheetLogView(View):
     def get(self, request):
         sheet_id = request.GET.get('sheet_id')
+<<<<<<< HEAD
         print(sheet_id)
         
         log_id_list = SheetLog.objects.filter(sheet_id = sheet_id).values_list('id', flat= True)
 
         result = list(SheetCompositionLog.objects.filter(sheet_log_id__in = log_id_list).values(
+=======
+
+        log_id_list = SheetLog.objects.filter(sheet_id = sheet_id).values_list('id', flat= True)
+        check = SheetLog.objects.filter(sheet_id = sheet_id)
+        
+        result = list(SheetCompositionLog.objects.filter(sheet_log_id__in = log_id_list).values(
+            'id',
+            'sheet_log__id',
+>>>>>>> 93933fa0d5aa2d0b0e94187f6b45cc782db931f5
             'sheet_log__sheet_id',
             'sheet_log__user_name',
             'sheet_log__type',
             'sheet_log__company',
             'sheet_log__etc',
             'sheet_log__created_at',
+<<<<<<< HEAD
             'product_id'
             'product__product_code'
             'product__name'
             'unit_price'
+=======
+            'product_id',
+            'product__product_code',
+            'product__name',
+            'unit_price',
+>>>>>>> 93933fa0d5aa2d0b0e94187f6b45cc782db931f5
             'quantity',
             'warehouse_code',
             'location',
             'etc'
         ))
+<<<<<<< HEAD
         return JsonResponse({'message' : result}, status = 200)
             
+=======
+        return JsonResponse({'message' : result}, status = 200)
+>>>>>>> 93933fa0d5aa2d0b0e94187f6b45cc782db931f5

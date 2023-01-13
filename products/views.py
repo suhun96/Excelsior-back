@@ -224,6 +224,8 @@ class ProductInfoView(View):
                 'movingaveragemethod__custom_price',
                 'movingaveragemethod__average_price',
                 'labor',
+                'movingaveragemethod__custom_price',
+                'movingaveragemethod__average_price',
                 'company__code',
                 'company__name',
                 'product_group__code',
@@ -657,7 +659,6 @@ class SetInfoView(View):
         
         return JsonResponse({'message' : result_list}, status = 200)
 
-
 class ProductStatusView(View):
     @jwt_decoder
     def post(self, request):
@@ -683,7 +684,6 @@ class ProductStatusView(View):
 
         except Exception:
             return JsonResponse({'message' : '예외 사항이 발생해서 트랜잭션을 중지했습니다.'}, status = 403)
-
 
 class ProductGroupStatusView(View):
     @jwt_decoder
