@@ -462,6 +462,12 @@ def reflecte_sheet_detail(sheet_id):
                         warehouse_code = warehouse_code,
                         defaults={'total_quantity' : stock_quantity})
 
+                    if Product.objects.get(id = product_id).is_serial == True:
+                        create_product_serial_code(product_id, quantity, target_sheet.id)
+                    else:
+                        pass
+
+
             if target_sheet.type == 'outbound':
                 compositions = SheetComposition.objects.filter(sheet_id = sheet_id).values(
                         'product',

@@ -187,7 +187,7 @@ class ModifySheetView(View):
                     SerialCode.objects.filter(product_id__in = delete_product_list).delete()
                     # 수정된 sheet_detail 생성
                     modify_sheet_detail(sheet_id, modify_data['products'])
-                    # 수정된 sheet_detail 수량 반영
+                    # 수정된 sheet_detail 수량 반영 / 수정된 sheet_detail 중 is_serial이 True 인 product 시리얼 코드 자동 생성.
                     reflecte_sheet_detail(sheet_id)
                     # 수정된 가격 반영
                     register_checker(modify_data)
