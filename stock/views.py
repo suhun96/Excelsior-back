@@ -1115,13 +1115,6 @@ class ModifyMovingAverageMethodView(View):
 class InquireSheetLogView(View):
     def get(self, request):
         sheet_id = request.GET.get('sheet_id')
-<<<<<<< HEAD
-        print(sheet_id)
-        
-        log_id_list = SheetLog.objects.filter(sheet_id = sheet_id).values_list('id', flat= True)
-
-        result = list(SheetCompositionLog.objects.filter(sheet_log_id__in = log_id_list).values(
-=======
 
         log_id_list = SheetLog.objects.filter(sheet_id = sheet_id).values_list('id', flat= True)
         check = SheetLog.objects.filter(sheet_id = sheet_id)
@@ -1129,32 +1122,19 @@ class InquireSheetLogView(View):
         result = list(SheetCompositionLog.objects.filter(sheet_log_id__in = log_id_list).values(
             'id',
             'sheet_log__id',
->>>>>>> 93933fa0d5aa2d0b0e94187f6b45cc782db931f5
             'sheet_log__sheet_id',
             'sheet_log__user_name',
             'sheet_log__type',
             'sheet_log__company',
             'sheet_log__etc',
             'sheet_log__created_at',
-<<<<<<< HEAD
-            'product_id'
-            'product__product_code'
-            'product__name'
-            'unit_price'
-=======
             'product_id',
             'product__product_code',
             'product__name',
             'unit_price',
->>>>>>> 93933fa0d5aa2d0b0e94187f6b45cc782db931f5
             'quantity',
             'warehouse_code',
             'location',
             'etc'
         ))
-<<<<<<< HEAD
         return JsonResponse({'message' : result}, status = 200)
-            
-=======
-        return JsonResponse({'message' : result}, status = 200)
->>>>>>> 93933fa0d5aa2d0b0e94187f6b45cc782db931f5
