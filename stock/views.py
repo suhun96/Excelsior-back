@@ -1096,3 +1096,45 @@ class GenerateSetProductView(View):
             return JsonResponse({'message' : '세트 생산이 완료되었습니다.', 'generate_sheet_id' : generate_sheet_id}, status = 200)
         except KeyError:
             return JsonResponse({'message' : '세트 생산이 실패했습니다.'}, status = 403)
+
+# 이동평균법 수정
+
+class ModifyMovingAverageMethodView(View):
+    def post(self, request):
+        custom_price = request.POST['custom_price']
+        product_id  = request.POST['product_id']
+        
+        try:
+            target = MovingAverageMethod.objects.get(product_id = product_id)
+            target.custom_price = custom_price
+            target.save()
+            return JsonResponse({'message' : '수정 완료'}, status = 200)
+        except Exception:
+            return JsonResponse({'message' : '커스텀 가격을 수정하는데 애러가 발생'}, status = 403)
+
+class InquireSheetLogView(View):
+    def get(self, request):
+        sheet_id = request.GET.get('sheet_id')
+
+        log_id_list = SheetLog.objects.filter(sheet_id = sheet_id).values_list('id', flat= True)
+        check = SheetLog.objects.filter(sheet_id = sheet_id)
+        
+        result = list(SheetCompositionLog.objects.filter(sheet_log_id__in = log_id_list).values(
+            'id',
+            'sheet_log__id',
+            'sheet_log__sheet_id',
+            'sheet_log__user_name',
+            'sheet_log__type',
+            'sheet_log__company',
+            'sheet_log__etc',
+            'sheet_log__created_at',
+            'product_id',
+            'product__product_code',
+            'product__name',
+            'unit_price',
+            'quantity',
+            'warehouse_code',
+            'location',
+            'etc'
+        ))
+        return JsonResponse({'message' : result}, status = 200)
