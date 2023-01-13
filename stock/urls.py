@@ -18,5 +18,6 @@ urlpatterns = [
     path('check-set', CheckSetProductView.as_view()),
     path('generate-set', GenerateSetProductView.as_view()),
     path('modify-custom-price', ModifyMovingAverageMethodView.as_view()),
-    path('sheet-log', InquireSheetLogView.as_view())
+    path('sheet-log', InquireSheetLogView.as_view()),
+    path('serial-code-log', InquireSerialLogView.as_view())
 ]
