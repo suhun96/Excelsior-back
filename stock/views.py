@@ -1138,3 +1138,36 @@ class InquireSheetLogView(View):
             'etc'
         ))
         return JsonResponse({'message' : result}, status = 200)
+
+class InquireSerialLogView(View):
+    def get(self, request):
+        serial_code = request.GET.get('serial_code')
+
+        sheet_id_list = list(SerialCode.objects.filter(code = serial_code).values_list('sheet_id', flat= True))
+
+        sheets = Sheet.objects.filter(id__in = sheet_id_list)
+
+        result = []
+
+        for sheet in sheets:
+            dict = {
+                '날짜' : sheet.date,
+                '속성' : sheet.type,
+                '확인' : sheet.id,
+                '담당' : sheet.user.name
+            }
+            result.append(dict)
+
+        sheets_2 = SerialCodeValue.objects.filter(serial_code = serial_code)
+
+        for sheet2 in sheets_2:
+            dict = {
+                '날짜' : sheet2.date,
+                '속성' : sheet2.title.title,
+                '확인' : sheet2.contents,
+                '담당' : sheet2.user.name
+            }
+            result.append(dict)
+
+        return JsonResponse({'message' : result}, status = 200)
+            
