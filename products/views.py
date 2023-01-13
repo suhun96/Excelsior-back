@@ -217,10 +217,12 @@ class ProductInfoView(View):
                 q &= Q(status = status)
 
             
-            products = Product.objects.filter(q)[offset : offset+limit].values(
+            products = Product.objects.filter(q).prefetch_related('movingaveragemethod_set')[offset : offset+limit].values(
                 'id',
                 'is_set',
                 'is_serial',
+                'movingaveragemethod__custom_price',
+                'movingaveragemethod__average_price',
                 'labor',
                 'movingaveragemethod__custom_price',
                 'movingaveragemethod__average_price',

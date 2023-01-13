@@ -1096,3 +1096,17 @@ class GenerateSetProductView(View):
             return JsonResponse({'message' : '세트 생산이 완료되었습니다.', 'generate_sheet_id' : generate_sheet_id}, status = 200)
         except KeyError:
             return JsonResponse({'message' : '세트 생산이 실패했습니다.'}, status = 403)
+
+# 이동평균법 수정
+
+class ModifyMovingAverageMethodView(View):
+    def post(self, request):
+        custom_price = request.POST['custom_price']
+        product_id  = request.POST['product_id']
+        
+        try:
+            target = MovingAverageMethod.objects.get(product_id = product_id)
+            target.custom_price = custom_price
+            target.save()
+        except Exception:
+            return JsonResponse({'message' : '커스텀 가격을 수정하는데 애러가 발생'})

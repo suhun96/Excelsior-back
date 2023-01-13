@@ -11,14 +11,11 @@ urlpatterns = [
     path('quantity', TotalQuantityView.as_view()),
     path('price', PriceCheckView.as_view()),
     path('stock-info', StockTotalView.as_view()),
-    
     path('sheet-modify', ModifySheetView.as_view()), # POST
     path('sheet-delete', DeleteSheetView.as_view()), # POST 
     path('sheet-log-list', InquireSheetLogView.as_view()), # GET
-
     path('serial/', include('stock.urls_serial_code')),
-
     path('check-set', CheckSetProductView.as_view()),
-
     path('generate-set', GenerateSetProductView.as_view()),
+    path('modify-custom-price', ModifyMovingAverageMethodView.as_view())
 ]
