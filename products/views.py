@@ -139,6 +139,7 @@ class ProductInfoView(View):
                     type = 'new',
                     etc  = '초도 입고'
                 )
+                generate_document_num(new_sheet.id)
 
                 if Product.objects.filter(product_code = new_product_code).exists() == False:
                     raise Exception({'message' : f'{new_product_code}는 존재하지 않습니다.'}) 
