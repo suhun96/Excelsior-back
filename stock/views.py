@@ -1150,22 +1150,37 @@ class InquireSerialLogView(View):
         result = []
 
         for sheet in sheets:
-            dict = {
-                '날짜' : sheet.date,
-                '속성' : sheet.type,
-                '확인' : sheet.id,
-                '담당' : sheet.user.name
-            }
+            if  sheet.date.year == sheet.created_at.year and \
+                sheet.date.month == sheet.created_at.month and \
+                sheet.date.day == sheet.created_at.day:    
+                dict = {
+                    'date'    : sheet.date,
+                    'time'    : f'{sheet.created_at.hour}:{sheet.created_at.minute}',
+                    'type'    : sheet.type,
+                    'content' : sheet.id,
+                    'user'    : sheet.user.name
+                }
+            else:
+                dict = {
+                    'date'    : sheet.date,
+                    'time'    : "",
+                    'type'    : sheet.type,
+                    'content' : sheet.id,
+                    'user'    : sheet.user.name
+                }
             result.append(dict)
 
-        sheets_2 = SerialCodeValue.objects.filter(serial_code = serial_code)
+        serial_code_id = SerialCode.objects.filter(code = serial_code).last().id
+        sheets_2 = SerialCodeValue.objects.filter(serial_code_id = serial_code_id)
 
         for sheet2 in sheets_2:
+            
             dict = {
-                '날짜' : sheet2.date,
-                '속성' : sheet2.title.title,
-                '확인' : sheet2.contents,
-                '담당' : sheet2.user.name
+                'date'    : f'{sheet2.date.year}-{(str(sheet2.date.month).zfill(2))}-{(str(sheet2.date.day).zfill(2))}',
+                'time'    : f'{sheet2.date.hour}:{str(sheet2.date.minute).zfill(2)}',
+                'type'    : sheet2.title.title,
+                'content' : sheet2.contents,
+                'user'    : sheet2.user.name
             }
             result.append(dict)
 
