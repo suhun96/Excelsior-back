@@ -948,7 +948,9 @@ class GenerateSetProductView(View):
                     company_id = 1,
                     date = input_date,
                     etc  = input_etc
-                )            
+                )
+
+                generate_document_num(generate_sheet.id )            
 
                 generate_sheet_id = generate_sheet.id
                 
@@ -1025,6 +1027,8 @@ class GenerateSetProductView(View):
                     date = input_date,
                     etc  = '세트 생산으로 인한 소진'
                 )
+
+                generate_document_num(used_sheet.id )
                 
                 used_sheet_id = used_sheet.id
 
