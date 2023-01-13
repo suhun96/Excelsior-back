@@ -108,6 +108,7 @@ def create_sheet(input_data, user):
                     else:
                         for serial_code in product['serial_code']:
                             # 입/출고 구성품의 serial_code 연결
+                            serial_code_checker(serial_code, input_type)
                             SerialCode.objects.create(
                                 sheet_id = new_sheet.id,
                                 product_id = product_id,
@@ -228,13 +229,18 @@ def create_sheet_detail(sheet_id, products):
                 etc             = product['etc']
             )
             if 'serial_code' in product:
-                for serial_code in product['serial_code']:
-                    # 입/출고 구성품의 serial_code 연결
-                    SerialCode.objects.create(
-                        sheet_id = sheet_id,
-                        product_id = product_id,
-                        code = serial_code
-                    )
+                    if product['serial_code'] == None:
+                        pass    
+                    else:
+                        for serial_code in product['serial_code']:
+                            # 입/출고 구성품의 serial_code 연결
+                            type = Sheet.objects.get(id = sheet_id).type
+                            serial_code_checker(serial_code, type)
+                            SerialCode.objects.create(
+                                sheet_id = sheet_id,
+                                product_id = product_id,
+                                code = serial_code
+                            )
     except:
         raise Exception('create_sheet_detail 사용하는중 에러가 발생했습니다.')
 
@@ -667,3 +673,50 @@ def modify_sheet_detail_2(sheet_id, products):
     except:
         raise Exception({'message' : 'create_sheet_detail 사용하는중 에러가 발생했습니다.(check-point3)'})
 
+def serial_tracker2(serial_code):
+        sheet_id = SerialCode.objects.filter(code = serial_code).latest('id').sheet_id
+
+        sheet = Sheet.objects.get(id = sheet_id )
+
+        return sheet
+
+def serial_code_checker(serial_code, process_type):
+    if process_type == 'inbound':
+        if not SerialCode.objects.filter(code = serial_code).exists():
+            pass
+        
+        else:
+            sheet = serial_tracker2(serial_code)
+            sheet_type  = sheet.type
+            
+            if sheet_type == 'inbound':
+                raise Exception('이미 보유하고 있는 시리얼 입니다.')
+
+            if sheet_type == 'generate':
+                raise Exception('이미 보유하고 있는 시리얼 입니다.')
+    
+            else:
+                pass
+
+    if process_type == 'outbound':
+        if not SerialCode.objects.filter(code = serial_code).exists():
+            raise Exception('존재하지 않는 시리얼 코드는 출고 불가능합니다.')
+
+        else:
+            sheet = serial_tracker2(serial_code)
+            sheet_type  = sheet.type
+
+            if sheet_type == "new":
+                pass
+
+            if sheet_type == "inbound":
+                pass
+
+            if sheet_type == "generate":
+                pass
+
+            if sheet_type == "outbound":
+                raise Exception('이미 출고된 시리얼 입니다.')
+
+            if sheet_type == "used":
+                raise Exception('세트 생산에 사용된 시리얼 입니다.')
