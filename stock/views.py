@@ -903,6 +903,7 @@ class CheckSetProductView(View):
                 })
 
             conponents_dict = {
+                'is_serial'         : product_info.is_serial,
                 'product_group_name': product_info.product_group.name,
                 'product_name'      : product_info.name,
                 'product_code'      : product_info.product_code,
