@@ -857,10 +857,14 @@ class InquireSetSerialCodeView(View):
         sheet_id = request.GET.get('sheet_id')
         list_id = SerialCode.objects.filter(sheet_id = sheet_id).values_list('id', flat = True)
 
-        result = SetSerialCodeComponent.objects.filter(set_serial_code_id__in = list_id).values(
-            'set_serial_code__code'
-            'component_serial_code__code'
-        )
+        result = []
+        for set_serial_code_id in list_id:
+            set_serial_code = SerialCode.objects.get(id = set_serial_code_id).code
+            
+            list_D = SetSerialCodeComponent.objects.filter(set_serial_code_id = set_serial_code_id).values_list('component_serial_code__code', flat = True)
+            
+            result.append({set_serial_code : list(list_D)})
+            
         return JsonResponse({'message' : result}, status =200)
 # 평균가액
 
