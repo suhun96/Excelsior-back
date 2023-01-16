@@ -853,14 +853,15 @@ class InquireSerialCodeView(View):
 
 ### 완성 못시킨 코드 ###
 class InquireSetSerialCodeView(View):
-    def post(self, request):
+    def get(self, request):
         sheet_id = request.GET.get('sheet_id')
         list_id = SerialCode.objects.filter(sheet_id = sheet_id).values_list('id', flat = True)
 
-        result = SetSerialCodeComponent.objects.filter(set_serial_code_id__in = list_id).value(
-            ''
+        result = SetSerialCodeComponent.objects.filter(set_serial_code_id__in = list_id).values(
+            'set_serial_code__code'
+            'component_serial_code__code'
         )
-
+        return JsonResponse({'message' : result}, status =200)
 # 평균가액
 
 # class InquireS
