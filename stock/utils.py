@@ -560,7 +560,6 @@ def mam_delete_sheet(product_id, unit_price, quantity, stock_quantity):
         )
 
 def count_serial_code(input_data, component, used_sheet):
-    manufacture_quantity = input_data.get('manufacture_quantity')
     set_product_code = input_data.get('set_product_code')
     set_product_id = Product.objects.get(product_code = set_product_code).id
     set_components_ids = ProductComposition.objects.filter(set_product_id = set_product_id).values_list('composition_product', flat= True)
@@ -576,9 +575,7 @@ def count_serial_code(input_data, component, used_sheet):
             serial_product_id = SerialCode.objects.filter(code = serial).latest('id').product_id
             component_quantity = ProductComposition.objects.get(set_product_id = set_product_id, composition_product_id = serial_product_id).quantity
 
-            total_manufacture_quantity = manufacture_quantity * component_quantity
-
-            if not serial_quantity == total_manufacture_quantity:
+            if not serial_quantity == component_quantity:
                 raise Exception('생산시 요구되는 시리얼 갯수와 입력하신 시리얼 갯수가 일치하지 않습니다.')
 
             if not serial_product_id in set_components_ids:
