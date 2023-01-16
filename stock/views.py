@@ -1039,13 +1039,15 @@ class GenerateSetProductView(View):
                     for used_product in  component:
                         print(used_product)
                         used_product_id = Product.objects.get(product_code = used_product.get('product_code')).id
+                        try:
+                            check_price = MovingAverageMethod.objects.get(product_id = used_product_id)
 
-                        check_price = MovingAverageMethod.objects.get(product_id = used_product_id)
-
-                        if check_price.custom_price == 0:
-                            unit_price = check_price.average_price
-                        else:
-                            unit_price = check_price.custom_price
+                            if check_price.custom_price == 0:
+                                unit_price = check_price.average_price
+                            else:
+                                unit_price = check_price.custom_price
+                        except MovingAverageMethod.DoesNotExist:
+                            unit_price = 0
 
                         SheetComposition.objects.create(
                             sheet_id        = used_sheet.id,
