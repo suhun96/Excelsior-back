@@ -1040,7 +1040,6 @@ class GenerateSetProductView(View):
                     component_serial_codes = []
 
                     for used_product in  component:
-                        print(used_product)
                         used_product_id = Product.objects.get(product_code = used_product.get('product_code')).id
                         try:
                             check_price = MovingAverageMethod.objects.get(product_id = used_product_id)

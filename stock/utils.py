@@ -179,7 +179,7 @@ def create_set_serial_code(input_data, generate_sheet_id):
         after_route = int(before_route) + 1
         
         # for i  in range(int(quantity)):
-        last_number = last_serial[:-3]
+        last_number = last_serial[-3:]
         plus_last_number = int(last_number) + 1
         numbering = str(plus_last_number).zfill(3)
         serial_code2 = serial_code1 + str(after_route).zfill(2) + numbering
