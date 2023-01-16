@@ -165,25 +165,39 @@ def create_set_serial_code(input_data, generate_sheet_id):
     serial_code1 = set_product_code + today
 
     if not SerialCode.objects.filter(code__icontains = serial_code1).exists():
-        # for i in range(int(quantity)):
         route = '01'
         numbering = '001'
         serial_code2 = serial_code1 + route + numbering   
         SerialCode.objects.create(code = serial_code2, sheet_id = generate_sheet_id, product_id = product_id)
     else:
-        last_serial = SerialCode.objects.filter(code__icontains = serial_code1).latest('id').code
-        
-        before_route = last_serial.replace(serial_code1, "")
-        before_route = before_route[:2]
-        
-        after_route = int(before_route) + 1
-        
-        # for i  in range(int(quantity)):
-        last_number = last_serial[-3:]
-        plus_last_number = int(last_number) + 1
-        numbering = str(plus_last_number).zfill(3)
-        serial_code2 = serial_code1 + str(after_route).zfill(2) + numbering
-        SerialCode.objects.create(code = serial_code2, sheet_id = generate_sheet_id, product_id = product_id)
+        last_code = SerialCode.objects.filter(code__icontains = serial_code1).last().code
+        remove_product_code = last_code.strip(set_product_code)
+        date = remove_product_code[:6]
+        print(date)
+        if date == today:
+            last_serial = SerialCode.objects.filter(code__icontains = serial_code1).latest('id').code
+            
+            before_route = last_serial.replace(serial_code1, "")
+            before_route = before_route[:2]
+            
+            last_number = last_serial[-3:]
+            plus_last_number = int(last_number) + 1
+            numbering = str(plus_last_number).zfill(3)
+            serial_code2 = serial_code1 + str(before_route).zfill(2) + numbering
+            SerialCode.objects.create(code = serial_code2, sheet_id = generate_sheet_id, product_id = product_id)
+        else:
+            last_serial = SerialCode.objects.filter(code__icontains = serial_code1).latest('id').code
+            
+            before_route = last_serial.replace(serial_code1, "")
+            before_route = before_route[:2]
+            
+            after_route = int(before_route) + 1
+            
+            last_number = last_serial[-3:]
+            plus_last_number = int(last_number) + 1
+            numbering = str(plus_last_number).zfill(3)
+            serial_code2 = serial_code1 + str(after_route).zfill(2) + numbering
+            SerialCode.objects.create(code = serial_code2, sheet_id = generate_sheet_id, product_id = product_id)
 
         return serial_code2
 
