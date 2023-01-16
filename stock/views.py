@@ -1036,47 +1036,49 @@ class GenerateSetProductView(View):
                 used_sheet_id = used_sheet.id
 
                 for component in components:
-                    component_id = Product.objects.get(product_code = component.get('product_code')).id
+                    for used_product in  component:
+                        print(used_product)
+                        used_product_id = Product.objects.get(product_code = used_product.get('product_code')).id
 
-                    check_price = MovingAverageMethod.objects.get(product_id = component_id)
+                        check_price = MovingAverageMethod.objects.get(product_id = used_product_id)
 
-                    if check_price.custom_price == 0:
-                        unit_price = check_price.average_price
-                    else:
-                        unit_price = check_price.custom_price
+                        if check_price.custom_price == 0:
+                            unit_price = check_price.average_price
+                        else:
+                            unit_price = check_price.custom_price
 
-                    SheetComposition.objects.create(
-                        sheet_id        = used_sheet.id,
-                        product_id      = component_id,
-                        quantity        = component.get('quantity'), 
-                        warehouse_code  = component.get('warehouse_code'),
-                        unit_price      = unit_price,
-                        etc             = '세트 생산으로 인한 소진'
-                    )
-                
-                    # 시리얼 코드 체크
-                    if 'serials' in component:
-                        count_serial_code(input_data, component, used_sheet)
-    
-                    # 수량 반영
-                    stock = StockByWarehouse.objects.filter(warehouse_code = component.get('warehouse_code'), product_id = component_id)
-                
-                    if stock.exists():
-                        before_quantity = stock.last().stock_quantity
-                        stock_quantity  = before_quantity - int(component.get('quantity'))
-                    else:
-                        stock_quantity  = int(component.get('quantity'))
-
-                    StockByWarehouse.objects.filter(warehouse_code = component.get('warehouse_code'), product_id = component_id).create(
-                        sheet_id = used_sheet.id,
-                        stock_quantity = stock_quantity,
-                        product_id = component_id,
-                        warehouse_code = component.get('warehouse_code') )
+                        SheetComposition.objects.create(
+                            sheet_id        = used_sheet.id,
+                            product_id      = used_product_id,
+                            quantity        = used_product.get('quantity'), 
+                            warehouse_code  = used_product.get('warehouse_code'),
+                            unit_price      = unit_price,
+                            etc             = '세트 생산으로 인한 소진'
+                        )
                     
-                    QuantityByWarehouse.objects.filter(warehouse_code = component.get('warehouse_code'), product_id = component_id).update_or_create(
-                        product_id = component_id,
-                        warehouse_code = component.get('warehouse_code'),
-                        defaults={'total_quantity' : stock_quantity})
+                        # 시리얼 코드 체크
+                        if 'serials' in used_product:
+                            count_serial_code(input_data, used_product, used_sheet)
+        
+                        # 수량 반영
+                        stock = StockByWarehouse.objects.filter(warehouse_code = used_product.get('warehouse_code'), product_id = used_product_id)
+                    
+                        if stock.exists():
+                            before_quantity = stock.last().stock_quantity
+                            stock_quantity  = before_quantity - int(used_product.get('quantity'))
+                        else:
+                            stock_quantity  = int(used_product.get('quantity'))
+
+                        StockByWarehouse.objects.filter(warehouse_code = used_product.get('warehouse_code'), product_id = used_product_id).create(
+                            sheet_id = used_sheet.id,
+                            stock_quantity = stock_quantity,
+                            product_id = used_product_id,
+                            warehouse_code = used_product.get('warehouse_code') )
+                        
+                        QuantityByWarehouse.objects.filter(warehouse_code = used_product.get('warehouse_code'), product_id = used_product_id).update_or_create(
+                            product_id = used_product_id,
+                            warehouse_code = used_product.get('warehouse_code'),
+                            defaults={'total_quantity' : stock_quantity})
 
             return used_sheet_id
         except Exception:
@@ -1087,6 +1089,13 @@ class GenerateSetProductView(View):
         input_data = json.loads(request.body)
         user = request.user
         try:
+            # components 의 개수와 생산할 세트 품목의 개수가 같아야 한다.
+            manufacture_quantity = input_data.get('manufacture_quantity')
+            components = input_data.get('components')
+
+            if not len(components) == manufacture_quantity:
+                return JsonResponse({'message' : '세트 생산에 필요한 구성품의 개수만큼 components가 들어오지 않았습니다.'}, status = 403)
+
             generate_sheet_id = self.generate_sheet(input_data, user)
             create_set_serial_code(input_data, generate_sheet_id)
             used_sheet_id = self.used_sheet(input_data, user, generate_sheet_id)
