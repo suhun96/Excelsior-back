@@ -177,7 +177,7 @@ def create_set_serial_code(input_data, generate_sheet_id):
         
         after_route = int(before_route) + 1
         
-        for i  in range(int(quantity)):
+        for i  in range(int(manufacture_quantity)):
             numbering = str(i + 1).zfill(3)
             serial_code2 = serial_code1 + str(after_route).zfill(2) + numbering
             SerialCode.objects.create(code = serial_code2, sheet_id = generate_sheet_id, product_id = product_id)

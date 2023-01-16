@@ -1118,13 +1118,15 @@ class GenerateSetProductView(View):
                 # components 의 개수와 생산할 세트 품목의 개수가 같아야 한다.
                 manufacture_quantity = input_data.get('manufacture_quantity')
                 components = input_data.get('components')
-
+                print(manufacture_quantity)
+                print(len(components))
                 if not len(components) == manufacture_quantity:
                     return JsonResponse({'message' : '세트 생산에 필요한 구성품의 개수만큼 components가 들어오지 않았습니다.'}, status = 403)
 
                 generate_sheet_id = self.generate_sheet(input_data, user)
-                create_set_serial_code(input_data, generate_sheet_id)
+                create_set_serial_code(input_data,generate_sheet_id)
                 used_sheet_id, total_used_serial = self.used_sheet(input_data, user, generate_sheet_id)
+                self.bind_set_serial_code(generate_sheet_id ,total_used_serial)
 
                 #related_sheet
                 self.bind_used_generate_sheet(generate_sheet_id, used_sheet_id)
