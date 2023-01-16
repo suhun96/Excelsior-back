@@ -1035,6 +1035,8 @@ class GenerateSetProductView(View):
                 
                 used_sheet_id = used_sheet.id
 
+                total_used_serial = []
+
                 for component in components:
                     
                     component_serial_codes = []
@@ -1086,25 +1088,27 @@ class GenerateSetProductView(View):
                             warehouse_code = used_product.get('warehouse_code'),
                             defaults={'total_quantity' : stock_quantity})
                     
-                    set_serial_code = create_set_serial_code(input_data, generate_sheet_id)
-                    self.bind_set_serial_code(set_serial_code, component_serial_codes)
-
-            return used_sheet_id
+                    total_used_serial.append(component_serial_codes)
+                    
+            return used_sheet_id, total_used_serial
         except Exception:
             raise Exception({'message' : 'used_sheet를 생성하는중 에러가 발생했습니다.'})
 
-    def bind_set_serial_code(self, set_serial_code ,component_serial_codes):
-        if len(component_serial_codes) == 0:
-            pass
-        else:
-            for component_serial_code in component_serial_codes:
-                SetSerialCodeComponent.objects.create(
-                    set_serial_code = set_serial_code,
-                    component_serial_code = component_serial_code
-                )
+    def bind_set_serial_code(self, generate_sheet_id ,total_used_serial):
+        set_product_serial_code_list = SerialCode.objects.filter(sheet_id = generate_sheet_id).values_list('id', flat= True)
         
-
-
+        if len(total_used_serial) == 0 and len(set_product_serial_code_list) == len(total_used_serial):
+            for i in range(len(set_product_serial_code_list)):
+                step1 = total_used_serial[i]
+                step2 = SerialCode.objects.filter(code__in = step1).values_list('id', flat= True)
+                
+                for id in step2:
+                    SetSerialCodeComponent.objects.create(
+                        set_serial_code = set_product_serial_code_list[i],
+                        component_serial_code = id
+                    )
+        
+        
     @jwt_decoder
     def post(self, request):
         input_data = json.loads(request.body)
@@ -1119,7 +1123,8 @@ class GenerateSetProductView(View):
                     return JsonResponse({'message' : '세트 생산에 필요한 구성품의 개수만큼 components가 들어오지 않았습니다.'}, status = 403)
 
                 generate_sheet_id = self.generate_sheet(input_data, user)
-                used_sheet_id = self.used_sheet(input_data, user, generate_sheet_id)
+                create_set_serial_code(input_data, generate_sheet_id)
+                used_sheet_id, total_used_serial = self.used_sheet(input_data, user, generate_sheet_id)
 
                 #related_sheet
                 self.bind_used_generate_sheet(generate_sheet_id, used_sheet_id)
