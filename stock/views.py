@@ -1093,12 +1093,15 @@ class GenerateSetProductView(View):
         except Exception:
             raise Exception({'message' : 'used_sheet를 생성하는중 에러가 발생했습니다.'})
 
-    def bind_set_serial_code(self, set_serial_code ,component_serial_codes):        
-        for component_serial_code in component_serial_codes:
-            SetSerialCodeComponent.objects.create(
-                set_serial_code = set_serial_code,
-                component_serial_code = component_serial_code
-            )
+    def bind_set_serial_code(self, set_serial_code ,component_serial_codes):
+        if len(component_serial_codes) == 0:
+            pass
+        else:
+            for component_serial_code in component_serial_codes:
+                SetSerialCodeComponent.objects.create(
+                    set_serial_code = set_serial_code,
+                    component_serial_code = component_serial_code
+                )
         
 
 
