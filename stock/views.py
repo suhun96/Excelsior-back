@@ -852,25 +852,14 @@ class InquireSerialCodeView(View):
             return JsonResponse({'message' : '검색 조건에 맞는 시리얼 코드가 없습니다.'}, status = 403)    
 
 ### 완성 못시킨 코드 ###
-class InquireSerialCodeValueView(View):
-    def get(self, request):
-        serial_code_ids = SerialCode.objects.all().values_list('id', flat= True)
+class InquireSetSerialCodeView(View):
+    def post(self, request):
+        sheet_id = request.GET.get('sheet_id')
+        list_id = SerialCode.objects.filter(sheet_id = sheet_id).values_list('id', flat = True)
 
-        list_A = []
-
-        for id in serial_code_ids:
-            things = SerialCodeValue.objects.filter(serial_code_id = id)
-            
-            dict_A = {thing.serial_code : dict_B}
-            
-            for thing in things:
-                dict_A.update({
-                    'title' : things.title.title,
-                    'contents' : things.contents
-                })
-                list_A.append(dict_A)
-
-        return JsonResponse({'message': list_A})
+        result = SetSerialCodeComponent.objects.filter(set_serial_code_id__in = list_id).value(
+            ''
+        )
 
 # 평균가액
 
