@@ -165,11 +165,11 @@ def create_set_serial_code(input_data, generate_sheet_id):
     serial_code1 = set_product_code + today
 
     if not SerialCode.objects.filter(code__icontains = serial_code1).exists():
-        for i in range(int(quantity)):
-            route = '01'
-            numbering = str(i + 1).zfill(3)
-            serial_code2 = serial_code1 + route + numbering   
-            SerialCode.objects.create(code = serial_code2, sheet_id = generate_sheet_id, product_id = product_id)
+        # for i in range(int(quantity)):
+        route = '01'
+        numbering = '001'
+        serial_code2 = serial_code1 + route + numbering   
+        SerialCode.objects.create(code = serial_code2, sheet_id = generate_sheet_id, product_id = product_id)
     else:
         last_serial = SerialCode.objects.filter(code__icontains = serial_code1).latest('id').code
         
@@ -178,10 +178,14 @@ def create_set_serial_code(input_data, generate_sheet_id):
         
         after_route = int(before_route) + 1
         
-        for i  in range(int(quantity)):
-            numbering = str(i + 1).zfill(3)
-            serial_code2 = serial_code1 + str(after_route).zfill(2) + numbering
-            SerialCode.objects.create(code = serial_code2, sheet_id = generate_sheet_id, product_id = product_id)
+        # for i  in range(int(quantity)):
+        last_number = last_serial[:-3]
+        plus_last_number = int(last_number) + 1
+        numbering = str(plus_last_number).zfill(3)
+        serial_code2 = serial_code1 + str(after_route).zfill(2) + numbering
+        SerialCode.objects.create(code = serial_code2, sheet_id = generate_sheet_id, product_id = product_id)
+
+        return serial_code2
 
 def create_sheet_logs(sheet_id, modify_user):
     target_sheet = Sheet.objects.get(id = sheet_id)
