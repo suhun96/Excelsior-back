@@ -917,7 +917,7 @@ class CheckSetProductView(View):
         return JsonResponse({'message' : RESULT_LIST}, status = 200)
 
 class GenerateSetProductView(View):
-    def bind_used_generate_sheed(self, generate_sheet_id, used_sheet_id):
+    def bind_used_generate_sheet(self, generate_sheet_id, used_sheet_id):
         generate_sheet = Sheet.objects.get(id = generate_sheet_id)
         generate_sheet.related_sheet_id = used_sheet_id
         used_sheet = Sheet.objects.get(id = used_sheet_id)
@@ -1036,6 +1036,9 @@ class GenerateSetProductView(View):
                 used_sheet_id = used_sheet.id
 
                 for component in components:
+                    
+                    component_serial_codes = []
+
                     for used_product in  component:
                         print(used_product)
                         used_product_id = Product.objects.get(product_code = used_product.get('product_code')).id
@@ -1061,7 +1064,9 @@ class GenerateSetProductView(View):
                         # 시리얼 코드 체크
                         if 'serials' in used_product:
                             count_serial_code(input_data, used_product, used_sheet)
-        
+                            serials = used_product.get('serials')
+                            component_serial_codes.append(serials)
+
                         # 수량 반영
                         stock = StockByWarehouse.objects.filter(warehouse_code = used_product.get('warehouse_code'), product_id = used_product_id)
                     
@@ -1081,29 +1086,41 @@ class GenerateSetProductView(View):
                             product_id = used_product_id,
                             warehouse_code = used_product.get('warehouse_code'),
                             defaults={'total_quantity' : stock_quantity})
+                    
+                    set_serial_code = create_set_serial_code(input_data, generate_sheet_id)
+                    self.bind_set_serial_code(set_serial_code, component_serial_codes)
 
             return used_sheet_id
         except Exception:
             raise Exception({'message' : 'used_sheet를 생성하는중 에러가 발생했습니다.'})
+
+    def bind_set_serial_code(self, set_serial_code ,component_serial_codes):        
+        for component_serial_code in component_serial_codes:
+            SetSerialCodeComponent.objects.create(
+                set_serial_code = set_serial_code,
+                component_serial_code = component_serial_code
+            )
+        
+
 
     @jwt_decoder
     def post(self, request):
         input_data = json.loads(request.body)
         user = request.user
         try:
-            # components 의 개수와 생산할 세트 품목의 개수가 같아야 한다.
-            manufacture_quantity = input_data.get('manufacture_quantity')
-            components = input_data.get('components')
+            with transaction.atomic():
+                # components 의 개수와 생산할 세트 품목의 개수가 같아야 한다.
+                manufacture_quantity = input_data.get('manufacture_quantity')
+                components = input_data.get('components')
 
-            if not len(components) == manufacture_quantity:
-                return JsonResponse({'message' : '세트 생산에 필요한 구성품의 개수만큼 components가 들어오지 않았습니다.'}, status = 403)
+                if not len(components) == manufacture_quantity:
+                    return JsonResponse({'message' : '세트 생산에 필요한 구성품의 개수만큼 components가 들어오지 않았습니다.'}, status = 403)
 
-            generate_sheet_id = self.generate_sheet(input_data, user)
-            create_set_serial_code(input_data, generate_sheet_id)
-            used_sheet_id = self.used_sheet(input_data, user, generate_sheet_id)
+                generate_sheet_id = self.generate_sheet(input_data, user)
+                used_sheet_id = self.used_sheet(input_data, user, generate_sheet_id)
 
-            #related_sheet
-            self.bind_used_generate_sheed(generate_sheet_id, used_sheet_id)
+                #related_sheet
+                self.bind_used_generate_sheet(generate_sheet_id, used_sheet_id)
             
             return JsonResponse({'message' : '세트 생산이 완료되었습니다.', 'generate_sheet_id' : generate_sheet_id}, status = 200)
         except KeyError:

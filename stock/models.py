@@ -94,6 +94,13 @@ class SerialCode(models.Model):
     class Meta:
         db_table = 'serial_codes'
 
+class SetSerialCodeComponent(models.Model):
+    set_serial_code = models.ForeignKey(SerialCode, on_delete= models.CASCADE)
+    component_serial_code = models.ForeignKey(SerialCode, on_delete= models.CASCADE, related_name= 'component_serial_code')
+
+    class Meta:
+        db_table = 'set_serial_code_component'
+
 class SerialCodeTitle(models.Model):
     title  = models.CharField(max_length= 100)
     status = models.BooleanField(default= True)
