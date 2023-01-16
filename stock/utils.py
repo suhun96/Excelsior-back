@@ -173,7 +173,6 @@ def create_set_serial_code(input_data, generate_sheet_id):
         last_code = SerialCode.objects.filter(code__icontains = serial_code1).last().code
         remove_product_code = last_code.strip(set_product_code)
         date = remove_product_code[:6]
-        print(date)
         if date == today:
             last_serial = SerialCode.objects.filter(code__icontains = serial_code1).latest('id').code
             
