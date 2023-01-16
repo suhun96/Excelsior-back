@@ -857,13 +857,15 @@ class InquireSetSerialCodeView(View):
         sheet_id = request.GET.get('sheet_id')
         list_id = SerialCode.objects.filter(sheet_id = sheet_id).values_list('id', flat = True)
 
+
         result = []
         for set_serial_code_id in list_id:
             set_serial_code = SerialCode.objects.get(id = set_serial_code_id).code
+            list_D = list(SetSerialCodeComponent.objects.filter(set_serial_code_id = set_serial_code_id).values_list('component_serial_code__code', flat = True))
             
-            list_D = SetSerialCodeComponent.objects.filter(set_serial_code_id = set_serial_code_id).values_list('component_serial_code__code', flat = True)
+            send_form = { 'generate_serial_code' : set_serial_code, 'used_serial_code' : list_D}
             
-            result.append({set_serial_code : list(list_D)})
+            result.append(send_form)
             
         return JsonResponse({'message' : result}, status =200)
 # 평균가액
@@ -1165,6 +1167,7 @@ class InquireSheetLogView(View):
             'sheet_log__created_at',
             'product_id',
             'product__product_code',
+            'product__product_group__name',
             'product__name',
             'unit_price',
             'quantity',
