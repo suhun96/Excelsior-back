@@ -166,9 +166,10 @@ def create_set_serial_code(input_data, generate_sheet_id):
 
     if not SerialCode.objects.filter(code__icontains = serial_code1).exists():
         route = '01'
-        numbering = '001'
-        serial_code2 = serial_code1 + route + numbering   
-        SerialCode.objects.create(code = serial_code2, sheet_id = generate_sheet_id, product_id = product_id)
+        for i  in range(int(manufacture_quantity)):
+            numbering = '001'
+            serial_code2 = serial_code1 + route + numbering   
+            SerialCode.objects.create(code = serial_code2, sheet_id = generate_sheet_id, product_id = product_id)
     else:
         last_serial = SerialCode.objects.filter(code__icontains = serial_code1).latest('id').code
         
@@ -580,6 +581,16 @@ def count_serial_code(input_data, component, used_sheet):
 
             if not serial_product_id in set_components_ids:
                 raise Exception('시리얼 코드 불일치를 발견했습니다.')
+            
+            # 추가 
+            sheet_id = SerialCode.objects.filter(code = serial).latest('id').sheet_id
+
+            sheet_type = Sheet.objects.get(id = sheet_id).type
+            
+            if sheet_type == 'outbound':
+                raise Exception('이미 출고된 시리얼 입니다.')
+            if sheet_type == 'used':
+                raise Exception('이미 사용된 시리얼 입니다.')
 
             SerialCode.objects.create(
                 sheet_id = used_sheet.id,
