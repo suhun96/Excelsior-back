@@ -1256,7 +1256,6 @@ class DecomposeSetSerialCodeView(View):
 
         return targert_sheet_id
 
-    
     def generate_sheet_2(self, set_product_id, generate_sheet_id, LAB, warehouse_code):
         try:           
             set_product  = Product.objects.get(id = set_product_id)
@@ -1349,7 +1348,7 @@ class DecomposeSetSerialCodeView(View):
                     )
                 
                     # 수량 반영
-                    stock = StockByWarehouse.objects.filter(warehouse_code = check_product.get('warehouse_code'), product_id = check_product_id)
+                    stock = StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = check_product_id)
                 
                     if stock.exists():
                         before_quantity = stock.last().stock_quantity
@@ -1357,13 +1356,13 @@ class DecomposeSetSerialCodeView(View):
                     else:
                         stock_quantity  = int(check_product.get('quantity'))
 
-                    StockByWarehouse.objects.filter(warehouse_code = check_product.get('warehouse_code'), product_id = check_product_id).create(
+                    StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = check_product_id).create(
                         sheet_id = used_sheet_id,
                         stock_quantity = stock_quantity,
                         product_id = check_product_id,
                         warehouse_code = warehouse_code )
                     
-                    QuantityByWarehouse.objects.filter(warehouse_code = check_product.get('warehouse_code'), product_id = check_product_id).update_or_create(
+                    QuantityByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = check_product_id).update_or_create(
                         product_id = check_product_id,
                         warehouse_code = warehouse_code,
                         defaults={'total_quantity' : stock_quantity})
