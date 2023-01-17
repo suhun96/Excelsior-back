@@ -620,7 +620,7 @@ def generate_document_num(sheet_id):
     if stock_type == 'used':
         stock_type = '사용'
     if stock_type == 'return':
-        stock_type = '사용'
+        stock_type = '반품'
 
     check_sheet_date = Sheet.objects.filter(date = target_sheet.date)
 

@@ -294,7 +294,6 @@ class SheetListView(View):
 
 class InfoSheetListView(View):
     def get(self, request):
-        
         # sheet
         sheet_id       = request.GET.get('sheet_id', None)
         name           = request.GET.get('user_name', None)
@@ -346,7 +345,7 @@ class InfoSheetListView(View):
                 return JsonResponse({'message' : "기준 종료 날짜 설정 오류"}, status = 403)
             
             # Sheet 필터링
-            q = Q(sheet__date__range = (date_start, date_end))
+            q = Q(sheet__date__range = (date_start, date_end), sheet__type__in = ['inbound', 'outbound', 'generate', 'new'])
 
             if name:
                 user_id = User.objects.get(name = name).id
@@ -774,7 +773,7 @@ class ModifySerialCodeTitleView(View):
 
         UPDATE_SET = {}
 
-        for key, value in request.POST.item():
+        for key, value in request.POST.items():
             if key == 'title':
                 UPDATE_SET.update({key : value})
             
@@ -807,9 +806,11 @@ class CreateSerialCodeValueView(View):
     def post(self, request):
         user = request.user
         serial_code_title_id = request.POST['title_id']
-        serial_code_id       = request.POST['serial_code_id']
+        serial_code          = request.POST['serial_code']
         contents             = request.POST['contents']
         
+        serial_code_id = SerialCode.objects.filter(code = serial_code).last().id
+
         try:
             with transaction.atomic():
                 obj, check = SerialCodeValue.objects.update_or_create(
@@ -1111,6 +1112,7 @@ class GenerateSetProductView(View):
     @jwt_decoder
     def post(self, request):
         input_data = json.loads(request.body)
+        print(input_data)
         user = request.user
         try:
             with transaction.atomic():
