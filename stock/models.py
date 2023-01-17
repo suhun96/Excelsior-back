@@ -26,7 +26,7 @@ class SheetComposition(models.Model):
     product    = models.ForeignKey(Product, on_delete = models.CASCADE)
     unit_price = models.IntegerField(default = 0)
     quantity   = models.IntegerField(default = 0)
-    warehouse_code = models.CharField(max_length = 20)
+    warehouse_code = models.CharField(max_length = 20, default= "A")
     location   = models.CharField(max_length = 300) 
     etc        = models.CharField(max_length = 300)
 

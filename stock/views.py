@@ -955,7 +955,7 @@ class GenerateSetProductView(View):
                 generate_sheet_id = generate_sheet.id
                 
                 try:           
-                    set_product   = Product.objects.get(product_code =set_product_code)
+                    set_product  = Product.objects.get(product_code = set_product_code)
                 except Product.DoesNotExist:
                     return JsonResponse({'message' : f'{set_product_code}는 존재하지 않습니다.'}, status = 403) 
 
@@ -1226,14 +1226,176 @@ class InquireSerialLogView(View):
 
         return JsonResponse({'message' : result}, status = 200)
 
+class DecomposeSetSerialCodeView(View):
+    def check_serials(self, serials):
+        check_list = []
+        
+        for serial_code in serials:
+            serial_code_query_set = SerialCode.objects.filter(code = serial_code)
+            
+            for query in serial_code_query_set:
+                if Sheet.objects.get(id = query.sheet_id).type == 'generate':
+                    sheet_id = query.sheet_id
+                    check_list.append(sheet_id)
+        
+        # 중복 제거
+        checked_list = []
+        for value in check_list:
+            if value not in checked_list:
+                checked_list.append(value)
+        
+        if not len(checked_list) == 1:
+            raise Exception("serials의 값을 확인해주세요.")
+        
+        targert_sheet_id = checked_list[0]
 
-class DeleteTargetSetSerialCodeView(View):
+        return targert_sheet_id
+
+    
+    def generate_sheet_2(self, set_product_id, generate_sheet_id, LAB, warehouse_code):
+        try:           
+            set_product  = Product.objects.get(id = set_product_id)
+        except Product.DoesNotExist:
+            return JsonResponse({'message' : f'제품 ID:{set_product_id}는 존재하지 않습니다.'}, status = 403) 
+
+        if set_product.is_set == False:
+            return JsonResponse({'message' : f'이 상품은 세트가 아닙니다. 생산 불가능 합니다.'}, status = 403) 
+        ### 이동 평균법으로 가격을 가져오자.
+
+        component_list = ProductComposition.objects.filter(id = set_product_id).values_list('composition_product_id', flat= True) 
+                
+        generate_set_product_price = 0
+        for component_id in component_list:
+            mam_price = MovingAverageMethod.objects.get(product_id = component_id)
+
+            if mam_price.custom_price == 0:
+                target_price = mam_price.average_price
+            else:
+                target_price = mam_price.custom_price
+            generate_set_product_price += target_price
+        
+        labor_price = set_product.labor
+        total_price = generate_set_product_price + labor_price 
+
+
+        generate_sheet_composition = SheetComposition.objects.create(
+            sheet_id        = generate_sheet_id,
+            product_id      = set_product.id,
+            quantity        = LAB, 
+            unit_price      = total_price,
+            etc             = f'세트를 생산했습니다.{generate_sheet_id}'
+        )
+        
+        # 수량 반영
+        stock = StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = set_product.id)
+                
+        if stock.exists():
+            before_quantity = stock.last().stock_quantity
+            stock_quantity  = before_quantity + int(LAB)
+        else:
+            stock_quantity  = int(LAB)
+
+        StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = set_product.id).create(
+            sheet_id = generate_sheet_id,
+            stock_quantity = stock_quantity,
+            product_id = set_product.id,
+            warehouse_code = warehouse_code )
+        
+        QuantityByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = set_product.id).update_or_create(
+            product_id = set_product.id,
+            warehouse_code = warehouse_code,
+            defaults={'total_quantity' : stock_quantity})
+
+    def used_sheet_2(self, used_sheet_id, set_product_id, LAB):
+        try:
+            product_component = ProductComposition.objects.filter(set_product_id = set_product_id)
+
+            components = []
+
+            for i in LAB:
+                component = []
+                for product in product_component:
+                    form = {
+                        "product_code" : product.composition_product.product_code,
+                        "quantity"     : product.quantity,
+                    }
+                    component.append(form)  
+                components.append(component)
+
+            for component in components:
+                for check_product in  component:
+                    check_product_id = Product.objects.get(product_code = check_product.get('product_code')).id
+                    try:
+                        check_price = MovingAverageMethod.objects.get(product_id = check_product_id)
+
+                        if check_price.custom_price == 0:
+                            unit_price = check_price.average_price
+                        else:
+                            unit_price = check_price.custom_price
+                    except MovingAverageMethod.DoesNotExist:
+                        unit_price = 0
+
+                    SheetComposition.objects.create(
+                        sheet_id        = used_sheet_id,
+                        product_id      = check_product_id,
+                        quantity        = check_product.get('quantity'), 
+                        warehouse_code  = check_product.get('warehouse_code'),
+                        unit_price      = unit_price,
+                        etc             = '세트 생산으로 인한 소진'
+                    )
+                
+                    # 수량 반영
+                    stock = StockByWarehouse.objects.filter(warehouse_code = check_product.get('warehouse_code'), product_id = check_product_id)
+                
+                    if stock.exists():
+                        before_quantity = stock.last().stock_quantity
+                        stock_quantity  = before_quantity - int(check_product.get('quantity'))
+                    else:
+                        stock_quantity  = int(check_product.get('quantity'))
+
+                    StockByWarehouse.objects.filter(warehouse_code = check_product.get('warehouse_code'), product_id = check_product_id).create(
+                        sheet_id = check_product.id,
+                        stock_quantity = stock_quantity,
+                        product_id = check_product_id,
+                        warehouse_code = check_product.get('warehouse_code') )
+                    
+                    QuantityByWarehouse.objects.filter(warehouse_code = check_product.get('warehouse_code'), product_id = check_product_id).update_or_create(
+                        product_id = check_product_id,
+                        warehouse_code = check_product.get('warehouse_code'),
+                        defaults={'total_quantity' : stock_quantity})
+        except Exception:
+            raise Exception({'message' : 'used_sheet를 생성하는중 에러가 발생했습니다.'})
+                
+    @jwt_decoder
     def post(self, request):
-        set_serial_code = request.POST['set_serial_code']
+        user = request.user
+        serials = request.POST['serials']
+        try:
+            generate_sheet_id = self.check_serials(serials)
+            target_query = SheetComposition.objects.get(sheet_id = generate_sheet_id)
+            # 옵션
+            set_product_id = target_query.product_id
+            manufacture_quantity = target_query.quantity
+            warehouse_code = target_query.warehouse_code
+            LAB = manufacture_quantity - len(serials)
+            
+            # 로그 찍기
+            used_sheet_id = Sheet.objects.get(id = generate_sheet_id).related_sheet_id
+            generate_sheet_log = create_sheet_logs(generate_sheet_id, user)
+            used_sheet_log     = create_sheet_logs(used_sheet_id, user)
+            
+            # 롤백
+            rollback_sheet_detail(generate_sheet_id)
+            SheetComposition.objects.filter(sheet_id = generate_sheet_id).delete()
+            self.generate_sheet_2(set_product_id, generate_sheet_id, LAB, warehouse_code)
+            
+            rollback_sheet_detail(used_sheet_id)
+            SheetComposition.objects.filter(sheet_id = used_sheet_id).delete()
+            self.used_sheet_2(used_sheet_id, set_product_id, LAB)
+        
+            return JsonResponse({'message' : '입력하신 serials 를 해체 성공했습니다.'}, status = 200)
+        except Exception:
+            return JsonResponse({'message' : '시리얼 코드 해체 시도 중 실패했습니다.'}, status = 403)
 
-        target_set_serial_code = SerialCode.objects.get(code = set_serial_code)
-
-        target_sheet = Sheet.objects.get(id = target_set_serial_code.sheet_id)
-        target_sheet.type 
-
+        
         
