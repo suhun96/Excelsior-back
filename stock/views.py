@@ -1311,7 +1311,7 @@ class DecomposeSetSerialCodeView(View):
             warehouse_code = warehouse_code,
             defaults={'total_quantity' : stock_quantity})
 
-    def used_sheet_2(self, used_sheet_id, set_product_id, LAB):
+    def used_sheet_2(self, used_sheet_id, set_product_id, LAB, warehouse_code):
         try:
             product_component = ProductComposition.objects.filter(set_product_id = set_product_id)
 
@@ -1358,14 +1358,14 @@ class DecomposeSetSerialCodeView(View):
                         stock_quantity  = int(check_product.get('quantity'))
 
                     StockByWarehouse.objects.filter(warehouse_code = check_product.get('warehouse_code'), product_id = check_product_id).create(
-                        sheet_id = check_product.id,
+                        sheet_id = check_product_id,
                         stock_quantity = stock_quantity,
                         product_id = check_product_id,
-                        warehouse_code = check_product.get('warehouse_code') )
+                        warehouse_code = warehouse_code )
                     
                     QuantityByWarehouse.objects.filter(warehouse_code = check_product.get('warehouse_code'), product_id = check_product_id).update_or_create(
                         product_id = check_product_id,
-                        warehouse_code = check_product.get('warehouse_code'),
+                        warehouse_code = warehouse_code,
                         defaults={'total_quantity' : stock_quantity})
         except Exception:
             raise Exception({'message' : 'used_sheet를 생성하는중 에러가 발생했습니다.'})
@@ -1393,12 +1393,16 @@ class DecomposeSetSerialCodeView(View):
             rollback_sheet_detail(generate_sheet_id)
             SheetComposition.objects.filter(sheet_id = generate_sheet_id).delete()
             self.generate_sheet_2(set_product_id, generate_sheet_id, LAB, warehouse_code)
-            for serial_code in serials:
-                SerialCode.objects.get(sheet_id = generate_sheet_id, code = serial_code).delete()
             
+            
+            for serial_code in serials:
+                set_serial_code = SerialCode.objects.get(sheet_id = generate_sheet_id, code = serial_code)
+                bind_list = SetSerialCodeComponent.objects.filter(set_serial_code_id = set_serial_code.id).values_list('component_serial_code', flat = True)
+                SerialCode.objects.filter(sheet_id = used_sheet_id, id__in = bind_list).delete()
+                set_serial_code.delete()
             rollback_sheet_detail(used_sheet_id)
             SheetComposition.objects.filter(sheet_id = used_sheet_id).delete()
-            self.used_sheet_2(used_sheet_id, set_product_id, LAB)
+            self.used_sheet_2(used_sheet_id, set_product_id, LAB, warehouse_code)
         
             return JsonResponse({'message' : '입력하신 serials 를 해체 성공했습니다.'}, status = 200)
         except KeyError:
