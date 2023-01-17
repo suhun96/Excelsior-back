@@ -1393,6 +1393,8 @@ class DecomposeSetSerialCodeView(View):
             rollback_sheet_detail(generate_sheet_id)
             SheetComposition.objects.filter(sheet_id = generate_sheet_id).delete()
             self.generate_sheet_2(set_product_id, generate_sheet_id, LAB, warehouse_code)
+            for serial_code in serials:
+                SerialCode.objects.get(sheet_id = generate_sheet_id, code = serial_code).delete()
             
             rollback_sheet_detail(used_sheet_id)
             SheetComposition.objects.filter(sheet_id = used_sheet_id).delete()
