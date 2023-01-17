@@ -544,7 +544,7 @@ class SerialCodeCheckView(View):
             try: 
                 total = QuantityByWarehouse.objects.filter(product_id = product.id).aggregate(Sum('total_quantity'))
         
-                partial_quantity = QuantityByWarehouse.objects.get(warehouse_code = sheet_composition.warehouse_code, product_id = product.id).total_quantity,
+                partial_quantity = QuantityByWarehouse.objects.get(warehouse_code = detail.warehouse_code, product_id = product.id).total_quantity,
             
             except QuantityByWarehouse.DoesNotExist:
                 partial_quantity = 0
@@ -800,7 +800,7 @@ class ModifySerialCodeTitleView(View):
 class InquireSerialCodeTitleView(View):
     def get(self, request):
         
-        Title_list = list(SerialCodeTitle.objects.filter(status = True).values())
+        Title_list = list(SerialCodeTitle.objects.all().values())
 
         return JsonResponse({'message': Title_list})
 
@@ -1112,15 +1112,20 @@ class GenerateSetProductView(View):
     @jwt_decoder
     def post(self, request):
         input_data = json.loads(request.body)
-        print(input_data)
+        print('check point-1')
+        print(input_data.get('components'))
+        print(len(input_data.get('components')))
         user = request.user
         try:
             with transaction.atomic():
                 # components 의 개수와 생산할 세트 품목의 개수가 같아야 한다.
                 manufacture_quantity = input_data.get('manufacture_quantity')
+                print('check point-2')
+                print(manufacture_quantity)
+                print(type(manufacture_quantity))
                 components = input_data.get('components')
                 
-                if not len(components) == manufacture_quantity:
+                if not len(components) == int(manufacture_quantity):
                     return JsonResponse({'message' : '세트 생산에 필요한 구성품의 개수만큼 components가 들어오지 않았습니다.'}, status = 403)
 
                 generate_sheet_id = self.generate_sheet(input_data, user)
