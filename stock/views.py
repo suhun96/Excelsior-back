@@ -1317,7 +1317,7 @@ class DecomposeSetSerialCodeView(View):
 
             components = []
 
-            for i in LAB:
+            for i in range(LAB):
                 component = []
                 for product in product_component:
                     form = {
@@ -1344,7 +1344,6 @@ class DecomposeSetSerialCodeView(View):
                         sheet_id        = used_sheet_id,
                         product_id      = check_product_id,
                         quantity        = check_product.get('quantity'), 
-                        warehouse_code  = check_product.get('warehouse_code'),
                         unit_price      = unit_price,
                         etc             = '세트 생산으로 인한 소진'
                     )
@@ -1374,7 +1373,8 @@ class DecomposeSetSerialCodeView(View):
     @jwt_decoder
     def post(self, request):
         user = request.user
-        serials = request.POST['serials']
+        input_data = json.loads(request.body)
+        serials = input_data.get('serials')
         try:
             generate_sheet_id = self.check_serials(serials)
             target_query = SheetComposition.objects.get(sheet_id = generate_sheet_id)
@@ -1399,5 +1399,5 @@ class DecomposeSetSerialCodeView(View):
             self.used_sheet_2(used_sheet_id, set_product_id, LAB)
         
             return JsonResponse({'message' : '입력하신 serials 를 해체 성공했습니다.'}, status = 200)
-        except Exception:
+        except KeyError:
             return JsonResponse({'message' : '시리얼 코드 해체 시도 중 실패했습니다.'}, status = 403)
