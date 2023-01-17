@@ -1358,7 +1358,7 @@ class DecomposeSetSerialCodeView(View):
                         stock_quantity  = int(check_product.get('quantity'))
 
                     StockByWarehouse.objects.filter(warehouse_code = check_product.get('warehouse_code'), product_id = check_product_id).create(
-                        sheet_id = check_product_id,
+                        sheet_id = used_sheet_id,
                         stock_quantity = stock_quantity,
                         product_id = check_product_id,
                         warehouse_code = warehouse_code )
@@ -1374,6 +1374,7 @@ class DecomposeSetSerialCodeView(View):
     def post(self, request):
         user = request.user
         input_data = json.loads(request.body)
+        print(input_data)
         serials = input_data.get('serials')
         try:
             generate_sheet_id = self.check_serials(serials)
