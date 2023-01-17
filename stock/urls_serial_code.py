@@ -9,5 +9,6 @@ urlpatterns = [
     path('value-create', CreateSerialCodeValueView.as_view()), # POST / Form-data
     path('check', SerialCodeCheckView.as_view()),
     path('code-list', InquireSerialCodeView.as_view()),
-    path('set-code-list', InquireSetSerialCodeView.as_view())
+    path('set-code-list', InquireSetSerialCodeView.as_view()),
+    path('set-decompose', DecomposeSetSerialCodeView.as_view())
 ]
