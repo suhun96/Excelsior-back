@@ -534,40 +534,44 @@ class SerialCodeCheckView(View):
     def print_sheet(self, sheet, serial_code):
         product_id = SerialCode.objects.filter(code = serial_code).latest('id').product_id
         
-        sheet_composition = SheetComposition.objects.get(sheet_id = sheet.id , product_id = product_id)
+        sheet_composition = SheetComposition.objects.filter(sheet_id = sheet.id , product_id = product_id)
         
         product = Product.objects.get(id = product_id)
 
-        try: 
-            total = QuantityByWarehouse.objects.filter(product_id = product.id).aggregate(Sum('total_quantity'))
-      
-            partial_quantity = QuantityByWarehouse.objects.get(warehouse_code = sheet_composition.warehouse_code, product_id = product.id).total_quantity,
-        
-        except QuantityByWarehouse.DoesNotExist:
-            partial_quantity = 0
-            total = 0
+        result = []
 
-        result = {
-            'sheet_id'              : sheet.id,
-            'related_sheet_id'      : sheet.related_sheet_id,
-            'document_num'          : sheet.document_num,
-            'user_name'             : sheet.user.name,
-            'type'                  : sheet.type,
-            'company_name'          : sheet.company.name,
-            'etc'                   : sheet.etc,
-            'created_at'            : sheet.created_at,
-            'is_serial'             : product.is_serial,
-            'product_code'          : product.product_code,
-            'product_name'          : product.name,
-            'product_group_name'    : product.product_group.name,
-            'barcode'               : product.barcode,
-            'unit_price'            : sheet_composition.unit_price,
-            'quantity'              : sheet_composition.quantity,
-            'total_quantity'        : total['total_quantity__sum'],
-            'partial_quantity'      : partial_quantity,
-            'location'              : sheet_composition.location,
-            'etc'                   : sheet_composition.etc   
-            } 
+        for detail in sheet_composition:
+            try: 
+                total = QuantityByWarehouse.objects.filter(product_id = product.id).aggregate(Sum('total_quantity'))
+        
+                partial_quantity = QuantityByWarehouse.objects.get(warehouse_code = sheet_composition.warehouse_code, product_id = product.id).total_quantity,
+            
+            except QuantityByWarehouse.DoesNotExist:
+                partial_quantity = 0
+                total = 0
+            
+            dict_A = {
+                'sheet_id'              : sheet.id,
+                'related_sheet_id'      : sheet.related_sheet_id,
+                'document_num'          : sheet.document_num,
+                'user_name'             : sheet.user.name,
+                'type'                  : sheet.type,
+                'company_name'          : sheet.company.name,
+                'etc'                   : sheet.etc,
+                'created_at'            : sheet.created_at,
+                'is_serial'             : product.is_serial,
+                'product_code'          : product.product_code,
+                'product_name'          : product.name,
+                'product_group_name'    : product.product_group.name,
+                'barcode'               : product.barcode,
+                'unit_price'            : detail.unit_price,
+                'quantity'              : detail.quantity,
+                'total_quantity'        : total['total_quantity__sum'],
+                'partial_quantity'      : partial_quantity,
+                'location'              : detail.location,
+                'etc'                   : detail.etc   
+                }
+            result.append(dict_A) 
         
         return result
 
@@ -852,7 +856,6 @@ class InquireSerialCodeView(View):
         except SerialCode.DoesNotExist:
             return JsonResponse({'message' : '검색 조건에 맞는 시리얼 코드가 없습니다.'}, status = 403)    
 
-### 완성 못시킨 코드 ###
 class InquireSetSerialCodeView(View):
     def get(self, request):
         sheet_id = request.GET.get('sheet_id')
@@ -869,9 +872,6 @@ class InquireSetSerialCodeView(View):
             result.append(send_form)
             
         return JsonResponse({'message' : result}, status =200)
-# 평균가액
-
-# class InquireS
 
 class CheckSetProductView(View):
     def get(self, request):
@@ -1225,4 +1225,15 @@ class InquireSerialLogView(View):
             result.append(dict)
 
         return JsonResponse({'message' : result}, status = 200)
-            
+
+
+class DeleteTargetSetSerialCodeView(View):
+    def post(self, request):
+        set_serial_code = request.POST['set_serial_code']
+
+        target_set_serial_code = SerialCode.objects.get(code = set_serial_code)
+
+        target_sheet = Sheet.objects.get(id = target_set_serial_code.sheet_id)
+        target_sheet.type 
+
+        
