@@ -836,6 +836,16 @@ class CreateSerialCodeValueView(View):
         except KeyError:
             return JsonResponse({'message' : '잘못된 key 값을 입력하셨습니다.'}, status = 403)
 
+class DeleteSerialCodeValueView(View):
+    def get(self, request):
+        value_id = request.GET.get('value_id')
+        try:
+            SerialCodeValue.objects.get(id = value_id).delete()
+
+            return JsonResponse({'message' : '삭제가 완료되었습니다.'}, status = 200)
+        except SerialCodeValue.DoesNotExist:
+            return JsonResponse({'message' : '존재하지 않는 ID 값 입니다.'}, status = 403)
+            
 # Serial Code - 조회
 class InquireSerialCodeView(View):
     def get(self, request):
@@ -1224,6 +1234,7 @@ class InquireSerialLogView(View):
                 'date'    : f'{sheet2.date.year}-{(str(sheet2.date.month).zfill(2))}-{(str(sheet2.date.day).zfill(2))}',
                 'time'    : f'{sheet2.date.hour}:{str(sheet2.date.minute).zfill(2)}',
                 'type'    : sheet2.title.title,
+                'value_id': sheet2.id,
                 'content' : sheet2.contents,
                 'user'    : sheet2.user.name
             }
@@ -1373,7 +1384,6 @@ class DecomposeSetSerialCodeView(View):
     def post(self, request):
         user = request.user
         input_data = json.loads(request.body)
-        print(input_data)
         serials = input_data.get('serials')
         try:
             generate_sheet_id = self.check_serials(serials)
