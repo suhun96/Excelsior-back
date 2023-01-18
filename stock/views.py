@@ -845,7 +845,7 @@ class DeleteSerialCodeValueView(View):
             return JsonResponse({'message' : '삭제가 완료되었습니다.'}, status = 200)
         except SerialCodeValue.DoesNotExist:
             return JsonResponse({'message' : '존재하지 않는 ID 값 입니다.'}, status = 403)
-            
+
 # Serial Code - 조회
 class InquireSerialCodeView(View):
     def get(self, request):
@@ -1417,3 +1417,34 @@ class DecomposeSetSerialCodeView(View):
             return JsonResponse({'message' : '입력하신 serials 를 해체 성공했습니다.'}, status = 200)
         except KeyError:
             return JsonResponse({'message' : '시리얼 코드 해체 시도 중 실패했습니다.'}, status = 403)
+
+class DeleteMistakeSerialCodeView(View):
+    @jwt_decoder
+    def post(self, request):
+        user = request.user
+        input_data = json.loads(request.body)
+        serials  = input_data.get('serials')
+        sheet_id = input_data.get('sheet_id')
+
+        # 시리얼 체크
+        serial_code_id_list = []
+        for serial_code in serials:
+            try:
+                serial_code_id = SerialCode.objects.get(sheet_id = sheet_id, code = serial_code).id
+                serial_code_id_list.append(serial_code_id)
+            except SerialCode.DoesNotExist:
+                return JsonResponse({'message' : '입력하신 시리얼 정보를 확인해주세요.'}, status = 403)
+        
+        create_sheet_logs(sheet_id, user)
+
+        for serial_code_id in serial_code_id_list:
+            try:
+                product_id = SerialCode.objects.get(id = serial_code_id).product_id
+                target_sheet = SheetComposition.objects.get(sheet_id = sheet_id, product_id = product_id)
+                before_quantity = target_sheet.quantity
+                target_sheet.quantity = before_quantity - 1
+                target_sheet.save()        
+            except SheetComposition.DoesNotExist:
+                return JsonResponse({'message' : '존재하지 않는 sheet의 세부 사항입니다.'}, status = 403)
+        
+        return JsonResponse({'message' : '시리얼 수량 수정이 완료되었습니다.'}, status = 200)
