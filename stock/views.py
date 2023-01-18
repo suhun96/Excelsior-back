@@ -1443,7 +1443,8 @@ class DeleteMistakeSerialCodeView(View):
                 target_sheet = SheetComposition.objects.get(sheet_id = sheet_id, product_id = product_id)
                 before_quantity = target_sheet.quantity
                 target_sheet.quantity = before_quantity - 1
-                target_sheet.save()        
+                target_sheet.save()
+                delete_serial_code = SerialCode.objects.get(id = serial_code_id).delete()        
             except SheetComposition.DoesNotExist:
                 return JsonResponse({'message' : '존재하지 않는 sheet의 세부 사항입니다.'}, status = 403)
         
