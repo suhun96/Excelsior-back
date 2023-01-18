@@ -440,7 +440,7 @@ def rollback_sheet_detail(sheet_id):
                         stock_quantity = stock_quantity,
                         product_id = product_id,
                         warehouse_code = warehouse_code )
-                    
+
                     mam_delete_sheet(product_id, unit_price, quantity, stock_quantity)
 
                     QuantityByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id).update_or_create(
@@ -473,7 +473,7 @@ def rollback_sheet_detail(sheet_id):
                         stock_quantity = stock_quantity,
                         product_id = product_id,
                         warehouse_code = warehouse_code )
-                    
+
                     mam_delete_sheet(product_id, unit_price, quantity, stock_quantity)
 
                     QuantityByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id).update_or_create(
@@ -606,13 +606,16 @@ def mam_delete_sheet(product_id, unit_price, quantity, stock_quantity):
             total_quantity = total_quantity
         )
     else:
+        
         average_price = MovingAverageMethod.objects.get(product_id = product_id).average_price
         mul_stock   = average_price * total_quantity
         mul_inbound = unit_price * quantity
 
-        
-        result1 = (mul_stock - mul_inbound) / (total_quantity - quantity)
-        round_result = round(result1, 6)
+        try:
+            result1 = (mul_stock - mul_inbound) / (total_quantity - quantity)
+            round_result = round(result1, 6)
+        except ZeroDivisionError
+            round_result = 0
 
         new_MAM = MovingAverageMethod.objects.filter(product_id= product_id).update(
             average_price = round_result,
