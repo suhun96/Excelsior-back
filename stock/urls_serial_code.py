@@ -11,5 +11,6 @@ urlpatterns = [
     path('check', SerialCodeCheckView.as_view()),
     path('code-list', InquireSerialCodeView.as_view()),
     path('set-code-list', InquireSetSerialCodeView.as_view()),
-    path('set-decompose', DecomposeSetSerialCodeView.as_view())
+    path('set-decompose', DecomposeSetSerialCodeView.as_view()),
+    path('mistake', DeleteMistakeSerialCodeView.as_view())
 ]
