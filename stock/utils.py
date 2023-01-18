@@ -167,7 +167,7 @@ def create_set_serial_code(input_data, generate_sheet_id):
     if not SerialCode.objects.filter(code__icontains = serial_code1).exists():
         route = '01'
         for i  in range(int(manufacture_quantity)):
-            numbering = '001'
+            numbering = str(i + 1).zfill(3)
             serial_code2 = serial_code1 + route + numbering   
             SerialCode.objects.create(code = serial_code2, sheet_id = generate_sheet_id, product_id = product_id)
     else:
