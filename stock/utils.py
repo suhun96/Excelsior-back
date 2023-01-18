@@ -614,7 +614,7 @@ def mam_delete_sheet(product_id, unit_price, quantity, stock_quantity):
         try:
             result1 = (mul_stock - mul_inbound) / (total_quantity - quantity)
             round_result = round(result1, 6)
-        except ZeroDivisionError
+        except ZeroDivisionError:
             round_result = 0
 
         new_MAM = MovingAverageMethod.objects.filter(product_id= product_id).update(
