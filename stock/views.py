@@ -977,12 +977,15 @@ class GenerateSetProductView(View):
                 
                 generate_set_product_price = 0
                 for component_id in component_list:
-                    mam_price = MovingAverageMethod.objects.get(product_id = component_id)
-
-                    if mam_price.custom_price == 0:
-                        target_price = mam_price.average_price
-                    else:
-                        target_price = mam_price.custom_price
+                    try:
+                        mam_price = MovingAverageMethod.objects.get(product_id = component_id)
+                    
+                        if mam_price.custom_price == 0:
+                            target_price = mam_price.average_price
+                        else:
+                            target_price = mam_price.custom_price
+                    except MovingAverageMethod.DoesNotExist:
+                        target_price = 0
                     generate_set_product_price += target_price
                 
                 labor_price = set_product.labor
