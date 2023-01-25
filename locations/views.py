@@ -58,7 +58,7 @@ class DeleteWarehousePropertyView(View):
         WarehouseProperty.objects.get(id = warehouse_property_id).delete()
         return JsonResponse({'message' : '삭제를 성공했습니다.'}, status = 200)
 
-########################################################################################################
+#---------------------------------------------------------------------------------------------------------------------#
     
 class CreateWarehouseTypeView(View):
     def post(self, request):

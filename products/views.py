@@ -583,7 +583,7 @@ class CreateProductEtcDescView(View):
         except KeyError:
             return JsonResponse({'message' : '잘못된 key 값을 입력하셨습니다.'}, status = 200)
 
-###########################################################################################################
+#----------------------------------------------------------------------------------------------------#
 
 class SetInfoView(View):
     def get(self, request):

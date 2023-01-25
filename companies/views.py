@@ -24,21 +24,21 @@ class CompanyView(View):
         length = Company.objects.all().count()
         
         filter_options = {
-            'name'     : 'name__icontains',
-            'keyword'  : 'keyword__icontains',
-            'code'     : 'code__icontains',
-            'represent': 'represent__icontains',
-            'biz_no'   : 'biz_no__icontains',
-            'biz_type' : 'biz_type__icontains',
-            'biz_item' : 'biz_item__icontains',
-            'phone'    : 'phone__icontains',
-            'fax'      : 'fax__icontains',
-            'mobile'   : 'mobile__icontains',
-            'email'    : 'email__icontains',
+            'name'         : 'name__icontains',
+            'keyword'      : 'keyword__icontains',
+            'code'         : 'code__icontains',
+            'represent'    : 'represent__icontains',
+            'biz_no'       : 'biz_no__icontains',
+            'biz_type'     : 'biz_type__icontains',
+            'biz_item'     : 'biz_item__icontains',
+            'phone'        : 'phone__icontains',
+            'fax'          : 'fax__icontains',
+            'mobile'       : 'mobile__icontains',
+            'email'        : 'email__icontains',
             'address_main' : 'address_main__icontains',
             'address_desc' : 'address_desc__icontains',
-            'zip_code' : 'zip_code__icontains',
-            'status'    : 'status'
+            'zip_code'     : 'zip_code__icontains',
+            'status'       : 'status'
         }
 
         filter_set = { filter_options.get(key) : value for (key, value) in request.GET.items() if filter_options.get(key) }
@@ -53,7 +53,7 @@ class CompanyView(View):
         input_data = request.POST
         try:
             with transaction.atomic():
-                # 필수값 (이름, 코드, 번호)이 있는지 확인 없으면 에러 발생.
+                # 필수값 이름이 있는지 확인 없으면 에러 발생.
                 if not "name" in input_data:
                     return JsonResponse({'message' : 'Please enter the correct value.'}, status = 403)
                 
