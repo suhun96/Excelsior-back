@@ -1,16 +1,16 @@
-from django.urls import path
+from django.urls import path, include
 
 from products.views import *
 
 
 urlpatterns = [
-    path('group', CreateProductGroupView.as_view()),
-    path('company', CreateCompanyView.as_view()),
-    path('info', CreateProductInfoView.as_view()),
-    path('inbound', CreateInboundOrderView.as_view()),
-    path('outbound', CreateOutboundOrderView.as_view()),
-    path('outbound_conf', ConfirmOutboundOrderView.as_view()),
-    path('setinfo',CreateSetInfoView.as_view()),
-    path('print', PrintProductBarcodeView.as_view())
+    path('group', ProductGroupView.as_view()),
+    path('group-mod', ModifyProductGroupView.as_view()),
+    path('info',ProductInfoView.as_view()),
+    path('mod', ModifyProductInfoView.as_view()),
+    path('set-info', SetInfoView.as_view()),
+    path('status', ProductStatusView.as_view()),
+    path('group-status', ProductGroupStatusView.as_view()),
+    path('etc/', include('products.urls_etc'))
 ]
 

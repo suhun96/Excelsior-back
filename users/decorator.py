@@ -12,7 +12,16 @@ def jwt_decoder(func):
             jwt_token   = request.headers.get('Authorization', None)
             payload     = jwt.decode(jwt_token, SECRET_KEY, ALGORITHM)
             user        = User.objects.get(id = payload['user_id'])
+            
+            if user.status == False:
+                return JsonResponse({'message' : f'{user.name}은 허가되지 않은 상태입니다.'}, status = 403)
+            
+            # user_permission = UserPermission.objects.get(user_id = user.id)
+
+            # request.user_permission = user_permission
             request.user = user
+
+
 
         except jwt.InvalidSignatureError:
             return JsonResponse({'message' : 'INVALID_SIGNATURE_ERROR'}, status = 400)
@@ -28,16 +37,4 @@ def jwt_decoder(func):
 
         
         return func(self, request, *args, **kwargs)
-    return wrapper
-
-def check_status(func):
-    def wrapper(self, request, *args, **kwargs):
-        user_status = User.objects.get(id = request.user.id ).status
-        
-        if user_status == False:
-            return JsonResponse({'message' : 'This account is not available.'}, status = 403)
-        
-        else:
-            return func(self, request, *args, **kwargs)
-
     return wrapper

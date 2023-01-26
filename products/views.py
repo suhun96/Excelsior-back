@@ -1,400 +1,712 @@
-import json
+import json, re
+
 
 from django.views       import View
 from django.http        import JsonResponse
-from django.db          import transaction, connection
-from django.db.models   import Q
-from datetime           import datetime
+from django.db          import transaction, connection, IntegrityError
+from django.db.models   import Q, Sum
+
 
 # Model
 from users.models       import *
 from products.models    import *
+from companies.models   import *
+from locations.models   import *
+from stock.models       import *
 
 # decorator & utills 
-from users.decorator    import jwt_decoder, check_status
+from users.decorator    import jwt_decoder
 from products.utils     import *
+from stock.utils        import *
 
-class CreateProductGroupView(View):
-    @jwt_decoder
-    @check_status
-    def post(self, request):
-        input_data = request.POST
+import telegram
+from my_settings        import TELEGRAM_TOKEN, CHAT_ID
 
-        try:
-            if not "name" in input_data or not "code" in input_data:
-                return JsonResponse({'message' : 'Please enter the correct value.'}, status = 403)
 
-            new_PG , is_created = ProductGroup.objects.filter(
-                Q(name = input_data['name']) | Q(code = input_data['code'])
-            ).get_or_create(
-                defaults= {
-                    'name' : input_data['name'],
-                    'code' : input_data['code'],
-                    'etc'  : input_data['etc']
-                })
+class ProductGroupView(View):
+    def get(self, request):
+        name = request.GET.get('name', None)
+        code = request.GET.get('code', None)
+        status = request.GET.get('status', None)
+        offset = int(request.GET.get('offset'))
+        limit  = int(request.GET.get('limit'))
 
-            if is_created == False:
-                return JsonResponse({'messaga' : 'The product code(name) is already registered.'}, status = 403)      
-
-            check_PG = list(ProductGroup.objects.filter(id = new_PG.id).values(
-                'id',
-                'name',
-                'code',
-                'etc'
-            ))
-
-            return JsonResponse({'message' : check_PG}, status = 200)
-       
-        except KeyError:
-            return JsonResponse({'message' : 'KEY ERROR'}, status = 403)
-
-class CreateCompanyView(View):
-    @jwt_decoder
-    @check_status
-    def post(self, request):
-        input_data = request.POST
+        length = ProductGroup.objects.all().count()
 
         try:
-            if not "name" in input_data or not "code" in input_data:
-                return JsonResponse({'message' : 'Please enter the correct value.'}, status = 403)
-
-            new_CP , is_created = Company.objects.filter(
-                Q(name = input_data['name']) | Q(code = input_data['code'])
-            ).get_or_create(
-                defaults= {
-                    'name'       : input_data['name'],
-                    'code'       : input_data['code'],
-                    'address'    : input_data['address'],
-                    'managers'   : input_data['managers'],
-                    'telephone'  : input_data['telephone'],
-                    'mobilephone': input_data['mobilephone'],
-                    'manage_tag' : input_data['manage_tag'],
-                    'etc'        : input_data['etc']
-                })
-
-            if is_created == False:
-                return JsonResponse({'messaga' : 'The company code(name) is already registered.'}, status = 403)      
-
-            check_CP = list(Company.objects.filter(id = new_CP.id).values(
-                'name',       
-                'code',      
-                'address',    
-                'managers',   
-                'telephone',  
-                'mobilephone',
-                'manage_tag', 
-                'etc'        
-            ))
-
-            return JsonResponse({'message' : check_CP}, status = 200)
-       
-        except KeyError:
-            return JsonResponse({'message' : 'KEY ERROR'}, status = 403)
-
-class CreateProductInfoView(View):
-    def __init__(self):
-        # 날짜 설정
-        now = datetime.now()
-        self.year    = str(now.year)
-        self.month   = str(now.month)
-        self.day     = str(now.day) 
-
-    def post(self, request):
-        input_data = request.POST
-
-        try:
-            with transaction.atomic():
-                product_code = product_code_generator(input_data['pg_code'], input_data['cp_code'])
-                quantity = input_data['quantity']
-
-                # 제품 정보만 등록    
-                if int(quantity) == 0:
-                    ProductInfo.objects.create(
-                        product_code = product_code,
-                        quantity = quantity,
-                        safe_quantity = input_data['safe_quantity'],
-                        search_word = input_data['search_word'],
-                        name = input_data['name']
-                    )
-                    return JsonResponse({f'{product_code}' : 'Product information has been registered.'}, status = 200)
-                
-                # 제품 정보 등록 & 수량 입력 바코드 생성
-                else:
-                    ProductInfo.objects.create(
-                        product_code = product_code,
-                        quantity = quantity,
-                        safe_quantity = input_data['safe_quantity'],
-                        search_word = input_data['search_word'],
-                        name = input_data['name']
-                    )
-                    product_history_generator(product_code, quantity ,input_data['price'] ,input_data['etc'] )
-                    return JsonResponse({f'{product_code}' : f'등록 되었습니다. 입력하신 {quantity} 만큼 바코드를 생성했습니다.'}, status = 200) 
-        
-        except KeyError:
-            return JsonResponse({'message' : 'Key error'}, status = 403)
-
-class CreateInboundOrderView(View):
-    @jwt_decoder
-    @check_status
-    def post(self, request):
-        body_data= json.loads(request.body)
-        user = request.user
-        
-        try:
-            with transaction.atomic():
-                # 회사 코드 확인
-                if not 'company_code' in body_data:
-                    return JsonResponse({'message': "Company code does not exist."}, status = 403)
-                company_code = body_data['company_code']
-                # 기타사항 입력 과 미입력 값 조정
-                if 'etc' in body_data:
-                    etc = body_data['etc']
-                else:
-                    etc = ''    
-
-                # 새로운 입고확인서 생성
-                new_order = InboundOrder.objects.create(
-                    user_id = user.id,
-                    company_code =  body_data['company_code'],
-                    etc = etc
-                ) 
-
-                new_order_id = new_order.id
-
-                
-                for product_code in body_data.keys():
-                    # 입력값 필터링
-                    if str(product_code[0:4]).isupper() == True:
-                        product_code = product_code # 시리얼 코드안에 있는 가격, 수량 정보 가져옴
-                        print(product_code)
-                        price = body_data[product_code]['price']
-                        quantity = body_data[product_code]['Q']
-                        # 제품 정보 테이블에서 시리얼 코드가 있는지 확인
-                        if not ProductInfo.objects.filter(product_code__contains = product_code).exists():
-                            raise Exception(f'{product_code} 가 존재하지 않습니다')
-                        # 입고확인서 ID를 입력하여 입고된 상품의 정보 테이블에 저장
-                        InboundQuantity.objects.create(
-                            inbound_order_id = new_order_id,
-                            product_code = product_code,
-                            inbound_price = price,
-                            inbound_quntity = quantity
-                        )
-                        # 입고된 내용을 통해 제품 history, 제품 회사 - 가격 테이블 생성 (바코드 생성 및 저장)
-                        product_history_generator(product_code, quantity, price, etc)
-                        update_product_his(product_code) # 기존에 있는 수량과 입고된 수량 파악 후 저장.
-                        update_price(product_code, price, company_code)
-                        
-
-            return JsonResponse({'message' : 'Inbounding processing has been completed.'}, status = 200)
-        except KeyError:
-            return JsonResponse({'message' : 'Key error'}, status = 403)
-        except Exception as e:
-            return JsonResponse({'message' : 'An exception occurred while running.'}, status = 403)
-
-class CreateOutboundOrderView(View):
-    @jwt_decoder
-    @check_status
-    def post(self, request):
-        input_data = json.loads(request.body) # 여기서는 request.body를 사용
-        user = request.user
-        try:
-            with transaction.atomic():
-                #input_data 에서 받은 값에 company_code가 들어있는지 체크
-                if not 'company_code' in input_data:
-                    return JsonResponse({'message': "Company code does not exist."}, status = 403)
-                
-                #input_data 에서 받은 값으로 새로운 출고 주문서 생성
-                new_OB_order = OutboundOrder.objects.create(
-                    user_id = user.id,
-                    company_code = input_data['company_code'],
-                    etc = input_data['etc']
-                )
-    
-                new_OB_order_id = new_OB_order.id
-
-                
-                for product_code in input_data.keys():
-                    # 길이가 7인 값 = 시리얼 코드
-                    if len(product_code) == 7:
-                        product_code = product_code
-                        price = input_data[product_code]['price']
-                        quantity = input_data[product_code]['Q']
-
-                        # 제품 정보 테이블에서 시리얼 코드를 검색 없으면 예외를 일으켜 트랜젝션 작동
-                        if not ProductInfo.objects.filter(product_code__icontains = product_code).exists():
-                            raise Exception(f'{product_code} 가 존재하지 않습니다')
-                        # 제품이 있으면 수량, 가격, 생성한 출고 id로 OutboundQunatity 테이블 생성 
-                        OutboundQuantity.objects.create(
-                            outbound_order_id = new_OB_order_id,
-                            product_code = product_code,
-                            outbound_price = price,
-                            outbound_quantity = quantity
-                        )
-
-                # ConfirmOutboundOrderView 에서 사용할 딕셔너리 생성
-                Confirm_query = OutboundQuantity.objects.filter(outbound_order = new_OB_order_id).values('product_code', 'outbound_quantity')
-                check_product_code = {}
-
-                for query in Confirm_query:
-                    product_code = query['product_code']
-                    quantity    = query['outbound_quantity']
-                    check_product_code[product_code] = int(quantity)
-
-                
-            return JsonResponse({"product_codes" : check_product_code }, status = 200)
-        except KeyError:
-            return JsonResponse({'message' : 'Key error'}, status = 403)
-        except Exception as e:
-            return JsonResponse({'message' : 'An exception occurred while running.'}, status = 403)
-
-class ConfirmOutboundOrderView(View):
-    @jwt_decoder
-    @check_status
-    def post(self, request):
-        input_data = json.loads(request.body)
-        try:
-            with transaction.atomic():
-                OB_id = input_data['OB_id']
-                company_code = OutboundOrder.objects.get(id = OB_id).company_code
-
-                # {프로덕트 코드 : 바코드 수량} 비교 딕셔너리 생성.
-                product_codes_dic = {}
-                check_status = OutboundQuantity.objects.filter(outbound_order_id = OB_id).values('product_code', 'outbound_quantity')
-                for i in range(len(check_status)):
-                    product_codes_dic[check_status[i]['product_code']] = check_status[i]['outbound_quantity']
-
-                barcodes = input_data['barcodes']
-                
-                # 바코드를 슬라이싱해 프로덕트 코드화 딕셔너리 key 값에 슬라이싱한 바코드를 넣어 {프로덕트 코드 : 바코드 수량} 딕셔너리 값을 하나 차감.
-                for i in range(len(barcodes)):
-                    slicing_product_code = barcodes[i][:7]
-
-                    if not slicing_product_code in product_codes_dic.keys():
-                        return JsonResponse({'message' : 'Please check the first 7 digits of the product code.'}, status = 403 )
-                    product_codes_dic[slicing_product_code] = int(product_codes_dic[slicing_product_code]) - 1
-                
-                # {프로덕트 코드 : 바코드 수량} 바코드 수량이 0이 되지않으면 (즉, 같은 딕셔너리에 포함된 같은 프로덕트 코드 값의 바코드가 들어오지 않았음) return 값 작동.
-                for i in product_codes_dic.values():
-                    if not i == 0:
-                        return JsonResponse({"product_codes" : 'The barcode entered and the outbounding order do not match.' }, status = 200)
-                
-                for barcode in barcodes:
-                    # 바코드 검증 use_status가 1이 아니면 return 값 작동.
-                    if not ProductHis.objects.get(barcode = barcode).use_status == 1 :
-                        return JsonResponse({'message' : 'Barcode already used.'}, status = 403 )
-                    product_code = barcodes[i][:7]
-                    
-                    # 사용한 바코드 use_status 변경(사용함 = 2) 
-                    # OutboundBarcode Table에 OB 아이디와 바코드 저장 부품 추적시 사용.
-                    ProductHis.objects.filter(barcode = barcode).update(use_status = 2)
-                    OutboundBarcode.objects.create(outbound_order_id = OB_id, barcode = barcode)
-                    update_product_his(product_code)
-                    
-                     # 제품 정보에 수량 수정사항(사용 가능한 수량, 회사 - 출고 가격) 반영.
-                    outbound_price = OutboundQuantity.objects.get(product_code = product_code, outbound_order_id = OB_id).outbound_price
-                    update_product_his(product_code)
-                    update_price(product_code, outbound_price, company_code)
-                    
-            return JsonResponse({"product_codes" : 'processing completed.' }, status = 200)
-        except KeyError:
-            return JsonResponse({'message' : 'Key error'}, status = 403)
-
-class CreateSetInfoView(View):
-    def __init__(self):
-        # 날짜 설정
-        now = datetime.now()
-        self.year    = str(now.year)
-        self.month   = str(now.month)
-        self.day     = str(now.day) 
-
-    def serial_generator(self, pg_code):
-        product_group  = ProductGroup.objects.filter(code = pg_code)
-        
-        # 제품 그룹이 있는지 체크
-        if product_group.exists() == False:
-            raise ValueError('Product group that does not exist.')
-
-        CPPG = 'EX' + pg_code # SSPP 
-        # 형번을 생성 등록된 제품 정보를 참고해 CPPG 가 존재하면 그 다음 형번을 부여 없으면 1로 시작.
-        if SetProductInfo.objects.filter(set_product_code__icontains = CPPG).exists():
-            latest_product_code = SetProductInfo.objects.filter(set_product_code__icontains = CPPG).latest('created_at').set_product_code
-            model_number = int(latest_product_code[5:7]) + 1
-        else:
-            model_number = 1
-
-        model_number = str(model_number).zfill(3)
-        # 제품 시리얼 코드 생성 SSPP001
-        set_product_code = CPPG + model_number
-        
-        return set_product_code
-
-
-    def post(self, request):
-        input_data = json.loads(request.body)
-        set_product_code = self.serial_generator(input_data['pgcode'])
-        
-        try:
-            with transaction.atomic():
-                new_set = SetProductInfo.objects.create(
-                    set_product_code = set_product_code,
-                    quantity = input_data['quantity'],
-                    safe_quantity = input_data['safe_quantity'],
-                    search_word = input_data['search_word'],
-                    name = input_data['name']
-                    )
-                
-                product_codes = input_data['product_code']
-                for product_code in product_codes:
-                    quantity = int(product_codes[product_code])
-                    if not ProductInfo.objects.filter(product_code__icontains = product_code).exists():
-                        raise Exception(f'{product_code} 가 존재하지 않습니다')
-                    
-                    SetProductQuantity.objects.create(
-                        set_product_code = set_product_code,
-                        product_code = product_code,
-                        product_quantity = quantity
-                    )
-                
-                set_product_history_generator(set_product_code, input_data['quantity'],input_data['price'] ,input_data['etc'] )
-
-            return JsonResponse({'mesaage' : 'Product information has been registered.'}, status = 200) 
-        except KeyError:
-            return JsonResponse({'mesaage' : 'Key Error'}, status = 403) 
-
-class PrintProductBarcodeView(View):
-    def __init__(self):
-        now = datetime.now()
-        year    = str(now.year)
-        month   = str(now.month).zfill(2)
-        day     = str(now.day).zfill(2)
-        self.today = year[2:4] + month + day
-
-    def post(self, request):
-        input_data = request.POST
-        product_code = input_data['product_code']
-        yymmdd = self.today
-    
-        try:
-            product_info = ProductInfo.objects.filter(product_code = product_code)
-            print(len(connection.queries))
-            if not product_info.exists():
-                return JsonResponse({'mesaage' : '존재하지 않는 프로덕트 코드 입니다.'}, status = 403) 
-
-            if "yymmdd" in input_data:
-                yymmdd = input_data['yymmdd']
+            q = Q()
+            if name:
+                q &= Q(name__icontains = name)
+            if code:
+                q &= Q(code__icontains = code)
+            if status:
+                q &= Q(status = status)
             
-            barcodes = list(print_barcode(product_code, yymmdd))
-            print(len(connection.queries))
-            return JsonResponse({'barcodes' : barcodes }, status = 200) 
-        except KeyError:
-            return JsonResponse({'mesaage' : 'Key Error'}, status = 403) 
-
-# class CheckView(View):
-#     def post(self, request):
-#         data = request.POST
-#         product_code = "SHVV008"
-#         yymmdd = '221101'
-#         barcodes = list(print_barcode(product_code, yymmdd))
+            # result = list(ProductGroup.objects.filter(q).values())
+            result = list(ProductGroup.objects.filter(q)[offset : offset+limit].values())
         
-#         return JsonResponse({'message' : barcodes}, status = 200)
+            return JsonResponse({'message' : result, 'length': length}, status = 200)
+        except:
+            return JsonResponse({'message' : '예외 상황 발생'}, status = 403)
+            
+    @jwt_decoder
+    def post(self, request):
+        input_data = request.POST
 
+        
+        if not "name" in input_data:
+            return JsonResponse({'message' : 'Please enter the correct value.'}, status = 403)
+
+        if ProductGroup.objects.filter(name = input_data['name']).exists():
+                return JsonResponse({'message' : 'The product name is already registered.'}, status = 403)
+
+        if ProductGroup.objects.filter(code = input_data['code']).exists():
+                return JsonResponse({'message' : 'The product code is already registered.'}, status = 403)     
+        
+        
+
+        REGEX_CODE = '[A-Z]{2}'  
+
+        CREATE_SET = {}
+        CREATE_OPT = ['name', 'code', 'etc']
+        # create_options 로 request.POST 의 키값이 정확한지 확인.
+        for key in dict(request.POST).keys():
+            if key in CREATE_OPT:
+                if key == 'code':
+                    if not re.fullmatch(REGEX_CODE, input_data['code']):
+                        return JsonResponse({'message' : '제품 그룹 코드의 형식을 확인해주세요. [A-Z] 2자리 '}, status = 403)
+
+                CREATE_SET.update({ key : request.POST[key] })
+            
+            else:
+                return JsonResponse({'message' : '잘못된 키값이 들어오고 있습니다.'}, status = 403)
+
+        new_product_group = ProductGroup.objects.create(**CREATE_SET)
+
+        check_PG = list(ProductGroup.objects.filter(id = new_product_group.id).values(
+            'id',
+            'name',
+            'code',
+            'etc',
+            'status'
+        ))
+
+        return JsonResponse({'message' : check_PG}, status = 200)
+
+class ModifyProductGroupView(View):
+    @jwt_decoder
+    def post(self, request):
+        input_data = request.POST
+        group_id = request.GET.get('group_id')
+
+        if not ProductGroup.objects.filter(id = group_id).exists():
+            return JsonResponse({'message' : '존재하지 않는 제품그룹입니다.'}, status = 403)
+
+        try:
+            with transaction.atomic():
+                UPDATE_SET = {}
+
+                update_options = ['etc', 'status']
+
+                for key, value in input_data.items():
+                    if key == 'name':
+                        if ProductGroup.objects.filter(name = value).exists():
+                            return JsonResponse({'message' : 'The product name is already registered.'}, status = 403)
+                        else:
+                            UPDATE_SET.update({ key : value })
+
+                    if key in update_options:
+                        UPDATE_SET.update({ key : value })
+                    
+                ProductGroup.objects.filter(id = group_id).update(**UPDATE_SET)
+                return JsonResponse({'message' : '업데이트 내역을 확인해 주세요~!!'}, status = 200)
+        except:
+            return JsonResponse({'message' : "예외 사항이 발생했습니다."}, status = 403)
+
+class ProductInfoView(View):
+    def create_sheet_new(self, input_data, user, new_product):
+        user = user
+        input_user =  user.id
+        input_data = input_data
+        price    = input_data.get('price', None)
+        quantity = input_data.get('quantity', None)
+        new_product_code = new_product.product_code
+
+        try:
+            with transaction.atomic():        
+                new_sheet = Sheet.objects.create(
+                    user_id = input_user,
+                    type = 'new',
+                    etc  = '초도 입고'
+                )
+                generate_document_num(new_sheet.id)
+
+                if Product.objects.filter(product_code = new_product_code).exists() == False:
+                    raise Exception({'message' : f'{new_product_code}는 존재하지 않습니다.'}) 
+            
+                SheetComposition.objects.create(
+                    sheet_id        = new_sheet.id,
+                    product_id      = new_product.id,
+                    quantity        = quantity, 
+                    warehouse_code  = Warehouse.objects.get(main = True).code,
+                    location        = new_product.location,
+                    unit_price      = price,
+                )
+                
+                stock = StockByWarehouse.objects.filter(warehouse_code = Warehouse.objects.get(main = True).code , product_id = new_product.id)
+        
+                if stock.exists():
+                    before_quantity = stock.last().stock_quantity
+                    stock_quantity  = before_quantity + int(quantity)
+                else:
+                    stock_quantity  = int(quantity)
+                
+                StockByWarehouse.objects.filter(warehouse_code = Warehouse.objects.get(main = True).code, product_id = new_product.id).create(
+                    sheet_id = new_sheet.id,
+                    stock_quantity = stock_quantity,
+                    product_id = new_product.id,
+                    warehouse_code = Warehouse.objects.get(main = True).code )
+                
+
+                QuantityByWarehouse.objects.filter(warehouse_code = Warehouse.objects.get(main = True).code, product_id = new_product.id).update_or_create(
+                    product_id = new_product.id,
+                    warehouse_code = Warehouse.objects.get(main = True).code,
+                    defaults={
+                        'total_quantity' : stock_quantity,
+                    })
+                
+                if Product.objects.get(id = new_product.id).is_serial == True:
+                    create_product_serial_code(new_product.id, quantity, new_sheet.id)    
+                else:
+                    pass
+                # 이동 평균법 작동 
+                mam_create_sheet(new_product.id, price, quantity, stock_quantity)
+        except:
+            raise Exception({'message' : 'sheet를 생성하는중 에러가 발생했습니다.'})
+
+    def get(self, request):
+        offset = int(request.GET.get('offset'))
+        limit  = int(request.GET.get('limit'))
+
+        length = Product.objects.all().count()
+
+
+        name                = request.GET.get('name', None)
+        keyword             = request.GET.get('keyword', None)
+        product_group_name  = request.GET.get('product_group_name', None)
+        warehouse_code      = request.GET.get('warehouse_code', None)
+        product_code        = request.GET.get('product_code', None)
+        barcode             = request.GET.get('barcode', None)
+        status              = request.GET.get('status', None)
+        try:
+            q = Q()
+            if name:
+                q &= Q(name__icontains = name)
+            if keyword:
+                q &= Q(keyword__icontains = keyword)
+            if product_group_name:
+                product_group_list = ProductGroup.objects.filter(name__icontains = product_group_name).values_list('id', flat= True)
+                q &= Q(product_group_id__in = list(product_group_list))
+            if warehouse_code:
+                q &= Q(warehouse_code__icontains = warehouse_code)
+            if product_code:
+                q &= Q(product_code__icontains = product_code)
+            if barcode:
+                q &= Q(barcode__icontains = barcode)
+            if status:
+                q &= Q(status = status)
+
+            
+            products = Product.objects.filter(q).prefetch_related('movingaveragemethod_set')[offset : offset+limit].values(
+                'id',
+                'is_set',
+                'is_serial',
+                'movingaveragemethod__custom_price',
+                'movingaveragemethod__average_price',
+                'labor',
+                'movingaveragemethod__custom_price',
+                'movingaveragemethod__average_price',
+                'company__code',
+                'company__name',
+                'product_group__code',
+                'product_group__name',
+                'product_num',
+                'product_code',
+                'safe_quantity',
+                'keyword',
+                'name',
+                'warehouse_code',
+                'location',
+                'barcode',
+                'status'
+
+            ) 
+
+            return JsonResponse({'message' : list(products), 'length': length}, status = 200)
+        except KeyError:
+            return JsonResponse({'message' : 'keyerror'}, status = 403)
+
+    @jwt_decoder
+    def post(self, request):
+        user = request.user
+        input_data = json.loads(request.body)
+        name = input_data.get('name', None)
+        product_group_id = input_data.get('product_group_id', None)
+        product_group_code = input_data.get('product_group_code', None)
+        warehouse_code = input_data.get('warehouse_code', None)
+        company_code = input_data.get('company_code', None)
+        # company_id   = input_data.get('company_id', None)
+        is_set = input_data.get('is_set', None)
+        composition = input_data.get('composition', None )
+        is_serial = input_data.get('is_serial', None)
+        labor = input_data.get('labor', None)
+
+
+        check_price    = input_data.get('price', None)
+        check_quantity = input_data.get('quantity', None)
+        
+        
+        
+        # 필수값 제품명 확인
+        if name == None:
+            return JsonResponse({'message' : '제품명을 입력해주세요'}, status = 403)
+
+        if product_group_id == None:
+            return JsonResponse({'message' : '제품 그룹 id를 입력해주세요'}, status = 403)
+        else:
+            if not ProductGroup.objects.filter(id = product_group_id).exists():
+                return JsonResponse({'message' : '존재하지 않는 제품그룹 코드입니다.'}, status = 403)
+        if warehouse_code:
+            if not Warehouse.objects.filter(code = input_data['warehouse_code']).exists():
+                return JsonResponse({'message' : '존재하지 않는 창고 코드입니다.'}, status = 403)
+        if not warehouse_code:
+            warehouse_code = Warehouse.objects.get(main = True).code
+        
+        # 시리얼 사용 유무
+        if not is_serial:
+            is_serial = False
+        if is_serial:
+            is_serial = True
+
+        try:
+            with transaction.atomic():
+                # 회사코드가 있으면
+                if company_code:
+                # 회사코드 체크
+                    if not Company.objects.filter(code = company_code).exists():
+                        return JsonResponse({'message' : f'[{company_code}] 존재하지 않는 회사 코드입니다.'})
+                    
+                    company_id = Company.objects.get(code = company_code).id
+
+                    tartget_product = Product.objects.filter(product_group_id = product_group_id) 
+                    
+                    if tartget_product.exists():
+                        latest_product = tartget_product.latest('created_at')
+                        product_num = latest_product.product_num
+                        change_int_num = int(product_num) + 1
+                        product_num = str(change_int_num).zfill(3)           
+                    else:
+                        product_num = '001'
+                    
+                    # 세트 상품이면 
+                    if is_set == "True":
+                        CREATE_SET = {
+                            'is_set' : True,
+                            'is_serial': True, 
+                            'labor' : labor,     
+                            'product_group_id' : product_group_id , 
+                            'company_id' : company_id, 
+                            'name' : name,
+                            'product_num'  : product_num,
+                            'product_code' : company_code + product_group_code + product_num,
+                            'warehouse_code' : warehouse_code
+                        }
+                        # 들어온 기타 정보사항 CREATE_SET에 추가
+                        for key, value in input_data.items():
+                            if key in ['keyword', 'location', 'barcode']:
+                                CREATE_SET.update({key : value})
+
+                            if key == 'safe_quantity':
+                                if value == "":
+                                    CREATE_SET.update({key : 0})
+                                else:
+                                    CREATE_SET.update({key : value}) 
+                                
+                        
+                        # 새로운  세트 제품 등록
+                        new_product = Product.objects.create(**CREATE_SET)
+
+                        if check_price and check_quantity:
+                            self.create_sheet_new(input_data, user, new_product)
+                            
+                        # 새로운 세트 제품의 구성품 등록
+                        for id, quantity in composition.items():
+                            ProductComposition.objects.create(
+                                set_product_id = new_product.id,
+                                composition_product_id = id,
+                                quantity = quantity
+                            )
+                        return JsonResponse({'message' : '[Case 1] 새로운 세트 상품이 등록되었습니다.'}, status = 200) 
+                    # 일반 상품이면
+                    else:
+                        CREATE_SET = {
+                            'is_set' : False,
+                            'is_serial' : is_serial,  
+                            'product_group_id'  : product_group_id , 
+                            'company_id'        : company_id, 
+                            'name'              : name,
+                            'product_num'       : product_num,
+                            'product_code'      : company_code + product_group_code + product_num,
+                            'warehouse_code'    : warehouse_code
+                        }
+
+                        # 들어온 기타 정보사항 CREATE_SET에 추가
+                        for key, value in input_data.items():
+                            if key in ['keyword', 'location','barcode']:
+                                CREATE_SET.update({key : value})
+
+                            if key == 'safe_quantity':
+                                if value == "":
+                                    CREATE_SET.update({key : 0})
+                                else:
+                                    CREATE_SET.update({key : value})
+                        
+                        # 새로운 제품 등록
+                        new_product = Product.objects.create(**CREATE_SET)
+                        
+                        if check_price and check_quantity:
+                            self.create_sheet_new(input_data, user, new_product)
+                        
+                        return JsonResponse({'message' : '[Case 2] 새로운 일반 상품이 등록되었습니다'}, status = 200) 
+                    
+                # 회사코드가 없으면 
+                if not company_code:
+                    tartget_product = Product.objects.filter(product_group_id = product_group_id)
+
+                    if tartget_product.exists():
+                        latest_product = tartget_product.latest('created_at')
+                        product_num = latest_product.product_num
+                        change_int_num = int(product_num) + 1
+                        product_num = str(change_int_num).zfill(3)                 
+                    else:
+                        product_num = '001'
+                    
+                    # 세트 상품이면 
+                    if is_set == "True":
+                        CREATE_SET = {
+                            'is_set' : True,  
+                            'is_serial' : True,
+                            'labor' : labor,   
+                            'product_group_id' : product_group_id,  
+                            'name' : name,
+                            'product_num' : product_num,
+                            'product_code' : product_group_code + product_num,
+                            'warehouse_code' : warehouse_code
+                        }
+                        # 들어온 기타 정보사항 CREATE_SET에 추가
+                        for key, value in input_data.items():
+                            if key in ['keyword', 'location','barcode']:
+                                CREATE_SET.update({key : value})
+                            
+                            if key == 'safe_quantity':
+                                if value == "":
+                                    CREATE_SET.update({key : 0})
+                                else:
+                                    CREATE_SET.update({key : value})
+                        
+                        # 새로운  세트 제품 등록
+                        new_product = Product.objects.create(**CREATE_SET)
+
+                        if check_price and check_quantity:
+                            self.create_sheet_new(input_data, user, new_product)
+                            
+                        # 새로운 세트 제품의 구성품 등록
+                        for id, quantity in composition.items():
+                            ProductComposition.objects.create(
+                                set_product_id = new_product.id,
+                                composition_product_id = id,
+                                quantity = quantity
+                            )
+                        return JsonResponse({'message' : '[Case 3] 새로운 세트 상품이 등록되었습니다.'}, status = 200) 
+                    # 일반 상품이면
+                    else:
+                        CREATE_SET = {
+                            'is_set' : False,
+                            'is_serial' : is_serial,  
+                            'product_group_id' : product_group_id,
+                            'name' : name,
+                            'product_num' : product_num,
+                            'product_code' : product_group_code + product_num,
+                            'warehouse_code' : warehouse_code
+                        }
+                        
+                        # 들어온 기타 정보사항 CREATE_SET에 추가
+                        for key, value in input_data.items():
+                            if key in ['keyword', 'location','barcode']:
+                                CREATE_SET.update({key : value})
+
+                            if key == 'safe_quantity':
+                                if value == "":
+                                    CREATE_SET.update({key : 0})
+                                else:
+                                    CREATE_SET.update({key : value})
+                        
+                        # 새로운 제품 등록
+                        new_product = Product.objects.create(**CREATE_SET)
+                        
+                        if check_price and check_quantity:
+                            self.create_sheet_new(input_data, user, new_product)
+                        return JsonResponse({'message' : '[Case 4] 새로운 일반 상품이 등록되었습니다.'}, status = 200)
+
+        except KeyError:
+            return JsonResponse({'message' : 'composition에 입력된 id 값을 확인해주세요'}, status = 403)        
+
+class ModifyProductInfoView(View):
+    @jwt_decoder
+    def post(self, request):
+        input_data = request.POST
+        product_id = input_data.get('id', None)
+        
+        if not product_id:
+            return JsonResponse({'message' : "수정할 Product id가 입력되지 않았습니다."}, status = 403)
+        if Product.objects.filter(id = product_id).exists() == False:
+            return JsonResponse({'message' : "존재하지 않는 제품입니다."}, status = 403)
+        
+        UPDATE_SET = {}
+        UPDATE_OPT = ['safe_quantity', 'keyword', 'name', 'location', 'barcode', 'status', 'labor']
+
+        try:
+            with transaction.atomic():
+
+                for key, value in input_data.items():
+                    if key == 'warehouse_code':
+                        if not Warehouse.objects.filter(code = value).exists():
+                            return JsonResponse({'message' : '존재하지 않는 창고 코드입니다.'}, status = 403)
+                        UPDATE_SET.update({key : value})
+
+                    if key in UPDATE_OPT:
+                        UPDATE_SET.update({key : value})
+                
+                Product.objects.filter(id = product_id).update(**UPDATE_SET)
+
+                return JsonResponse({'message' : 'Check update'}, status = 200)
+        except KeyError:
+            return JsonResponse({'message' : 'KeyError'}, status = 403)
+        except:
+            return JsonResponse({'message' : '예외 사항 발생'}, status = 403)
+
+#------------------------------------------------------------------------------------------------------#
+
+class CreateProductEtcTitleView(View):
+    def post(self, request):
+        title   = request.POST['title']
+
+        try:
+            new_custom_title = ProductEtcTitle.objects.create(
+                title = title,
+                status = True
+            )
+        
+            return JsonResponse({'message' : 'product etc title 생성 성공'}, status = 200)
+        except KeyError:
+            return JsonResponse({'message' : '잘못된 key 값을 입력하셨습니다.'}, status = 403)
+
+class ModifyProductEtcTitleView(View):
+    def post(self, request):
+        id      = request.POST['product_title_id']
+        
+        UPDATE_SET = {}
+
+        for key, value in request.POST.items():
+            if key == 'title':
+                UPDATE_SET.update({key : value})
+            
+            if key == 'status':
+                if value == 'true':
+                    value = True
+                elif value == 'false':
+                    value = False
+                UPDATE_SET.update({key : value})
+    
+        try:
+            ProductEtcTitle.objects.filter(id = id).update(**UPDATE_SET)
+            
+            return JsonResponse({'message' : 'product etc title 수정을 성공했습니다.'}, status = 200)
+        except ProductEtcTitle.DoesNotExist:
+            return JsonResponse({'message' : f'title id를 확인해주세요. {id}'}, status = 403)
+        except KeyError:
+            return JsonResponse({'message' : 'KeyError'}, status = 403)  
+
+class InquireProductEtcTitleView(View):
+    def get(self, request):
+
+        Title_list = list(ProductEtcTitle.objects.all().values())
+
+        return JsonResponse({'message': Title_list}, status = 200)
+
+class InquireProductEtcDescView(View):
+    def get(self, request):
+        product_id = request.GET.get('product_id')
+        Use_Titles = ProductEtcTitle.objects.filter(status = True).values_list('id', flat= True)
+        result = []
+        for title_id in Use_Titles:
+            try:
+                contents = ProductEtcDesc.objects.get(product_id = product_id, etc_title_id = title_id).contents
+                dict = {}
+                dict.update({
+                    "title_id" : title_id,
+                    "contents" : contents
+                })
+                result.append(dict)
+            except ProductEtcDesc.DoesNotExist:
+                pass
+
+        return JsonResponse({'message' : result}, status = 200)
+
+class CreateProductEtcDescView(View):
+    def post(self, request):
+        etc_title_id    = request.POST['title_id']
+        product_id      = request.POST['product_id']
+        desc            = request.POST['desc']
+
+        try:
+            new_custom_value, check  = ProductEtcDesc.objects.update_or_create(
+                product_id = product_id,
+                etc_title_id = etc_title_id,
+                defaults={
+                    'contents' : desc
+                })
+            if check == True:
+                return JsonResponse({'message' : '생성 성공'}, status = 200)
+            else:
+                return JsonResponse({'message' : '수정 성공'}, status = 200)
+        except KeyError:
+            return JsonResponse({'message' : '잘못된 key 값을 입력하셨습니다.'}, status = 200)
+
+#----------------------------------------------------------------------------------------------------#
+
+class SetInfoView(View):
+    def get(self, request):
+        product_code = request.GET.get('product_code', None)
+
+        if not product_code:
+            return JsonResponse({'message' : 'product_code를 입력해주세요'})
+        
+        product_id = Product.objects.get(product_code = product_code).id
+
+        if Product.objects.get(id = product_id).is_set == 0:
+            return JsonResponse({'message' : '세트 상품이 아닙니다.'})
+
+        composition = ProductComposition.objects.filter(set_product_id = product_id )
+
+        result_list = []
+        
+        for object in composition:
+            composition_product_id = object.composition_product.id
+            composition_product_quantity = object.quantity
+
+            product = Product.objects.get(id = composition_product_id)
+
+            dict_W = {}
+            
+            warehouse_list = QuantityByWarehouse.objects.filter(product_id = composition_product_id).values()
+                       
+            for object in warehouse_list:
+                dict_W[object['warehouse_code']] = object['total_quantity']
+
+            if product.company_code== '':
+                dict_t = {
+                    'id'                : product.id,
+                    'is_set'            : product.is_set,
+                    'company_code'      : '',
+                    'company_name'      : '',
+                    'productgroup_code' : product.product_code,
+                    'productgroup_name' : ProductGroup.objects.get(code = product.productgroup_code).name,
+                    'product_num'       : product.product_num,
+                    'product_code'      : product.product_code,
+                    'safe_quantity'     : product.safe_quantity,
+                    'keyword'           : product.keyword,
+                    'name'              : product.name,
+                    'warehouse_code'    : product.warehouse_code,
+                    'location'          : product.location,
+                    'status'            : product.status,
+                    'consumption'       : composition_product_quantity,
+                    'stock'             : dict_W
+                    }
+                
+                result_list.append(dict_t)
+            else:
+                dict_t = {
+                    'id'                : product.id,
+                    'is_set'            : product.is_set,
+                    'company_code'      : product.company_code,
+                    'company_name'      : Company.objects.get(code = product.company_code).name ,
+                    'productgroup_code' : product.product_code,
+                    'productgroup_name' : ProductGroup.objects.get(code = product.productgroup_code).name,
+                    'product_num'       : product.product_num,
+                    'product_code'      : product.product_code,
+                    'safe_quantity'     : product.safe_quantity,
+                    'keyword'           : product.keyword,
+                    'name'              : product.name,
+                    'warehouse_code'    : product.warehouse_code,
+                    'location'          : product.location,
+                    'status'            : product.status,
+                    'consumption'       : composition_product_quantity,
+                    'stock'             : dict_W
+                }
+            
+                result_list.append(dict_t)
+        
+        return JsonResponse({'message' : result_list}, status = 200)
+
+class ProductStatusView(View):
+    @jwt_decoder
+    def post(self, request):
+        input_data = request.POST
+        user = request.user
+        product_id = input_data.get('product_id', None)
+        try:
+            with transaction.atomic():
+
+                if not product_id:
+                    return JsonResponse({'message' : "product_id를 입력해주세요"}, status = 403)
+
+                if user.admin == False:
+                    return JsonResponse({'message' : '당신은 권한이 없습니다. '}, status = 403)
+
+                if input_data['status'] == "False":
+                    Product.objects.filter(id = product_id).update( status = False)
+                    return JsonResponse({'message' : '제품 상태 False'}, status = 200)
+                
+                if input_data['status'] == "True": 
+                    Product.objects.filter(id = product_id).update( status = True)
+                    return JsonResponse({'message' : '제품 상태 True'}, status = 200)
+
+        except Exception:
+            return JsonResponse({'message' : '예외 사항이 발생해서 트랜잭션을 중지했습니다.'}, status = 403)
+
+class ProductGroupStatusView(View):
+    @jwt_decoder
+    def post(self, request):
+        input_data = request.POST
+        user = request.user
+        product_group_id = input_data.get('product_group_id', None)
+        try:
+            with transaction.atomic():
+
+                if not product_group_id:
+                    return JsonResponse({'message' : "product_id를 입력해주세요"}, status = 403)
+
+                if user.admin == False:
+                    return JsonResponse({'message' : '당신은 권한이 없습니다. '}, status = 403)
+
+                if input_data['status'] == "False":
+                    ProductGroup.objects.filter(id = product_group_id).update( status = False)
+                    return JsonResponse({'message' : '제품 그룹 상태 False'}, status = 200)
+                
+                if input_data['status'] == "True": 
+                    ProductGroup.objects.filter(id = product_group_id).update( status = True)
+                    return JsonResponse({'message' : '제품 그룹 상태 True'}, status = 200)
+
+        except Exception:
+            return JsonResponse({'message' : '예외 사항이 발생해서 트랜잭션을 중지했습니다.'}, status = 403)

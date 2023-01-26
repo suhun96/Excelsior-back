@@ -18,7 +18,11 @@ from django.urls    import path, include
 from users.views    import *
 
 urlpatterns = [
+    # django
     path('health', HealthCheckView.health),
     path('user/', include('users.urls')),
     path('product/', include('products.urls')),  
+    path('warehouse/', include('locations.urls')),
+    path('company/', include('companies.urls')),
+    path('stock/', include('stock.urls'))
 ]

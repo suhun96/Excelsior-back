@@ -13,7 +13,7 @@ https://docs.djangoproject.com/en/4.0/ref/settings/
 from pathlib import Path
 
 import pymysql
-from my_settings import DATABASES,SECRET_KEY,ALGORITHM
+from my_settings import DATABASES,SECRET_KEY,ALGORITHM, ALLOWED_HOSTS
 pymysql.install_as_MySQLdb()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -28,7 +28,11 @@ SECRET_KEY = SECRET_KEY
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = [ '*']
+ALLOWED_HOSTS = ALLOWED_HOSTS
+
+# timeout error
+SESSION_COOKIE_AGE = 1200
+SESSION_SAVE_EVERY_REQUEST = True
 
 
 # Application definition
@@ -40,12 +44,20 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    # 'health_check',
+    # 'drf_yasg',
+    # 'rest_framework',
     'corsheaders',
     'users',
-    'products'
+    'products',
+    'locations',
+    'companies',
+    'stock',
 ]
 
 MIDDLEWARE = [
+    # health-check
+    'excelsior_backend.middleware.HealthCheckMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
