@@ -675,6 +675,7 @@ class StockTotalView(View):
         type            = request.GET.get('type', None)
         company_id      = request.GET.get('company_id', None)
         warehouse_code  = request.GET.get('warehouse_code', None)
+        status          = request.GET.get('status', None)
 
         q = Q()
         if product_name:
@@ -685,6 +686,8 @@ class StockTotalView(View):
             q &= Q(barcode__icontains = barcode)
         if keyword:
             q &= Q(keyword__icontains = keyword)
+        if status:
+            q &= Q(status = status)
 
         target_products = Product.objects.filter(q)
 
