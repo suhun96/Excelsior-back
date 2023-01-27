@@ -675,6 +675,7 @@ class StockTotalView(View):
         type            = request.GET.get('type', None)
         company_id      = request.GET.get('company_id', None)
         warehouse_code  = request.GET.get('warehouse_code', None)
+        status          = request.GET.get('status', None)
 
         q = Q()
         if product_name:
@@ -685,6 +686,8 @@ class StockTotalView(View):
             q &= Q(barcode__icontains = barcode)
         if keyword:
             q &= Q(keyword__icontains = keyword)
+        if status:
+            q &= Q(status = status)
 
         target_products = Product.objects.filter(q)
 
@@ -1389,34 +1392,40 @@ class DecomposeSetSerialCodeView(View):
         input_data = json.loads(request.body)
         serials = input_data.get('serials')
         try:
-            generate_sheet_id = self.check_serials(serials)
-            target_query = SheetComposition.objects.get(sheet_id = generate_sheet_id)
-            # 옵션
-            set_product_id = target_query.product_id
-            manufacture_quantity = target_query.quantity
-            warehouse_code = target_query.warehouse_code
-            LAB = manufacture_quantity - len(serials)
+            with transaction.atomic():
+                generate_sheet_id = self.check_serials(serials)
+                target_query = SheetComposition.objects.get(sheet_id = generate_sheet_id)
+                # 옵션
+                set_product_id = target_query.product_id
+                manufacture_quantity = target_query.quantity
+                warehouse_code = target_query.warehouse_code
+                LAB = manufacture_quantity - len(serials)
+                
+                # 로그 찍기
+                used_sheet_id = Sheet.objects.get(id = generate_sheet_id).related_sheet_id
+                generate_sheet_log = create_sheet_logs(generate_sheet_id, user)
+                used_sheet_log     = create_sheet_logs(used_sheet_id, user)
+                
+                # 롤백
+                rollback_sheet_detail(generate_sheet_id)
+                SheetComposition.objects.filter(sheet_id = generate_sheet_id).delete()
+                self.generate_sheet_2(set_product_id, generate_sheet_id, LAB, warehouse_code)
+                
+                
+                for serial_code in serials:
+                    set_serial_code = SerialCode.objects.get(sheet_id = generate_sheet_id, code = serial_code)
+                    bind_list = SetSerialCodeComponent.objects.filter(set_serial_code_id = set_serial_code.id).values_list('component_serial_code', flat = True)
+                    SerialCode.objects.filter(sheet_id = used_sheet_id, id__in = bind_list).delete()
+                    set_serial_code.delete()
+                rollback_sheet_detail(used_sheet_id)
+                SheetComposition.objects.filter(sheet_id = used_sheet_id).delete()
+                self.used_sheet_2(used_sheet_id, set_product_id, LAB, warehouse_code)
+
+                # 세트 환원을 시도한 유저 저장.
+                update_target_sheet = Sheet.objects.get(id = generate_sheet_id)
+                update_target_sheet.user = user
+                update_target_sheet.save()
             
-            # 로그 찍기
-            used_sheet_id = Sheet.objects.get(id = generate_sheet_id).related_sheet_id
-            generate_sheet_log = create_sheet_logs(generate_sheet_id, user)
-            used_sheet_log     = create_sheet_logs(used_sheet_id, user)
-            
-            # 롤백
-            rollback_sheet_detail(generate_sheet_id)
-            SheetComposition.objects.filter(sheet_id = generate_sheet_id).delete()
-            self.generate_sheet_2(set_product_id, generate_sheet_id, LAB, warehouse_code)
-            
-            
-            for serial_code in serials:
-                set_serial_code = SerialCode.objects.get(sheet_id = generate_sheet_id, code = serial_code)
-                bind_list = SetSerialCodeComponent.objects.filter(set_serial_code_id = set_serial_code.id).values_list('component_serial_code', flat = True)
-                SerialCode.objects.filter(sheet_id = used_sheet_id, id__in = bind_list).delete()
-                set_serial_code.delete()
-            rollback_sheet_detail(used_sheet_id)
-            SheetComposition.objects.filter(sheet_id = used_sheet_id).delete()
-            self.used_sheet_2(used_sheet_id, set_product_id, LAB, warehouse_code)
-        
             return JsonResponse({'message' : '입력하신 serials 를 해체 성공했습니다.'}, status = 200)
         except KeyError:
             return JsonResponse({'message' : '시리얼 코드 해체 시도 중 실패했습니다.'}, status = 403)
@@ -1431,24 +1440,53 @@ class DeleteMistakeSerialCodeView(View):
 
         # 시리얼 체크
         serial_code_id_list = []
+        failed_serial_code = []
+        
         for serial_code in serials:
-            try:
-                serial_code_id = SerialCode.objects.get(sheet_id = sheet_id, code = serial_code).id
-                serial_code_id_list.append(serial_code_id)
-            except SerialCode.DoesNotExist:
-                return JsonResponse({'message' : '입력하신 시리얼 정보를 확인해주세요.'}, status = 403)
-        
-        create_sheet_logs(sheet_id, user)
+            last_sheet_id = SerialCode.objects.filter(code = serial_code).latest('id').sheet_id
+            
+            if not last_sheet_id == sheet_id:
+                dict_A = {}
+                dict_A.update({'serial_code' : serial_code, 'sheet_id' : last_sheet_id })
+                failed_serial_code.append(dict_A)
 
-        for serial_code_id in serial_code_id_list:
-            try:
-                product_id = SerialCode.objects.get(id = serial_code_id).product_id
-                target_sheet = SheetComposition.objects.get(sheet_id = sheet_id, product_id = product_id)
-                before_quantity = target_sheet.quantity
-                target_sheet.quantity = before_quantity - 1
-                target_sheet.save()
-                delete_serial_code = SerialCode.objects.get(id = serial_code_id).delete()        
-            except SheetComposition.DoesNotExist:
-                return JsonResponse({'message' : '존재하지 않는 sheet의 세부 사항입니다.'}, status = 403)
+            serial_code_id = SerialCode.objects.get(sheet_id = sheet_id, code = serial_code).id
+            serial_code_id_list.append(serial_code_id)
+                
+
+        if not len(failed_serial_code) == 0:
+            print(failed_serial_code)
+            return JsonResponse({'message': '환원에 실패했습니다.', 'failed_serial_code' : failed_serial_code}, status = 403)
+
+        # 로그 찍히기 전에 error_serial_code가 있으면 return을 한다.
+                
+        try:
+            with transaction.atomic():
+                create_sheet_logs(sheet_id, user)
+
+                for serial_code_id in serial_code_id_list:
+                    product_id = SerialCode.objects.get(id = serial_code_id).product_id
+                    target_sheet = SheetComposition.objects.get(sheet_id = sheet_id, product_id = product_id)
+                    before_quantity = target_sheet.quantity
+                    target_sheet.quantity = before_quantity - 1
+                    target_sheet.save()
+                    delete_serial_code = SerialCode.objects.get(id = serial_code_id).delete()
+                    # 실제 수량 반영
+                    target_product = QuantityByWarehouse.objects.get(product_id = product_id)
+                    target_product_before_quantity = target_product.total_quantity
+                    target_product.quantity = target_product_before_quantity - 1
+                    target_product.save()
+
+            return JsonResponse({'message' : '시리얼 수량 수정이 완료되었습니다.'}, status = 200)
+        except SerialCode.DoesNotExist:
+            return JsonResponse({'message' : '입력하신 시리얼 정보를 확인해주세요.'}, status = 403)        
+        except SheetComposition.DoesNotExist:
+            return JsonResponse({'message' : '존재하지 않는 sheet의 세부 사항입니다.'}, status = 403)
         
-        return JsonResponse({'message' : '시리얼 수량 수정이 완료되었습니다.'}, status = 200)
+class QueryTestView(View):
+    def get(self, request):
+        sheet_id = request.GET.get('sheet_id')
+        Test_sheet = Sheet.objects.get(id = sheet_id)
+
+        user_name = Test_sheet.user.name
+        return JsonResponse({'message' : user_name})
