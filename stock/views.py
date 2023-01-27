@@ -1450,8 +1450,24 @@ class DeleteMistakeSerialCodeView(View):
                 before_quantity = target_sheet.quantity
                 target_sheet.quantity = before_quantity - 1
                 target_sheet.save()
-                delete_serial_code = SerialCode.objects.get(id = serial_code_id).delete()        
+                delete_serial_code = SerialCode.objects.get(id = serial_code_id).delete()
+                # 실제 수량 반영
+                target_product = QuantityByWarehouse.objects.get(product_id = product_id)
+                target_product_before_quantity = target_product.total_quantity
+                target_product.quantity = target_product_before_quantity - 1
+                target_product.save()        
             except SheetComposition.DoesNotExist:
                 return JsonResponse({'message' : '존재하지 않는 sheet의 세부 사항입니다.'}, status = 403)
         
+        
+
         return JsonResponse({'message' : '시리얼 수량 수정이 완료되었습니다.'}, status = 200)
+
+
+class QueryTestView(View):
+    def get(self, request):
+        sheet_id = request.GET.get('sheet_id')
+        Test_sheet = Sheet.objects.get(id = sheet_id)
+
+        user_name = Test_sheet.user.name
+        return JsonResponse({'message' : user_name})

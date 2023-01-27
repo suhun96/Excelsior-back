@@ -189,7 +189,7 @@ def create_sheet_logs(sheet_id, modify_user):
         with transaction.atomic():
             new_sheet_log = SheetLog.objects.create(
                 sheet_id  = target_sheet.id,
-                user_name = target_sheet.user_name,
+                user_name = target_sheet.user.name,
                 type      = target_sheet.type,
                 company_id = target_sheet.company_id,
                 etc       = target_sheet.etc,
