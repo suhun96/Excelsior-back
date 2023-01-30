@@ -500,7 +500,7 @@ class TotalQuantityView(View):
                 get_product = Product.objects.get(id = num)
                 check = QuantityByWarehouse.objects.filter(product_id = num).aggregate(quantity = Sum('total_quantity'))
                 try: 
-                    MAM = MovingAverageMethod.objects.get(product_id = obj.product_id)
+                    MAM = MovingAverageMethod.objects.get(product_id = num)
                     average_price = MAM.average_price
                     custom_price = MAM.custom_price
                 except MovingAverageMethod.DoesNotExist:
