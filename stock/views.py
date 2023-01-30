@@ -1,4 +1,8 @@
 import json, re
+import asyncio
+from asgiref.sync import sync_to_async, async_to_sync
+
+import time 
 
 import datetime
 
@@ -21,7 +25,8 @@ from .utils             import *
 
 class CreateSheetView(View):
     @jwt_decoder
-    def post(self, request):
+    @async_to_sync
+    async def post(self, request):
         input_data = json.loads(request.body)
         user = request.user
 
@@ -73,7 +78,7 @@ class CreateSheetView(View):
                         mam_create_sheet(product_id, unit_price, quantity, stock_quantity)
 
                     register_checker(input_data)
-                    telegram_bot(new_sheet_id)
+                    await telegram_bot(new_sheet_id)
 
                     return JsonResponse({'message' : '입고 성공', 'sheet_id' : new_sheet_id}, status = 200)
 
@@ -114,8 +119,8 @@ class CreateSheetView(View):
                             defaults={'total_quantity' : stock_quantity})
                         
                     register_checker(input_data)
-                    telegram_bot(new_sheet_id)
-
+                    await telegram_bot(new_sheet_id)
+    
                     return JsonResponse({'message' : '출고 성공', 'sheet_id' : new_sheet_id}, status = 200)
                 
                 if new_sheet.type == 'return':
@@ -150,7 +155,7 @@ class CreateSheetView(View):
                             warehouse_code = warehouse_code,
                             defaults={'total_quantity' : stock_quantity})
 
-                    telegram_bot(new_sheet_id)
+                    
                     
                     return JsonResponse({'message' : '반품 성공', 'sheet_id' : new_sheet_id}, status = 200)
         except Exception as e:
@@ -462,6 +467,7 @@ class TotalQuantityView(View):
 
             for obj in check:
                 get_product = Product.objects.get(id = obj.product_id)
+                MAM = MovingAverageMethod.objects.get(product_id = obj.product_id)
                 dict = {
                     'product_code' : get_product.product_code,
                     'product_name' : get_product.name,
@@ -470,6 +476,8 @@ class TotalQuantityView(View):
                     'status'       : get_product.status,
                     'safe_quantity': get_product.safe_quantity,
                     'quantity'     : obj.total_quantity,
+                    'average_price' : MAM.average_price,
+                    'custom_price' : MAM.custom_price,
                     'ketword'      : get_product.keyword
                 }
                 result_list.append(dict) 
@@ -484,12 +492,15 @@ class TotalQuantityView(View):
             for num in set(ids):
                 get_product = Product.objects.get(id = num)
                 check = QuantityByWarehouse.objects.filter(product_id = num).aggregate(quantity = Sum('total_quantity'))
+                MAM = MovingAverageMethod.objects.get(product_id = num)
                 dict = {
                     'product_code' : get_product.product_code,
                     'product_name' : get_product.name,
                     'status'       : get_product.status,
                     'safe_quantity': get_product.safe_quantity,
                     'quantity'     : check['quantity'],
+                    'average_price' : MAM.average_price,
+                    'custom_price' : MAM.custom_price,
                     'ketword'      : get_product.keyword
                 }
                 result_list.append(dict) 
@@ -1488,10 +1499,10 @@ class DeleteMistakeSerialCodeView(View):
         
 class QueryTestView(View):
     def get(self, request):
-        sheet_id = request.GET.get('sheet_id')
+        product_id = request.GET.get('product_id')
         
-        Sheet.objects.filter(id = sheet_id).update(user_id = 10)
-
+        get_product = Product.objects.get(id = product_id)
         
+        check = get_product.movingaveragemethod__name
+        return JsonResponse({'message' : check})
         
-        return JsonResponse({'message' : user_name})

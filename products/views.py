@@ -224,8 +224,6 @@ class ProductInfoView(View):
                 'movingaveragemethod__custom_price',
                 'movingaveragemethod__average_price',
                 'labor',
-                'movingaveragemethod__custom_price',
-                'movingaveragemethod__average_price',
                 'company__code',
                 'company__name',
                 'product_group__code',

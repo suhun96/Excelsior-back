@@ -9,7 +9,7 @@ import telegram
 
 from my_settings        import TELEGRAM_TOKEN, CHAT_ID
 
-def telegram_bot(new_sheet_id):
+async def telegram_bot(new_sheet_id):
     bot = telegram.Bot(token = TELEGRAM_TOKEN)
     
     long_text = "[🤖 안전재고미만 알림]\n"
@@ -36,6 +36,8 @@ def telegram_bot(new_sheet_id):
             long_text = long_text + text
     
     if count > 0:
-        bot.sendMessage(chat_id = CHAT_ID, text = long_text)
+        await bot.sendMessage(chat_id = CHAT_ID, text = long_text)
+        Message = 'ok'
+        return Message
         
         
