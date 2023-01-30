@@ -467,7 +467,14 @@ class TotalQuantityView(View):
 
             for obj in check:
                 get_product = Product.objects.get(id = obj.product_id)
-                MAM = MovingAverageMethod.objects.get(product_id = obj.product_id)
+                try: 
+                    MAM = MovingAverageMethod.objects.get(product_id = obj.product_id)
+                    average_price = MAM.average_price
+                    custom_price = MAM.custom_price
+                except MovingAverageMethod.DoesNotExist:
+                    average_price = 0
+                    custom_price = 0
+
                 dict = {
                     'product_code' : get_product.product_code,
                     'product_name' : get_product.name,
@@ -476,8 +483,8 @@ class TotalQuantityView(View):
                     'status'       : get_product.status,
                     'safe_quantity': get_product.safe_quantity,
                     'quantity'     : obj.total_quantity,
-                    'average_price' : MAM.average_price,
-                    'custom_price' : MAM.custom_price,
+                    'average_price' : average_price,
+                    'custom_price' : custom_price,
                     'ketword'      : get_product.keyword
                 }
                 result_list.append(dict) 
@@ -492,15 +499,21 @@ class TotalQuantityView(View):
             for num in set(ids):
                 get_product = Product.objects.get(id = num)
                 check = QuantityByWarehouse.objects.filter(product_id = num).aggregate(quantity = Sum('total_quantity'))
-                MAM = MovingAverageMethod.objects.get(product_id = num)
+                try: 
+                    MAM = MovingAverageMethod.objects.get(product_id = obj.product_id)
+                    average_price = MAM.average_price
+                    custom_price = MAM.custom_price
+                except MovingAverageMethod.DoesNotExist:
+                    average_price = 0
+                    custom_price = 0
                 dict = {
                     'product_code' : get_product.product_code,
                     'product_name' : get_product.name,
                     'status'       : get_product.status,
                     'safe_quantity': get_product.safe_quantity,
                     'quantity'     : check['quantity'],
-                    'average_price' : MAM.average_price,
-                    'custom_price' : MAM.custom_price,
+                    'average_price' : average_price,
+                    'custom_price' :  custom_price,
                     'ketword'      : get_product.keyword
                 }
                 result_list.append(dict) 
