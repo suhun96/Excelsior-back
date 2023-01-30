@@ -42,14 +42,15 @@ class CreateSheetView(View):
                         stock = StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id)
                         
                         if not stock.exists():
-                            stock_quantity = 0
+                            before_quantity = 0
 
                         if stock.exists():
                             before_quantity = stock.last().stock_quantity
-                            stock_quantity  = before_quantity + int(quantity)
+                        
+                        stock_quantity  = before_quantity + int(quantity)
                             
-                        else:
-                            stock_quantity  = int(quantity)
+                        # else:
+                        #     stock_quantity  = int(quantity)
 
                         StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id).create(
                             sheet_id = new_sheet_id,
@@ -92,13 +93,14 @@ class CreateSheetView(View):
                         stock = StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id)
                         
                         if not stock.exists():
-                            stock_quantity = 0
+                            before_quantity = 0
 
                         if stock.exists():
                             before_quantity = stock.last().stock_quantity
-                            stock_quantity  = before_quantity - int(quantity)
-                        else:
-                            stock_quantity  = int(quantity)                            
+                        
+                        stock_quantity  = before_quantity - int(quantity)
+                        # else:
+                        #     stock_quantity  = int(quantity)                            
 
                         StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id).create(
                             sheet_id = new_sheet_id,
@@ -1405,6 +1407,7 @@ class DecomposeSetSerialCodeView(View):
                 used_sheet_id = Sheet.objects.get(id = generate_sheet_id).related_sheet_id
                 generate_sheet_log = create_sheet_logs(generate_sheet_id, user)
                 used_sheet_log     = create_sheet_logs(used_sheet_id, user)
+
                 
                 # 롤백
                 rollback_sheet_detail(generate_sheet_id)
@@ -1421,10 +1424,9 @@ class DecomposeSetSerialCodeView(View):
                 SheetComposition.objects.filter(sheet_id = used_sheet_id).delete()
                 self.used_sheet_2(used_sheet_id, set_product_id, LAB, warehouse_code)
 
-                # 세트 환원을 시도한 유저 저장.
-                update_target_sheet = Sheet.objects.get(id = generate_sheet_id)
-                update_target_sheet.user = user
-                update_target_sheet.save()
+                # 작성자 수정
+                UPDATED_USER = Sheet.objects.filter(id = generate_sheet_id).update(user_id = user.id)
+
             
             return JsonResponse({'message' : '입력하신 serials 를 해체 성공했습니다.'}, status = 200)
         except KeyError:
@@ -1463,6 +1465,7 @@ class DeleteMistakeSerialCodeView(View):
         try:
             with transaction.atomic():
                 create_sheet_logs(sheet_id, user)
+                UPDATED_USER = Sheet.objects.filter(id = sheet_id).update(user_id = user.id)
 
                 for serial_code_id in serial_code_id_list:
                     product_id = SerialCode.objects.get(id = serial_code_id).product_id
@@ -1486,7 +1489,9 @@ class DeleteMistakeSerialCodeView(View):
 class QueryTestView(View):
     def get(self, request):
         sheet_id = request.GET.get('sheet_id')
-        Test_sheet = Sheet.objects.get(id = sheet_id)
+        
+        Sheet.objects.filter(id = sheet_id).update(user_id = 10)
 
-        user_name = Test_sheet.user.name
+        
+        
         return JsonResponse({'message' : user_name})

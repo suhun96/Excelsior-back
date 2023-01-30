@@ -210,6 +210,33 @@ def create_sheet_logs(sheet_id, modify_user):
     except:
         raise Exception({'message' : 'create_sheet_logs 사용하는중 에러가 발생했습니다.'})
 
+def create_sheet_logs2(sheet_id, modify_user):
+    target_sheet = Sheet.objects.get(id = sheet_id)
+    try:
+        with transaction.atomic():
+            new_sheet_log = SheetLog.objects.create(
+                sheet_id  = target_sheet.id,
+                user_name = modify_user.name,
+                type      = target_sheet.type,
+                company_id = target_sheet.company_id,
+                etc       = target_sheet.etc,
+            )
+
+            target_sheet_details = SheetComposition.objects.filter(sheet_id = target_sheet.id)
+
+            for detail in target_sheet_details:
+                new_sheet_detail_log = SheetCompositionLog.objects.create(
+                    sheet_log_id  = new_sheet_log.id,
+                    product_id = detail.product.id,
+                    unit_price = detail.unit_price,
+                    quantity   = detail.quantity,
+                    warehouse_code = detail.warehouse_code,
+                    location   = detail.location,
+                    etc        = detail.etc
+                )
+    except:
+        raise Exception({'message' : 'create_sheet_logs 사용하는중 에러가 발생했습니다.'})
+
 def create_sheet_detail(sheet_id, products):
     try:
         for product in products:
