@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/4.0/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 import pymysql
 from my_settings import DATABASES,SECRET_KEY,ALGORITHM, ALLOWED_HOSTS
@@ -183,3 +184,6 @@ CORS_ALLOW_HEADERS = (
     'x-csrftoken',
     'x-requested-with',    		
 )
+
+# 텔레그램
+os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = 'true'
