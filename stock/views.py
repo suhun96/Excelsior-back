@@ -309,7 +309,7 @@ class InfoSheetListView(View):
         date_end       = request.GET.get('date_end', None)
         company_name   = request.GET.get('company_name', None)
         # sheet-detail 
-        product_name   = request.GET.get('product_name', None)
+        product_id   = request.GET.get('product_id', None)
         product_group_id = request.GET.get('product_group_id', None)
         
         if sheet_id:
@@ -355,12 +355,15 @@ class InfoSheetListView(View):
             q = Q(sheet__date__range = (date_start, date_end), sheet__type__in = ['inbound', 'outbound', 'generate', 'new'])
 
             if name:
-                user_id = User.objects.get(name = name).id
+                try:
+                    user_id = User.objects.get(name = name).id
+                except User.DoesNotExist:
+                    return JsonResponse({'message' : '존재하지 않는 유저입니다.' }, status = 403)
                 q &= Q(sheet__user_id__exact = user_id)
             if stock_type:
                 q &= Q(sheet__type = stock_type)
-            if product_name:
-                product_id = Product.objects.get(name = product_name).id
+            if product_id:
+                product_id = Product.objects.get(id = product_id).id
                 q &= Q(product_id = product_id)
             if company_name:
                 company_id = Company.objects.get(name = company_name).id
