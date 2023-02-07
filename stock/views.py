@@ -1501,11 +1501,16 @@ class DeleteMistakeSerialCodeView(View):
                     target_sheet.quantity = before_quantity - 1
                     target_sheet.save()
                     delete_serial_code = SerialCode.objects.get(id = serial_code_id).delete()
-                    # 실제 수량 반영
-                    target_product = QuantityByWarehouse.objects.get(product_id = product_id)
-                    target_product_before_quantity = target_product.total_quantity
-                    target_product.quantity = target_product_before_quantity - 1
-                    target_product.save()
+                
+                # 실제 수량 반영
+                target_product = QuantityByWarehouse.objects.get(product_id = product_id)
+                target_product_before_quantity = target_product.total_quantity
+
+                # 시리얼 수량
+                delete_serial_quantity = len(serial_code_id_list)
+                print(delete_serial_quantity)
+                target_product_after_quantity = target_product_before_quantity - delete_serial_code
+                QuantityByWarehouse.objects.filter(product_id = product_id).update(total_quantity = target_product_after_quantity)
 
             return JsonResponse({'message' : '시리얼 수량 수정이 완료되었습니다.'}, status = 200)
         except SerialCode.DoesNotExist:
