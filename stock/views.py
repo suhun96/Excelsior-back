@@ -1466,6 +1466,7 @@ class DeleteMistakeSerialCodeView(View):
         input_data = json.loads(request.body)
         serials  = input_data.get('serials')
         sheet_id = input_data.get('sheet_id')
+        warehouse_code = "A"
 
         # 시리얼 체크
         serial_code_id_list = []
@@ -1502,16 +1503,20 @@ class DeleteMistakeSerialCodeView(View):
                     target_sheet.save()
                     delete_serial_code = SerialCode.objects.get(id = serial_code_id).delete()
                 
-                # 실제 수량 반영
-                target_product = QuantityByWarehouse.objects.get(product_id = product_id)
-                target_product_before_quantity = target_product.total_quantity
-
-                # 시리얼 수량
-                delete_serial_quantity = len(serial_code_id_list)
-                print(delete_serial_quantity)
-                target_product_after_quantity = target_product_before_quantity - delete_serial_code
-                QuantityByWarehouse.objects.filter(product_id = product_id).update(total_quantity = target_product_after_quantity)
-
+                    # 실제 수량 반영
+                    target_product_before_quantity = QuantityByWarehouse.objects.get(product_id = product_id).total_quantity
+                    # 시리얼 수량
+                    target_product_after_quantity = target_product_before_quantity - 1
+                    QuantityByWarehouse.objects.filter(product_id = product_id).update(total_quantity = target_product_after_quantity)
+                    # stock_by_warehouse 수정
+                    target_sbw_before_quanitty = StockByWarehouse.objects.filter(sheet_id = sheet_id, product_id = product_id).last().stock_quantity
+                    target_sbw_after_quantity = target_sbw_before_quanitty - 1
+                    StockByWarehouse.objects.create(
+                        sheet_id = sheet_id,
+                        stock_quantity = target_sbw_after_quantity,
+                        product_id = product_id,
+                        warehouse_code = warehouse_code)
+                
             return JsonResponse({'message' : '시리얼 수량 수정이 완료되었습니다.'}, status = 200)
         except SerialCode.DoesNotExist:
             return JsonResponse({'message' : '입력하신 시리얼 정보를 확인해주세요.'}, status = 403)        
