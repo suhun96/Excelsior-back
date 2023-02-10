@@ -172,6 +172,9 @@ class ModifySheetView(View):
     def post(self, request):
         modify_user = request.user
         modify_data = json.loads(request.body)
+        # 들어온 데이터 양식 확인.
+        print("수정에 사용된 데이터입니다.")
+        print(modify_data)
         
         sheet_id = modify_data.get('sheet_id')
         try:
@@ -186,7 +189,22 @@ class ModifySheetView(View):
 
                 target_sheet_type = Sheet.objects.get(id = sheet_id).type 
                 
-                if target_sheet_type in ['inbound', 'outbound', 'return', 'new']:
+                if target_sheet_type == 'inbound':
+                    Delete_sheet_composition = SheetComposition.objects.filter(sheet_id = sheet_id).delete()
+                    Delete_sheet_serialcode = SerialCode.objects.filter(sheet_id = sheet_id).delete()
+                    Modify_sheet_detail = modify_sheet_detail(sheet_id, modify_data['products'])
+                    Reflecte_sheet_detail = reflecte_sheet_detail(sheet_id)
+                    Register_check = register_checker(modify_data)
+                    
+
+                elif target_sheet_type == 'outbound':
+                    Delete_sheet_composition = SheetComposition.objects.filter(sheet_id = sheet_id).delete()
+                    Delete_sheet_serialcode = SerialCode.objects.filter(sheet_id = sheet_id).delete()
+                    Modify_sheet_detail = modify_sheet_detail(sheet_id, modify_data['products'])
+                    Reflecte_sheet_detail = reflecte_sheet_detail(sheet_id)
+                    Register_check = register_checker(modify_data)
+
+                elif target_sheet_type in ['return', 'new']:
                     # sheet_detail 삭제
                     SheetComposition.objects.filter(sheet_id = sheet_id).delete()
                     # 연결된 serial_code 도 삭제
@@ -203,7 +221,6 @@ class ModifySheetView(View):
                     register_checker(modify_data)
 
                 check_serial_code = self.check_serial_code(sheet_id) 
-                
                 if check_serial_code == True:
                     return JsonResponse({'message' : 'serial code가 입력된 sheet 입니다. 업데이트 내역을 확인해 주세요.'}, status = 200)
                 else:
@@ -1495,27 +1512,51 @@ class DeleteMistakeSerialCodeView(View):
                 create_sheet_logs(sheet_id, user)
                 UPDATED_USER = Sheet.objects.filter(id = sheet_id).update(user_id = user.id)
 
-                for serial_code_id in serial_code_id_list:
-                    product_id = SerialCode.objects.get(id = serial_code_id).product_id
-                    target_sheet = SheetComposition.objects.get(sheet_id = sheet_id, product_id = product_id)
-                    before_quantity = target_sheet.quantity
-                    target_sheet.quantity = before_quantity - 1
-                    target_sheet.save()
-                    delete_serial_code = SerialCode.objects.get(id = serial_code_id).delete()
-                
-                    # 실제 수량 반영
-                    target_product_before_quantity = QuantityByWarehouse.objects.get(product_id = product_id).total_quantity
-                    # 시리얼 수량
-                    target_product_after_quantity = target_product_before_quantity - 1
-                    QuantityByWarehouse.objects.filter(product_id = product_id).update(total_quantity = target_product_after_quantity)
-                    # stock_by_warehouse 수정
-                    target_sbw_before_quanitty = StockByWarehouse.objects.filter(sheet_id = sheet_id, product_id = product_id).last().stock_quantity
-                    target_sbw_after_quantity = target_sbw_before_quanitty - 1
-                    StockByWarehouse.objects.create(
-                        sheet_id = sheet_id,
-                        stock_quantity = target_sbw_after_quantity,
-                        product_id = product_id,
-                        warehouse_code = warehouse_code)
+                if Sheet.objects.get(id = sheet_id).type == 'inbound':
+                    for serial_code_id in serial_code_id_list:
+                        product_id = SerialCode.objects.get(id = serial_code_id).product_id
+                        target_sheet = SheetComposition.objects.get(sheet_id = sheet_id, product_id = product_id)
+                        before_quantity = target_sheet.quantity
+                        target_sheet.quantity = before_quantity - 1
+                        target_sheet.save()
+                        delete_serial_code = SerialCode.objects.get(id = serial_code_id).delete()
+                    
+                        # 실제 수량 반영
+                        target_product_before_quantity = QuantityByWarehouse.objects.get(product_id = product_id).total_quantity
+                        # 시리얼 수량
+                        target_product_after_quantity = target_product_before_quantity - 1
+                        QuantityByWarehouse.objects.filter(product_id = product_id).update(total_quantity = target_product_after_quantity)
+                        # stock_by_warehouse 수정
+                        target_sbw_before_quanitty = StockByWarehouse.objects.filter(sheet_id = sheet_id, product_id = product_id).last().stock_quantity
+                        target_sbw_after_quantity = target_sbw_before_quanitty - 1
+                        StockByWarehouse.objects.create(
+                            sheet_id = sheet_id,
+                            stock_quantity = target_sbw_after_quantity,
+                            product_id = product_id,
+                            warehouse_code = warehouse_code)
+
+                if Sheet.objects.get(id = sheet_id).type == 'outbound':
+                    for serial_code_id in serial_code_id_list:
+                        product_id = SerialCode.objects.get(id = serial_code_id).product_id
+                        target_sheet = SheetComposition.objects.get(sheet_id = sheet_id, product_id = product_id)
+                        before_quantity = target_sheet.quantity
+                        target_sheet.quantity = before_quantity + 1
+                        target_sheet.save()
+                        delete_serial_code = SerialCode.objects.get(id = serial_code_id).delete()
+                    
+                        # 실제 수량 반영
+                        target_product_before_quantity = QuantityByWarehouse.objects.get(product_id = product_id).total_quantity
+                        # 시리얼 수량
+                        target_product_after_quantity = target_product_before_quantity + 1
+                        QuantityByWarehouse.objects.filter(product_id = product_id).update(total_quantity = target_product_after_quantity)
+                        # stock_by_warehouse 수정
+                        target_sbw_before_quanitty = StockByWarehouse.objects.filter(sheet_id = sheet_id, product_id = product_id).last().stock_quantity
+                        target_sbw_after_quantity = target_sbw_before_quanitty + 1
+                        StockByWarehouse.objects.create(
+                            sheet_id = sheet_id,
+                            stock_quantity = target_sbw_after_quantity,
+                            product_id = product_id,
+                            warehouse_code = warehouse_code)
                 
             return JsonResponse({'message' : '시리얼 수량 수정이 완료되었습니다.'}, status = 200)
         except SerialCode.DoesNotExist:

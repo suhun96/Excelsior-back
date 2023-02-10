@@ -129,14 +129,16 @@ def create_product_serial_code(product_id, quantity, new_sheet_id):
     product_code = Product.objects.get(id = product_id).product_code
 
     serial_code1 = product_code + today
-
+    print('시리얼 코드 생산 작동')
     if not SerialCode.objects.filter(code__icontains = serial_code1).exists():
+        print('시리얼 코드 생산 작동 분기 1')
         for i in range(int(quantity)):
             route = '01'
             numbering = str(i + 1).zfill(3)
             serial_code2 = serial_code1 + route + numbering   
             SerialCode.objects.create(code = serial_code2, sheet_id = new_sheet_id, product_id = product_id)
     else:
+        print('시리얼 코드 생산 작동 분기 2')
         last_serial = SerialCode.objects.filter(code__icontains = serial_code1).latest('id').code
         
         before_route = last_serial.replace(serial_code1, "")
@@ -275,6 +277,7 @@ def modify_sheet_detail(sheet_id, products):
     try:
         for product in products:
             product_code = product['product_code']
+            print(product_code)
             product_id   = Product.objects.get(product_code =product['product_code']).id
 
             if Product.objects.filter(product_code = product_code).exists() == False:
@@ -290,21 +293,24 @@ def modify_sheet_detail(sheet_id, products):
                 etc             = product['etc']
             )
             
-            if "modified" in product:
-                SerialCode.objects.filter(product_id = product_id, sheet_id = sheet_id).delete()
-                if 'serial_code' in product:
-                    if product['serial_code'] == None:
-                        pass    
-                    else:
-                        for serial_code in product['serial_code']:
-                            # 입/출고 구성품의 serial_code 연결
+            if product['is_serial'] == True:
+                if 'serial_codes' not in product:
+                    create_product_serial_code(product_id, product['quantity'], sheet_id)
+
+                elif not product['serial_codes']:
+                    print('serial_codes empty') 
+                    create_product_serial_code(product_id, product['quantity'], sheet_id)
+
+                else:
+                    if len(product['serial_codes']) == product['quantity']:
+                        for serial_code in product['serial_codes']:
                             SerialCode.objects.create(
                                 sheet_id = sheet_id,
                                 product_id = product_id,
                                 code = serial_code
                             )
     except:
-        raise Exception({'message' : 'create_sheet_detail 사용하는중 에러가 발생했습니다.2'})
+        raise Exception({'message' : 'modify_sheet_detail 사용하는중 에러가 발생했습니다.'})
 
 def rollback_sheet_detail(sheet_id):
     target_sheet = Sheet.objects.get(id = sheet_id)
@@ -515,6 +521,7 @@ def reflecte_sheet_detail(sheet_id):
     try:
         with transaction.atomic():
             if target_sheet.type == 'inbound':
+                print('체크 포인트 1-2')
                 compositions = SheetComposition.objects.filter(sheet_id = sheet_id).values(
                         'product',
                         'unit_price',
@@ -529,7 +536,6 @@ def reflecte_sheet_detail(sheet_id):
                     unit_price     = composition.get('unit_price') 
                     
                     stock = StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id)
-                    
                     if stock.exists():
                         before_quantity = stock.last().stock_quantity
                         stock_quantity  = before_quantity + int(quantity)
@@ -541,18 +547,13 @@ def reflecte_sheet_detail(sheet_id):
                         stock_quantity = stock_quantity,
                         product_id = product_id,
                         warehouse_code = warehouse_code )
-                    
+
                     mam_create_sheet(product_id, unit_price, quantity, stock_quantity)
                     
                     QuantityByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id).update_or_create(
                         product_id = product_id,
                         warehouse_code = warehouse_code,
                         defaults={'total_quantity' : stock_quantity})
-
-                    if Product.objects.get(id = product_id).is_serial == True:
-                        create_product_serial_code(product_id, quantity, target_sheet.id)
-                    else:
-                        pass
 
 
             if target_sheet.type == 'outbound':
@@ -597,20 +598,25 @@ def mam_create_sheet(product_id, unit_price, quantity, stock_quantity):
 
     except QuantityByWarehouse.DoesNotExist:
         total_quantity = quantity
-        
+    
+    if total_quantity == None:
+        total_quantity = quantity
+
     if not MovingAverageMethod.objects.filter(product_id = product_id).exists():
+        
         new_MAM = MovingAverageMethod.objects.create(
             product_id = product_id,
             average_price = unit_price,
             custom_price = 0,
             total_quantity = total_quantity
         )
+        
     else:
         average_price = MovingAverageMethod.objects.get(product_id = product_id).average_price
         mul_stock   = average_price * total_quantity
         mul_inbound = unit_price * quantity
 
-        result1 = (mul_stock + mul_inbound) / (total_quantity + quantity)
+        result1 = (mul_stock + mul_inbound) / (total_quantity)
         round_result = round(result1, 6)
         
         new_MAM = MovingAverageMethod.objects.filter(product_id= product_id).update(
