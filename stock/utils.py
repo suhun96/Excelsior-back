@@ -593,19 +593,13 @@ def reflecte_sheet_detail(sheet_id):
 
 def mam_create_sheet(product_id, unit_price, quantity, stock_quantity):
     try:
-        total = QuantityByWarehouse.objects.filter(product_id = product_id).aggregate(Sum('total_quantity'))
-        total_quantity = total['total_quantity__sum']      
+        total_quantity = QuantityByWarehouse.objects.get(product_id = product_id).total_quantity
         
     except QuantityByWarehouse.DoesNotExist:
         total_quantity = quantity
     
-    if total_quantity == None:
-        total_quantity = quantity
-
-    print(unit_price)
-    print(quantity)
-    print(stock_quantity)
-    print(total_quantity)
+    # if total_quantity == None:
+    #     total_quantity = quantity
 
     if not MovingAverageMethod.objects.filter(product_id = product_id).exists():
         
@@ -617,11 +611,12 @@ def mam_create_sheet(product_id, unit_price, quantity, stock_quantity):
         )
         
     else:
+        before_quantity = total_quantity - quantity
+
         average_price = MovingAverageMethod.objects.get(product_id = product_id).average_price
-        mul_stock   = average_price * total_quantity
-        print(mul_stock)
+        mul_stock   = average_price * before_quantity
+
         mul_inbound = unit_price * quantity
-        print(mul_inbound)
         result1 = (mul_stock + mul_inbound) / (total_quantity)
         round_result = round(result1, 6)
         
@@ -632,11 +627,11 @@ def mam_create_sheet(product_id, unit_price, quantity, stock_quantity):
 
 def mam_delete_sheet(product_id, unit_price, quantity, stock_quantity):
     try:
-        total = QuantityByWarehouse.objects.filter(product_id = product_id).aggregate(Sum('total_quantity'))
-        total_quantity = total['total_quantity__sum']      
-
+        total_quantity = QuantityByWarehouse.objects.get(product_id = product_id).total_quantity
+        
     except QuantityByWarehouse.DoesNotExist:
-        total_quantity = unit_price
+        total_quantity = quantity
+
 
     if not MovingAverageMethod.objects.filter(product_id = product_id).exists():
         new_MAM = MovingAverageMethod.objects.create(
