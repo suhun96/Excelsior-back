@@ -39,8 +39,10 @@ class SheetLog(models.Model):
     type       = models.CharField(max_length= 30)
     company    = models.ForeignKey(Company, on_delete= models.CASCADE, null= True)
     status     = models.BooleanField(default= True)
+    date       = models.DateField(default= datetime.now())
     etc        = models.CharField(max_length= 500)
     created_at = models.DateTimeField(auto_now_add= True)
+    timestamp  = models.DateTimeField(default = datetime.now())
 
     class Meta:
         db_table = 'sheet_logs'

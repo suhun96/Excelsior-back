@@ -177,10 +177,12 @@ class ModifySheetView(View):
         print(modify_data)
         
         sheet_id = modify_data.get('sheet_id')
+        print('check--1')
         try:
             with transaction.atomic():
                 # sheet, sheet_detail log 작성
                 create_sheet_logs(sheet_id, modify_user)
+                print('check--2')
                 # sheet_detail 롤백 [입고 = (-), 출고 = (+)]
                 rollback_sheet_detail(sheet_id) # 이부분에서 이동 평균법 수정(delete).
                 
@@ -1232,8 +1234,10 @@ class InquireSheetLogView(View):
             'sheet_log__user_name',
             'sheet_log__type',
             'sheet_log__company',
+            'sheet_log__date',
             'sheet_log__etc',
             'sheet_log__created_at',
+            'sheet_log__timestamp',
             'product_id',
             'product__product_code',
             'product__product_group__name',

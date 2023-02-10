@@ -186,7 +186,10 @@ def create_set_serial_code(input_data, generate_sheet_id):
             SerialCode.objects.create(code = serial_code2, sheet_id = generate_sheet_id, product_id = product_id)
 
 def create_sheet_logs(sheet_id, modify_user):
+    print(sheet_id)
+    print(modify_user)
     target_sheet = Sheet.objects.get(id = sheet_id)
+    print(target_sheet.date)
     try:
         with transaction.atomic():
             new_sheet_log = SheetLog.objects.create(
@@ -194,9 +197,11 @@ def create_sheet_logs(sheet_id, modify_user):
                 user_name = target_sheet.user.name,
                 type      = target_sheet.type,
                 company_id = target_sheet.company_id,
+                date       = target_sheet.date,
+                timestamp = target_sheet.updated_at,
                 etc       = target_sheet.etc,
             )
-
+            print('check--2')
             target_sheet_details = SheetComposition.objects.filter(sheet_id = target_sheet.id)
 
             for detail in target_sheet_details:
