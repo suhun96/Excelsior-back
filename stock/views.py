@@ -182,7 +182,7 @@ class ModifySheetView(View):
                 # sheet, sheet_detail log 작성
                 create_sheet_logs(sheet_id, modify_user)
                 # sheet_detail 롤백 [입고 = (-), 출고 = (+)]
-                rollback_sheet_detail(sheet_id)
+                rollback_sheet_detail(sheet_id) # 이부분에서 이동 평균법 수정(delete).
                 
                 # sheet 수정    
                 modify_sheet_data(sheet_id, modify_user, modify_data)
@@ -193,7 +193,7 @@ class ModifySheetView(View):
                     Delete_sheet_composition = SheetComposition.objects.filter(sheet_id = sheet_id).delete()
                     Delete_sheet_serialcode = SerialCode.objects.filter(sheet_id = sheet_id).delete()
                     Modify_sheet_detail = modify_sheet_detail(sheet_id, modify_data['products'])
-                    Reflecte_sheet_detail = reflecte_sheet_detail(sheet_id)
+                    Reflecte_sheet_detail = reflecte_sheet_detail(sheet_id) # 이 부분에서 이동 평균법 재 생성(create)
                     Register_check = register_checker(modify_data)
                     
 

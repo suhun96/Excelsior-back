@@ -592,15 +592,18 @@ def reflecte_sheet_detail(sheet_id):
         raise Exception({'message' : 'reflecte_modify_sheet_detail 사용하는중 에러가 발생했습니다.'})
 
 def mam_create_sheet(product_id, unit_price, quantity, stock_quantity):
+    print('mam_create 시작')
+    print(f'받은 {unit_price}')
+    print(f'받은 {quantity}')
+    
     try:
         total_quantity = QuantityByWarehouse.objects.get(product_id = product_id).total_quantity
         
     except QuantityByWarehouse.DoesNotExist:
+        print('예외 동작 DoesNotExist mam_create')
         total_quantity = quantity
     
-    # if total_quantity == None:
-    #     total_quantity = quantity
-
+    print(f'총 수량{total_quantity}')
     if not MovingAverageMethod.objects.filter(product_id = product_id).exists():
         
         new_MAM = MovingAverageMethod.objects.create(
@@ -612,11 +615,13 @@ def mam_create_sheet(product_id, unit_price, quantity, stock_quantity):
         
     else:
         before_quantity = total_quantity - quantity
+        print(f'이전 수량{before_quantity}')
 
         average_price = MovingAverageMethod.objects.get(product_id = product_id).average_price
         mul_stock   = average_price * before_quantity
-
+        print(f'이전 총 가격{mul_stock}')
         mul_inbound = unit_price * quantity
+        print(f'들어온 총 가격{mul_inbound}')
 
         result1 = (mul_stock + mul_inbound) / (total_quantity)
         round_result = round(result1, 6)
