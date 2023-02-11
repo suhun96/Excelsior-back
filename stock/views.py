@@ -1452,8 +1452,7 @@ class DecomposeSetSerialCodeView(View):
                 # 시리얼 체크 결과 값으로 메세지 날리기.
                 if generate_sheet_id == 'check_serial':
                     print('들어온 시리얼 코드에 문제가 있습니다.')
-                    return JsonResponse({'message' : '들어온 시리얼 코드에 문제가 있습니다.'}, status = 403)
-
+                    return JsonResponse({'message' : f'들어온 시리얼 코드에 문제가 있습니다. 실패한 시리얼 "{serial}"' }, status = 403)
                 target_query = SheetComposition.objects.get(sheet_id = generate_sheet_id)
                 # 옵션
                 set_product_id = target_query.product_id
