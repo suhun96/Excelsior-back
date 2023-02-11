@@ -479,13 +479,13 @@ def rollback_sheet_detail(sheet_id):
                         product_id = product_id,
                         warehouse_code = warehouse_code )
 
-                    mam_delete_sheet(product_id, unit_price, quantity, stock_quantity)
 
                     QuantityByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id).update_or_create(
                         product_id = product_id,
                         warehouse_code = warehouse_code,
                         defaults={'total_quantity' : stock_quantity})
 
+                    # mam_delete_sheet(product_id, unit_price, quantity, stock_quantity)
             if target_sheet.type == 'generate':
                 target_details = SheetComposition.objects.filter(sheet_id = sheet_id).values(
                         'product',
@@ -627,9 +627,11 @@ def mam_create_sheet(product_id, unit_price, quantity, stock_quantity):
         print(f'이전 총 가격{mul_stock}')
         mul_inbound = unit_price * quantity
         print(f'들어온 총 가격{mul_inbound}')
-
-        result1 = (mul_stock + mul_inbound) / (total_quantity)
-        round_result = round(result1, 6)
+        try:
+            result1 = (mul_stock + mul_inbound) / (total_quantity)
+            round_result = round(result1, 6)
+        except ZeroDivisionError:
+            round_result = 0
         
         new_MAM = MovingAverageMethod.objects.filter(product_id= product_id).update(
             average_price = round_result,

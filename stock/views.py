@@ -1022,6 +1022,7 @@ class GenerateSetProductView(View):
 
                 if set_product.is_set == False:
                     return JsonResponse({'message' : f'이 상품은 세트가 아닙니다. 생산 불가능 합니다.'}, status = 403) 
+                
                 ### 이동 평균법으로 가격을 가져오자.
                 print(f'set_product_id 가져오는가 {set_product}')
                 component_list = ProductComposition.objects.filter(set_product_id = set_product.id).values_list('composition_product', flat= True) 
@@ -1031,11 +1032,12 @@ class GenerateSetProductView(View):
                     print(f'product_id 값 {component_id}')
                     try:
                         mam_price = MovingAverageMethod.objects.get(product_id = component_id)
-                        
+                        # 수량만큼 추가로 계산
+                        quantity_2 = ProductComposition.objects.get(set_product_id = set_product.id, composition_product_id = component_id).quantity
                         if mam_price.custom_price == 0:
-                            target_price = mam_price.average_price
+                            target_price = mam_price.average_price * quantity_2
                         else:
-                            target_price = mam_price.custom_price
+                            target_price = mam_price.custom_price * quantity_2
                     except MovingAverageMethod.DoesNotExist:
                         target_price = 0
                     print(f'product_id 의 이평가 {target_price}')
