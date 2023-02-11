@@ -348,12 +348,12 @@ def rollback_sheet_detail(sheet_id):
                         product_id = product_id,
                         warehouse_code = warehouse_code )
                     
-                    mam_delete_sheet(product_id, unit_price, quantity, stock_quantity)
-
                     QuantityByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id).update_or_create(
                         product_id = product_id,
                         warehouse_code = warehouse_code,
                         defaults={'total_quantity' : stock_quantity})
+
+                    mam_delete_sheet(product_id, unit_price, quantity, stock_quantity)
 
             if target_sheet.type == 'outbound':
                 compositions = SheetComposition.objects.filter(sheet_id = sheet_id).values(
@@ -386,39 +386,6 @@ def rollback_sheet_detail(sheet_id):
                         product_id = product_id,
                         warehouse_code = warehouse_code,
                         defaults={'total_quantity' : stock_quantity})
-            
-            # if target_sheet.type == 'return':
-            #     target_details = SheetComposition.objects.filter(sheet_id = sheet_id).values(
-            #             'product',
-            #             'unit_price',
-            #             'quantity',
-            #             'warehouse_code'
-            #         )
-
-            #     for detail in target_details:
-            #         product_id     = detail.get('product')
-            #         warehouse_code = detail.get('warehouse_code')
-            #         quantity       = detail.get('quantity') 
-            #         unit_price     = detail.get('unit_price')
-                    
-            #         stock = StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id)
-                    
-            #         # 반품일 경우 (-)
-            #         before_quantity = stock.last().stock_quantity
-            #         stock_quantity  = before_quantity - int(quantity)
-                    
-            #         StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id).create(
-            #             sheet_id = sheet_id,
-            #             stock_quantity = stock_quantity,
-            #             product_id = product_id,
-            #             warehouse_code = warehouse_code )
-                    
-            #         mam_delete_sheet(product_id, unit_price, quantity, stock_quantity)
-
-            #         QuantityByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id).update_or_create(
-            #             product_id = product_id,
-            #             warehouse_code = warehouse_code,
-            #             defaults={'total_quantity' : stock_quantity})
 
             if target_sheet.type == 'new':
                 target_details = SheetComposition.objects.filter(sheet_id = sheet_id).values(
@@ -449,12 +416,12 @@ def rollback_sheet_detail(sheet_id):
                         product_id = product_id,
                         warehouse_code = warehouse_code )
                     
-                    mam_delete_sheet(product_id, total_price, quantity, stock_quantity)
-
                     QuantityByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id).update_or_create(
                         product_id = product_id,
                         warehouse_code = warehouse_code,
                         defaults={'total_quantity' : stock_quantity})
+
+                    mam_delete_sheet(product_id, total_price, quantity, stock_quantity)
 
             if target_sheet.type == 'used':
                 target_details = SheetComposition.objects.filter(sheet_id = sheet_id).values(
@@ -602,8 +569,9 @@ def reflecte_sheet_detail(sheet_id):
 def mam_create_sheet(product_id, unit_price, quantity, stock_quantity):
     print('###########################################################################')
     print('mam_create 시작')
-    print(f'받은 {unit_price}')
-    print(f'받은 {quantity}')
+    print('###########################################################################')
+    print(f'받은 가격 {unit_price}')
+    print(f'받은 수량 {quantity}')
     
     try:
         total_quantity = QuantityByWarehouse.objects.get(product_id = product_id).total_quantity
@@ -624,31 +592,31 @@ def mam_create_sheet(product_id, unit_price, quantity, stock_quantity):
         
     else:
         before_quantity = total_quantity - quantity
-        print(f'이전 수량{before_quantity}')
 
         average_price = MovingAverageMethod.objects.get(product_id = product_id).average_price
         mul_stock   = average_price * before_quantity
-        print(f'이전 총 가격{mul_stock}')
         mul_inbound = unit_price * quantity
-        print(f'들어온 총 가격{mul_inbound}')
+    
         try:
             result1 = (mul_stock + mul_inbound) / (total_quantity)
             round_result = round(result1, 6)
         except ZeroDivisionError:
             round_result = 0
-        
+
+        print(f'계산된 완료 {round_result}')       
         new_MAM = MovingAverageMethod.objects.filter(product_id= product_id).update(
             average_price = round_result,
             total_quantity = stock_quantity
         )
+    print('mam_create 종료')
 
 def mam_delete_sheet(product_id, unit_price, quantity, stock_quantity):
     print('###########################################################################')
     print('이동 평균법 롤백에 쓰일 전 가격과 수량')
     print('###########################################################################')
     print(product_id)
-    print(unit_price)
-    print(quantity)
+    print(f'받은 가격 {unit_price}')
+    print(f'받은 수량 {quantity}')
 
     try:
         total_quantity = QuantityByWarehouse.objects.get(product_id = product_id).total_quantity
@@ -667,18 +635,17 @@ def mam_delete_sheet(product_id, unit_price, quantity, stock_quantity):
         average_price = MovingAverageMethod.objects.get(product_id = product_id).average_price
         print(f'총 수량{total_quantity}')
         print(f'평균 가격{average_price}')
-        
-        total_stock = average_price * total_quantity
+
+        total_stock = average_price * (total_quantity + quantity )
         print(f'전체 가격 {total_stock}')
         rollback_inbound = unit_price * quantity
         print(f'직전 가격 계산 {rollback_inbound}')
         try:
-            result1 = (total_stock - rollback_inbound) / (total_quantity - quantity)
-            print(f'계산 된 값{result1}')
+            result1 = (total_stock - rollback_inbound) / ((total_quantity + quantity )- quantity)
             round_result = round(result1, 6)
         except ZeroDivisionError:
             round_result = 0
-
+        print(f'계산 된 값{round_result}')
         new_MAM = MovingAverageMethod.objects.filter(product_id= product_id).update(
             average_price = round_result,
             total_quantity = stock_quantity
