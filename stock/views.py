@@ -1023,25 +1023,27 @@ class GenerateSetProductView(View):
                 if set_product.is_set == False:
                     return JsonResponse({'message' : f'이 상품은 세트가 아닙니다. 생산 불가능 합니다.'}, status = 403) 
                 ### 이동 평균법으로 가격을 가져오자.
-
-                component_list = ProductComposition.objects.filter(id = set_product.id).values_list('composition_product_id', flat= True) 
-                
+                print(f'set_product_id 가져오는가 {set_product}')
+                component_list = ProductComposition.objects.filter(set_product_id = set_product.id).values_list('composition_product', flat= True) 
+                print(f'component_list {component_list}')
                 generate_set_product_price = 0
                 for component_id in component_list:
+                    print(f'product_id 값 {component_id}')
                     try:
                         mam_price = MovingAverageMethod.objects.get(product_id = component_id)
-                    
+                        
                         if mam_price.custom_price == 0:
                             target_price = mam_price.average_price
                         else:
                             target_price = mam_price.custom_price
                     except MovingAverageMethod.DoesNotExist:
                         target_price = 0
+                    print(f'product_id 의 이평가 {target_price}')
                     generate_set_product_price += target_price
-                
+
                 labor_price = set_product.labor
                 total_price = generate_set_product_price + labor_price 
-
+                print(f'총 세트 생산 가격 {total_price}')
 
                 generate_sheet_composition = SheetComposition.objects.create(
                     sheet_id        = generate_sheet.id,
@@ -1176,17 +1178,11 @@ class GenerateSetProductView(View):
     @jwt_decoder
     def post(self, request):
         input_data = json.loads(request.body)
-        print('check point-1')
-        print(input_data.get('components'))
-        print(len(input_data.get('components')))
         user = request.user
         try:
             with transaction.atomic():
                 # components 의 개수와 생산할 세트 품목의 개수가 같아야 한다.
                 manufacture_quantity = input_data.get('manufacture_quantity')
-                print('check point-2')
-                print(manufacture_quantity)
-                print(type(manufacture_quantity))
                 components = input_data.get('components')
                 
                 if not len(components) == int(manufacture_quantity):
@@ -1301,14 +1297,23 @@ class InquireSerialLogView(View):
 class DecomposeSetSerialCodeView(View):
     def check_serials(self, serials):
         check_list = []
-        
-        for serial_code in serials:
-            serial_code_query_set = SerialCode.objects.filter(code = serial_code)
-            
-            for query in serial_code_query_set:
-                if Sheet.objects.get(id = query.sheet_id).type == 'generate':
-                    sheet_id = query.sheet_id
-                    check_list.append(sheet_id)
+        try:
+            for serial_code in serials:
+                # 최종 히스토리
+                last_history = SerialCode.objects.filter(code = serial_code).last()
+                
+                if Sheet.objects.get(id = last_history.sheet_id).type == 'outbound': 
+                    raise KeyError
+                
+                serial_code_query_set = SerialCode.objects.filter(code = serial_code)
+                
+                for query in serial_code_query_set:
+                    if Sheet.objects.get(id = query.sheet_id).type == 'generate':
+                        sheet_id = query.sheet_id
+                        check_list.append(sheet_id)
+        except KeyError:
+            print('오류 상황 분기')
+            return 'check_serial'
         
         # 중복 제거
         checked_list = []
@@ -1444,6 +1449,11 @@ class DecomposeSetSerialCodeView(View):
         try:
             with transaction.atomic():
                 generate_sheet_id = self.check_serials(serials)
+                # 시리얼 체크 결과 값으로 메세지 날리기.
+                if generate_sheet_id == 'check_serial':
+                    print('들어온 시리얼 코드에 문제가 있습니다.')
+                    return JsonResponse({'message' : '들어온 시리얼 코드에 문제가 있습니다.'}, status = 403)
+
                 target_query = SheetComposition.objects.get(sheet_id = generate_sheet_id)
                 # 옵션
                 set_product_id = target_query.product_id
@@ -1541,10 +1551,11 @@ class DeleteMistakeSerialCodeView(View):
 
                 if Sheet.objects.get(id = sheet_id).type == 'outbound':
                     for serial_code_id in serial_code_id_list:
+                        print(f'시리얼 아이디 리스트 {serial_code_id_list}')
                         product_id = SerialCode.objects.get(id = serial_code_id).product_id
                         target_sheet = SheetComposition.objects.get(sheet_id = sheet_id, product_id = product_id)
                         before_quantity = target_sheet.quantity
-                        target_sheet.quantity = before_quantity + 1
+                        target_sheet.quantity = before_quantity - 1
                         target_sheet.save()
                         delete_serial_code = SerialCode.objects.get(id = serial_code_id).delete()
                     
