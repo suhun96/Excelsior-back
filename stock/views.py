@@ -1073,7 +1073,13 @@ class GenerateSetProductView(View):
                     product_id = set_product.id,
                     warehouse_code = warehouse_code,
                     defaults={'total_quantity' : stock_quantity})
-            
+
+                # 이동 평균법 적용
+                # mam_create_sheet(product_id, unit_price, quantity, stock_quantity)
+                print('세트 생산 이동평균법 작동')
+                mam_create_sheet(set_product.id, total_price, int(manufacture_quantity), stock_quantity)
+                print('세트 생산 이동평균법 중지')
+                
             return generate_sheet_id
         except:
             raise Exception({'message' : 'generate_sheet를 생성하는중 에러가 발생했습니다.'})
