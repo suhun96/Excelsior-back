@@ -1353,12 +1353,13 @@ class DecomposeSetSerialCodeView(View):
             mam_price = MovingAverageMethod.objects.get(product_id = component_id)
             print(f'평균 가격{mam_price.average_price}')
             print(f'지정 가격{mam_price.custom_price}')
+            
+            # 수량만큼 추가로 계산
+            quantity_2 = ProductComposition.objects.get(set_product_id = set_product.id, composition_product_id = component_id).quantity
             if mam_price.custom_price == 0:
-                print('분기 2')
-                target_price = mam_price.average_price
+                target_price = mam_price.average_price * quantity_2
             else:
-                print('분기 1')
-                target_price = mam_price.custom_price
+                target_price = mam_price.custom_price * quantity_2
             generate_set_product_price += target_price
         
         print("######################################################################")
@@ -1481,6 +1482,7 @@ class DecomposeSetSerialCodeView(View):
                 manufacture_quantity = target_query.quantity
                 warehouse_code = target_query.warehouse_code
                 LAB = manufacture_quantity - len(serials)
+                serial_quantity2 = len(serials)
                 
                 # 로그 찍기
                 used_sheet_id = Sheet.objects.get(id = generate_sheet_id).related_sheet_id

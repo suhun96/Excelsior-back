@@ -440,13 +440,16 @@ def rollback_sheet_detail(sheet_id):
                     before_quantity = stock.last().stock_quantity
                     stock_quantity  = before_quantity - int(quantity)
                     
+                    # 총 금액을 줘야한다 13000원이 아닌.
+                    total_price = quantity * unit_price
+
                     StockByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id).create(
                         sheet_id = sheet_id,
                         stock_quantity = stock_quantity,
                         product_id = product_id,
                         warehouse_code = warehouse_code )
                     
-                    mam_delete_sheet(product_id, unit_price, quantity, stock_quantity)
+                    mam_delete_sheet(product_id, total_price, quantity, stock_quantity)
 
                     QuantityByWarehouse.objects.filter(warehouse_code = warehouse_code, product_id = product_id).update_or_create(
                         product_id = product_id,
@@ -597,6 +600,7 @@ def reflecte_sheet_detail(sheet_id):
         raise Exception({'message' : 'reflecte_modify_sheet_detail 사용하는중 에러가 발생했습니다.'})
 
 def mam_create_sheet(product_id, unit_price, quantity, stock_quantity):
+    print('###########################################################################')
     print('mam_create 시작')
     print(f'받은 {unit_price}')
     print(f'받은 {quantity}')
@@ -639,7 +643,10 @@ def mam_create_sheet(product_id, unit_price, quantity, stock_quantity):
         )
 
 def mam_delete_sheet(product_id, unit_price, quantity, stock_quantity):
+    print('###########################################################################')
     print('이동 평균법 롤백에 쓰일 전 가격과 수량')
+    print('###########################################################################')
+    print(product_id)
     print(unit_price)
     print(quantity)
 
@@ -660,6 +667,7 @@ def mam_delete_sheet(product_id, unit_price, quantity, stock_quantity):
         average_price = MovingAverageMethod.objects.get(product_id = product_id).average_price
         print(f'총 수량{total_quantity}')
         print(f'평균 가격{average_price}')
+        
         total_stock = average_price * total_quantity
         print(f'전체 가격 {total_stock}')
         rollback_inbound = unit_price * quantity
