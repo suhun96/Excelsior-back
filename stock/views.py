@@ -1344,18 +1344,25 @@ class DecomposeSetSerialCodeView(View):
             return JsonResponse({'message' : f'이 상품은 세트가 아닙니다. 생산 불가능 합니다.'}, status = 403) 
         ### 이동 평균법으로 가격을 가져오자.
 
-        component_list = ProductComposition.objects.filter(id = set_product_id).values_list('composition_product_id', flat= True) 
+        component_list = ProductComposition.objects.filter(set_product_id = set_product_id).values_list('composition_product_id', flat= True) 
                 
         generate_set_product_price = 0
         for component_id in component_list:
             mam_price = MovingAverageMethod.objects.get(product_id = component_id)
-
+            print(f'평균 가격{mam_price.average_price}')
+            print(f'지정 가격{mam_price.custom_price}')
             if mam_price.custom_price == 0:
+                print('분기 2')
                 target_price = mam_price.average_price
             else:
+                print('분기 1')
                 target_price = mam_price.custom_price
             generate_set_product_price += target_price
         
+        print("######################################################################")
+        print('타겟 프라이스 가격 확인')
+        print(generate_set_product_price)
+        print('타겟 프라이스 가격 확인')
         labor_price = set_product.labor
         total_price = generate_set_product_price + labor_price 
 
@@ -1387,6 +1394,13 @@ class DecomposeSetSerialCodeView(View):
             product_id = set_product.id,
             warehouse_code = warehouse_code,
             defaults={'total_quantity' : stock_quantity})
+        print('#####################################################################')
+        print('세트 환원 이동평균법 작동')
+        mam_create_sheet(set_product.id, total_price, int(LAB), stock_quantity)
+        print('세트 환원 이동평균법 중지')
+        print('#####################################################################')
+
+        
 
     def used_sheet_2(self, used_sheet_id, set_product_id, LAB, warehouse_code):
         try:
