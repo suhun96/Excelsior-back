@@ -129,16 +129,16 @@ def create_product_serial_code(product_id, quantity, new_sheet_id):
     product_code = Product.objects.get(id = product_id).product_code
 
     serial_code1 = product_code + today
-    print('시리얼 코드 생산 작동')
+    
     if not SerialCode.objects.filter(code__icontains = serial_code1).exists():
-        print('시리얼 코드 생산 작동 분기 1')
+        
         for i in range(int(quantity)):
             route = '01'
             numbering = str(i + 1).zfill(3)
             serial_code2 = serial_code1 + route + numbering   
             SerialCode.objects.create(code = serial_code2, sheet_id = new_sheet_id, product_id = product_id)
     else:
-        print('시리얼 코드 생산 작동 분기 2')
+        
         last_serial = SerialCode.objects.filter(code__icontains = serial_code1).latest('id').code
         
         before_route = last_serial.replace(serial_code1, "")
@@ -186,10 +186,7 @@ def create_set_serial_code(input_data, generate_sheet_id):
             SerialCode.objects.create(code = serial_code2, sheet_id = generate_sheet_id, product_id = product_id)
 
 def create_sheet_logs(sheet_id, modify_user):
-    print(sheet_id)
-    print(modify_user)
     target_sheet = Sheet.objects.get(id = sheet_id)
-    print(target_sheet.date)
     try:
         with transaction.atomic():
             new_sheet_log = SheetLog.objects.create(
@@ -201,7 +198,7 @@ def create_sheet_logs(sheet_id, modify_user):
                 timestamp = target_sheet.updated_at,
                 etc       = target_sheet.etc,
             )
-            print('check--2')
+            
             target_sheet_details = SheetComposition.objects.filter(sheet_id = target_sheet.id)
 
             for detail in target_sheet_details:
@@ -282,7 +279,7 @@ def modify_sheet_detail(sheet_id, products):
     try:
         for product in products:
             product_code = product['product_code']
-            print(product_code)
+            
             product_id   = Product.objects.get(product_code =product['product_code']).id
 
             if Product.objects.filter(product_code = product_code).exists() == False:
@@ -303,7 +300,7 @@ def modify_sheet_detail(sheet_id, products):
                     create_product_serial_code(product_id, product['quantity'], sheet_id)
 
                 elif not product['serial_codes']:
-                    print('serial_codes empty') 
+                    
                     create_product_serial_code(product_id, product['quantity'], sheet_id)
 
                 else:
@@ -353,7 +350,7 @@ def rollback_sheet_detail(sheet_id):
                         warehouse_code = warehouse_code,
                         defaults={'total_quantity' : stock_quantity})
 
-                    mam_delete_sheet(product_id, unit_price, quantity, stock_quantity)
+                    # mam_delete_sheet(product_id, unit_price, quantity, stock_quantity)
 
             if target_sheet.type == 'outbound':
                 compositions = SheetComposition.objects.filter(sheet_id = sheet_id).values(
@@ -421,7 +418,7 @@ def rollback_sheet_detail(sheet_id):
                         warehouse_code = warehouse_code,
                         defaults={'total_quantity' : stock_quantity})
 
-                    mam_delete_sheet(product_id, total_price, quantity, stock_quantity)
+                    # mam_delete_sheet(product_id, total_price, quantity, stock_quantity)
 
             if target_sheet.type == 'used':
                 target_details = SheetComposition.objects.filter(sheet_id = sheet_id).values(
@@ -487,7 +484,7 @@ def rollback_sheet_detail(sheet_id):
                         warehouse_code = warehouse_code,
                         defaults={'total_quantity' : stock_quantity})
                     
-                    mam_delete_sheet(product_id, unit_price, quantity, stock_quantity)
+                    # mam_delete_sheet(product_id, unit_price, quantity, stock_quantity)
     except:
         raise Exception({'message' : 'rollback_quantity 사용하는중 에러가 발생했습니다.'})
 
@@ -496,7 +493,6 @@ def reflecte_sheet_detail(sheet_id):
     try:
         with transaction.atomic():
             if target_sheet.type == 'inbound':
-                print('체크 포인트 1-2')
                 compositions = SheetComposition.objects.filter(sheet_id = sheet_id).values(
                         'product',
                         'unit_price',
@@ -529,7 +525,7 @@ def reflecte_sheet_detail(sheet_id):
                         warehouse_code = warehouse_code,
                         defaults={'total_quantity' : stock_quantity})
 
-                    mam_create_sheet(product_id, unit_price, quantity, stock_quantity)
+                    # mam_create_sheet(product_id, unit_price, quantity, stock_quantity)
 
             if target_sheet.type == 'outbound':
                 compositions = SheetComposition.objects.filter(sheet_id = sheet_id).values(
@@ -567,20 +563,15 @@ def reflecte_sheet_detail(sheet_id):
         raise Exception({'message' : 'reflecte_modify_sheet_detail 사용하는중 에러가 발생했습니다.'})
 
 def mam_create_sheet(product_id, unit_price, quantity, stock_quantity):
-    print('###########################################################################')
-    print('mam_create 시작')
-    print('###########################################################################')
-    print(f'받은 가격 {unit_price}')
-    print(f'받은 수량 {quantity}')
     
     try:
         total_quantity = QuantityByWarehouse.objects.get(product_id = product_id).total_quantity
         
     except QuantityByWarehouse.DoesNotExist:
-        print('예외 동작 DoesNotExist mam_create')
+        
         total_quantity = quantity
     
-    print(f'총 수량{total_quantity}')
+    
     if not MovingAverageMethod.objects.filter(product_id = product_id).exists():
         
         new_MAM = MovingAverageMethod.objects.create(
@@ -603,20 +594,15 @@ def mam_create_sheet(product_id, unit_price, quantity, stock_quantity):
         except ZeroDivisionError:
             round_result = 0
 
-        print(f'계산된 완료 {round_result}')       
+        
         new_MAM = MovingAverageMethod.objects.filter(product_id= product_id).update(
             average_price = round_result,
             total_quantity = stock_quantity
         )
-    print('mam_create 종료')
+    
 
 def mam_delete_sheet(product_id, unit_price, quantity, stock_quantity):
-    print('###########################################################################')
-    print('이동 평균법 롤백에 쓰일 전 가격과 수량')
-    print('###########################################################################')
-    print(product_id)
-    print(f'받은 가격 {unit_price}')
-    print(f'받은 수량 {quantity}')
+    
 
     try:
         total_quantity = QuantityByWarehouse.objects.get(product_id = product_id).total_quantity
@@ -633,19 +619,19 @@ def mam_delete_sheet(product_id, unit_price, quantity, stock_quantity):
         )
     else:
         average_price = MovingAverageMethod.objects.get(product_id = product_id).average_price
-        print(f'총 수량{total_quantity}')
-        print(f'평균 가격{average_price}')
+        
+        
 
         total_stock = average_price * (total_quantity + quantity )
-        print(f'전체 가격 {total_stock}')
+        
         rollback_inbound = unit_price * quantity
-        print(f'직전 가격 계산 {rollback_inbound}')
+        
         try:
             result1 = (total_stock - rollback_inbound) / ((total_quantity + quantity )- quantity)
             round_result = round(result1, 6)
         except ZeroDivisionError:
             round_result = 0
-        print(f'계산 된 값{round_result}')
+        
         new_MAM = MovingAverageMethod.objects.filter(product_id= product_id).update(
             average_price = round_result,
             total_quantity = stock_quantity

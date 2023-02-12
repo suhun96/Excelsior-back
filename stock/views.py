@@ -173,16 +173,15 @@ class ModifySheetView(View):
         modify_user = request.user
         modify_data = json.loads(request.body)
         # 들어온 데이터 양식 확인.
-        print("수정에 사용된 데이터입니다.")
-        print(modify_data)
+        
         
         sheet_id = modify_data.get('sheet_id')
-        print('check--1')
+        
         try:
             with transaction.atomic():
                 # sheet, sheet_detail log 작성
                 create_sheet_logs(sheet_id, modify_user)
-                print('check--2')
+                
                 # sheet_detail 롤백 [입고 = (-), 출고 = (+)]
                 rollback_sheet_detail(sheet_id) # 이부분에서 이동 평균법 수정(delete).
                 
@@ -1024,12 +1023,12 @@ class GenerateSetProductView(View):
                     return JsonResponse({'message' : f'이 상품은 세트가 아닙니다. 생산 불가능 합니다.'}, status = 403) 
                 
                 ### 이동 평균법으로 가격을 가져오자.
-                print(f'set_product_id 가져오는가 {set_product}')
+                
                 component_list = ProductComposition.objects.filter(set_product_id = set_product.id).values_list('composition_product', flat= True) 
-                print(f'component_list {component_list}')
+                
                 generate_set_product_price = 0
                 for component_id in component_list:
-                    print(f'product_id 값 {component_id}')
+                    
                     try:
                         mam_price = MovingAverageMethod.objects.get(product_id = component_id)
                         # 수량만큼 추가로 계산
@@ -1040,12 +1039,12 @@ class GenerateSetProductView(View):
                             target_price = mam_price.custom_price * quantity_2
                     except MovingAverageMethod.DoesNotExist:
                         target_price = 0
-                    print(f'product_id 의 이평가 {target_price}')
+                    
                     generate_set_product_price += target_price
 
                 labor_price = set_product.labor
                 total_price = generate_set_product_price + labor_price 
-                print(f'총 세트 생산 가격 {total_price}')
+                
 
                 generate_sheet_composition = SheetComposition.objects.create(
                     sheet_id        = generate_sheet.id,
@@ -1078,9 +1077,9 @@ class GenerateSetProductView(View):
 
                 # 이동 평균법 적용
                 # mam_create_sheet(product_id, unit_price, quantity, stock_quantity)
-                print('세트 생산 이동평균법 작동')
+                
                 mam_create_sheet(set_product.id, total_price, int(manufacture_quantity), stock_quantity)
-                print('세트 생산 이동평균법 중지')
+
                 
             return generate_sheet_id
         except:
@@ -1320,7 +1319,6 @@ class DecomposeSetSerialCodeView(View):
                         sheet_id = query.sheet_id
                         check_list.append(sheet_id)
         except KeyError:
-            print('오류 상황 분기')
             return 'check_serial'
         
         # 중복 제거
@@ -1351,8 +1349,7 @@ class DecomposeSetSerialCodeView(View):
         generate_set_product_price = 0
         for component_id in component_list:
             mam_price = MovingAverageMethod.objects.get(product_id = component_id)
-            print(f'평균 가격{mam_price.average_price}')
-            print(f'지정 가격{mam_price.custom_price}')
+            
             
             # 수량만큼 추가로 계산
             quantity_2 = ProductComposition.objects.get(set_product_id = set_product.id, composition_product_id = component_id).quantity
@@ -1362,10 +1359,7 @@ class DecomposeSetSerialCodeView(View):
                 target_price = mam_price.custom_price * quantity_2
             generate_set_product_price += target_price
         
-        print("######################################################################")
-        print('타겟 프라이스 가격 확인')
-        print(generate_set_product_price)
-        print('타겟 프라이스 가격 확인')
+    
         labor_price = set_product.labor
         total_price = generate_set_product_price + labor_price 
 
@@ -1397,11 +1391,9 @@ class DecomposeSetSerialCodeView(View):
             product_id = set_product.id,
             warehouse_code = warehouse_code,
             defaults={'total_quantity' : stock_quantity})
-        print('#####################################################################')
-        print('세트 환원 이동평균법 작동')
-        mam_create_sheet(set_product.id, total_price, int(LAB), stock_quantity)
-        print('세트 환원 이동평균법 중지')
-        print('#####################################################################')
+        
+        # mam_create_sheet(set_product.id, total_price, int(LAB), stock_quantity)
+        
 
         
 
@@ -1474,7 +1466,6 @@ class DecomposeSetSerialCodeView(View):
                 generate_sheet_id = self.check_serials(serials)
                 # 시리얼 체크 결과 값으로 메세지 날리기.
                 if generate_sheet_id == 'check_serial':
-                    print('들어온 시리얼 코드에 문제가 있습니다.')
                     return JsonResponse({'message' : f'들어온 시리얼 코드에 문제가 있습니다.', 'failed_serial' : serials }, status = 403)
                 target_query = SheetComposition.objects.get(sheet_id = generate_sheet_id)
                 # 옵션
@@ -1539,7 +1530,6 @@ class DeleteMistakeSerialCodeView(View):
                 
 
         if not len(failed_serial_code) == 0:
-            print(failed_serial_code)
             return JsonResponse({'message': '환원에 실패했습니다.', 'failed_serial_code' : failed_serial_code}, status = 403)
 
         # 로그 찍히기 전에 error_serial_code가 있으면 return을 한다.
@@ -1550,6 +1540,7 @@ class DeleteMistakeSerialCodeView(View):
                 UPDATED_USER = Sheet.objects.filter(id = sheet_id).update(user_id = user.id)
 
                 if Sheet.objects.get(id = sheet_id).type == 'inbound':
+                    
                     for serial_code_id in serial_code_id_list:
                         product_id = SerialCode.objects.get(id = serial_code_id).product_id
                         target_sheet = SheetComposition.objects.get(sheet_id = sheet_id, product_id = product_id)
@@ -1574,7 +1565,7 @@ class DeleteMistakeSerialCodeView(View):
 
                 if Sheet.objects.get(id = sheet_id).type == 'outbound':
                     for serial_code_id in serial_code_id_list:
-                        print(f'시리얼 아이디 리스트 {serial_code_id_list}')
+                    
                         product_id = SerialCode.objects.get(id = serial_code_id).product_id
                         target_sheet = SheetComposition.objects.get(sheet_id = sheet_id, product_id = product_id)
                         before_quantity = target_sheet.quantity
