@@ -370,7 +370,8 @@ class InfoSheetListView(View):
                 return JsonResponse({'message' : "기준 종료 날짜 설정 오류"}, status = 403)
             
             # Sheet 필터링
-            q = Q(sheet__date__range = (date_start, date_end), sheet__type__in = ['inbound', 'outbound', 'generate', 'new'])
+            q = Q(sheet__date__range = (date_start, date_end))
+            # q = Q(sheet__date__range = (date_start, date_end), sheet__type__in = ['inbound', 'outbound', 'generate', 'new'])
 
             if name:
                 try:
