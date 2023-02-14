@@ -13,6 +13,8 @@ urlpatterns = [
     path('stock-info', StockTotalView.as_view()),
     path('sheet-modify', ModifySheetView.as_view()), # POST
     path('sheet-delete', DeleteSheetView.as_view()), # POST 
+    path('sheet-etc-modify', ModifySheetEtcView.as_view()), # POST
+    path('sheet-etc', GetSheetEtcView.as_view()), # GET 
     path('sheet-log-list', InquireSheetLogView.as_view()), # GET
     path('serial/', include('stock.urls_serial_code')),
     path('check-set', CheckSetProductView.as_view()),

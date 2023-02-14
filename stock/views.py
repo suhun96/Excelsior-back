@@ -250,6 +250,30 @@ class DeleteSheetView(View):
         except:
             return JsonResponse({'message' : "예외 사항이 발생했습니다."}, status = 403)
 
+class ModifySheetEtcView(View):
+    @jwt_decoder
+    def post(self, request):
+        modify_user = request.user
+        modify_data = json.loads(request.body)
+        # 들어온 데이터 양식 확인.
+        sheet_id = modify_data.get('sheet_id')
+        modified_etc = modify_data.get('etc')
+        try:
+            with transaction.atomic():             
+                # sheet 수정    
+                target = Sheet.objects.filter(id = sheet_id)
+                target.etc = modified_etc
+                target.save()
+                return JsonResponse({'message' : '수정 완료'}, status = 200)
+        except:
+            return JsonResponse({'message' : "예외 사항이 발생했습니다."}, status = 403)
+
+class GetSheetEtcView(View):
+    def get(self, request):
+        sheet_id = request.GET.get('sheet_id', None)
+        result = Sheet.objects.filter(id=sheet_id).etc
+        return JsonResponse({'message' : result}, status = 200)
+
 class InquireSheetLogView(View):
     def get(self, request):
         result = list(SheetLog.objects.all().values())
