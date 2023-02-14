@@ -271,7 +271,7 @@ class ModifySheetEtcView(View):
 class GetSheetEtcView(View):
     def get(self, request):
         sheet_id = request.GET.get('sheet_id', None)
-        result = Sheet.objects.filter(id=sheet_id).etc
+        result = Sheet.objects.filter(id = sheet_id)
         return JsonResponse({'message' : result}, status = 200)
 
 class InquireSheetLogView(View):
