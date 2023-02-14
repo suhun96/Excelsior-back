@@ -530,6 +530,7 @@ class TotalQuantityView(View):
                 dict = {
                     'product_code' : get_product.product_code,
                     'product_name' : get_product.name,
+                    'product_group_name' : get_product.product_group.name,
                     'status'       : get_product.status,
                     'safe_quantity': get_product.safe_quantity,
                     'quantity'     : check['quantity'],
