@@ -763,8 +763,8 @@ class StockTotalView(View):
             q &= Q(status = status)
         if type=='inbound' :
             q &= (Q(company_id = company_id)|Q(company_id = None))
+            q &= Q(is_set = 0)
         target_products = Product.objects.filter(q)
-
         result = []
 
         try:
