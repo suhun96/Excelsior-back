@@ -14,7 +14,7 @@ urlpatterns = [
     path('sheet-modify', ModifySheetView.as_view()), # POST
     path('sheet-delete', DeleteSheetView.as_view()), # POST 
     path('sheet-etc-modify', ModifySheetEtcView.as_view()), # POST
-    path('sheet-etc', GetSheetEtcView.as_view()), # GET 
+    path('sheet-etc', GetSheetEtcView.as_view()), # 쿼리파라미터 sheet_id받음 
     path('sheet-log-list', InquireSheetLogView.as_view()), # GET
     path('serial/', include('stock.urls_serial_code')),
     path('check-set', CheckSetProductView.as_view()),

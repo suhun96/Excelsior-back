@@ -761,7 +761,8 @@ class StockTotalView(View):
             q &= Q(keyword__icontains = keyword)
         if status:
             q &= Q(status = status)
-
+        if type=='inbound' :
+            q &= (Q(company_id = company_id)|Q(company_id = None))
         target_products = Product.objects.filter(q)
 
         result = []
@@ -801,6 +802,7 @@ class StockTotalView(View):
                     except QuantityByWarehouse.DoesNotExist:
                         partial_quantity = 0
                     dict = {
+                        'is_set'            : product.is_set,
                         'is_serial'         : product.is_serial,
                         'product_name'      : product.name,
                         'product_code'      : product.product_code,
@@ -819,6 +821,7 @@ class StockTotalView(View):
                         partial_quantity = 0
                     
                     dict = {
+                        'is_set'            : product.is_set,
                         'is_serial'         : product.is_serial,
                         'product_name'      : product.name,
                         'product_code'      : product.product_code,
