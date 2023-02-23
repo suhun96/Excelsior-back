@@ -306,6 +306,7 @@ class SheetListView(View):
         offset         = int(request.GET.get('offset'))
         limit          = int(request.GET.get('limit'))
         name           = request.GET.get('user_name', None)
+        etc            = request.GET.get('etc', None)
         stock_type     = request.GET.get('type', None)
         date_start     = request.GET.get('date_start', None)
         date_end       = request.GET.get('date_end', None)
@@ -322,7 +323,8 @@ class SheetListView(View):
         if company_name:
             company_id = Company.objects.get(name = company_name).id
             q &= Q(company_id = company_id)
-
+        if etc:
+            q &= Q(etc__icontains = etc)
         
         sheets = Sheet.objects.filter(q).order_by('-date', '-id')[offset : offset+limit].values(
             'id',       
@@ -763,7 +765,7 @@ class StockTotalView(View):
             q &= Q(status = status)
         if type=='inbound' :
             q &= (Q(company_id = company_id)|Q(company_id = None))
-            # q &= Q(is_set = 0)
+            # q &= Q(is_set = 0) <==세트제품은 입고처리 못하게 막는코드
         target_products = Product.objects.filter(q)
         result = []
 
